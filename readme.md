@@ -11,7 +11,7 @@ Hiatus utilise le logiciel de photogrammétrie MicMac, ainsi que des scripts Pyt
 
 # Documentation
 
-La documentation détaillée de Hiatus se trouve dans [hiatus.pdf](documentation/hiatus.pdf)
+La documentation détaillée de Hiatus se trouve dans [hiatus.pdf](documentation/Hiatus.pdf)
 
 
 
