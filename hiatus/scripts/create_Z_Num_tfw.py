@@ -1,0 +1,77 @@
+import argparse
+import os
+from osgeo import gdal
+
+parser = argparse.ArgumentParser(description='Construction des tfw des fichiers Z Num Max')
+parser.add_argument('--input_Malt', default='', help='Dossier MEC-Malt')
+args = parser.parse_args()
+
+def read_tfw(path):
+    print("path : ", path)
+    with open(path, "r") as f:
+        compte = 0
+        for line in f:
+            if compte==0:
+                dX = float(line)
+            if compte==3:
+                dY = float(line)
+            if compte==4:
+                X0 = float(line)
+            if compte==5:
+                Y0 = float(line)
+            compte += 1
+    return X0, Y0, dX, dY
+
+def write_tfw(path, x, y, dX, dY):
+    with open(path, "w") as f:
+        f.write("{}\n0\n0\n{}\n{}\n{}\n".format(dX, dY, x, y))
+
+
+def create_tfw(folder, radical):
+    Z_Nums = [i for i in os.listdir(folder) if radical in i and i[-4:]==".tif"]
+
+    Z_Nums_Tile = sorted([i for i in Z_Nums if "Tile" in i])
+    Z_Nums_not_Tile = [i for i in Z_Nums if not "Tile" in i]
+
+
+    if len(Z_Nums_not_Tile)>=1:
+        X0, Y0, res_X, res_Y = read_tfw(os.path.join(folder, Z_Nums_not_Tile[0].replace(".tif", ".tfw")))
+        print(X0, Y0, res_X, res_Y)
+
+        for compte, tile in enumerate(Z_Nums_Tile):
+            if radical == "Orthophotomosaic":
+                j_tile = int(tile.split(".")[0].split("_")[2])
+            else:
+                j_tile = int(tile.split(".")[0].split("_")[5])
+            if compte==0:
+                x = X0
+                y = Y0
+            else:
+                if j_tile > j:
+                    #On passe à la colonne d'après
+                    x = x + res_X * dx
+                    y = Y0
+                else:
+                    y = y + res_Y * dy
+
+            print(os.path.join(folder, tile.replace(".tif", ".tfw")))
+            write_tfw(os.path.join(folder, tile.replace(".tif", ".tfw")), x, y, res_X, res_Y)
+            
+            input_ds = gdal.Open(os.path.join(folder, tile))
+            dx = input_ds.RasterXSize
+            dy = input_ds.RasterYSize
+            j = j_tile
+
+
+
+for indice in range(1, 10):
+    create_tfw(args.input_Malt, "Z_Num{}".format(indice))
+
+create_tfw("Ortho-"+args.input_Malt, "Orthophotomosaic")
+
+    
+
+            
+
+
+
