@@ -7,7 +7,7 @@ import shutil
 
 parser = argparse.ArgumentParser(description="Analyse des résultats Campari où chaque image est calculée individuellement")
 parser.add_argument('--appuis', help="Points d'appuis de la BD Ortho")
-parser.add_argument('--rapportResidus', help="Rapport Campari sur les résidus")
+parser.add_argument('--report_residuals', help="Rapport Campari sur les résidus")
 args = parser.parse_args()
 
 def lecture_appui_xml(path):
@@ -76,7 +76,7 @@ def check_compute_failed(path_rapport_residus):
 
 
 path_appuis_xml = args.appuis
-path_rapport_residus = args.rapportResidus
+path_rapport_residus = args.report_residuals
 
 if check_compute_failed(path_rapport_residus):
     # Si le calcul est un échec, alors on retire l'image du chantier

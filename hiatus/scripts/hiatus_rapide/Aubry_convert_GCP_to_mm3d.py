@@ -92,7 +92,7 @@ def save_mesures_3D_mm3d(mesures_3D):
         incertitude.text = "1 1 1"
         oneAppuisDAF.append(incertitude)
 
-    xml.write("appuis.xml", xml_declaration=True, encoding="UTF-8")
+    xml.write("GCP.xml", xml_declaration=True, encoding="UTF-8")
 
 def save_mesures_2D_mm3d(mesures_2D_mm3d):
     """
@@ -126,13 +126,13 @@ def save_mesures_2D_mm3d(mesures_2D_mm3d):
             ptIm.text = "{} {}".format(mesure["column"], mesure["row"])
             oneMesureAF1I.append(ptIm)
 
-    xml.write("MesuresAppuis-S2D.xml", xml_declaration=True, encoding="UTF-8")
+    xml.write("GCP-S2D.xml", xml_declaration=True, encoding="UTF-8")
 
 def save_nb_GCP_per_image(mesures_2D):
     """
     Sauvegarde le nombre de points d'appuis pour chaque image
     """
-    with open(os.path.join("rapports", "nb_GCP_per_image.txt"), "w") as f:
+    with open(os.path.join("reports", "nb_GCP_per_image.txt"), "w") as f:
         for image_name in sorted(list(mesures_2D.keys())):
             f.write("{} : {}\n".format(image_name, len(mesures_2D[image_name])))
 

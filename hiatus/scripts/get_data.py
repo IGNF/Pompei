@@ -6,8 +6,8 @@ import os
 
 
 
-parser = argparse.ArgumentParser(description="Récupère les emprises au sol des chantiers disponibles sur la géoplateforme")
-parser.add_argument('--outdir', help="Répertoire où écrire les emprises")
+parser = argparse.ArgumentParser(description="Récupère les footprints au sol des chantiers disponibles sur la géoplateforme")
+parser.add_argument('--outdir', help="Répertoire où écrire les footprints")
 args = parser.parse_args()
 
 
@@ -77,4 +77,4 @@ outdir = args.outdir
 os.makedirs(outdir, exist_ok=True)
 data = getChantiers()
 data = getFocale(data)
-save_geojson(data, os.path.join(outdir, "emprises.geojson"))
+save_geojson(data, os.path.join(outdir, "footprints.geojson"))

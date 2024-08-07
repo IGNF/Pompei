@@ -6,11 +6,11 @@ from lxml import etree
 
 parser = argparse.ArgumentParser(description="Récupère les positions des points d'appuis trouvés par Aubry")
 
-parser.add_argument('--facteur', help="Facteur de sous-échantillonnage", type=int)
+parser.add_argument('--factor', help="Facteur de sous-échantillonnage", type=int)
 parser.add_argument('--regrouper', help="Regroupe ou non les points d'appuis qui appartiennent à la même image", type=bool)
 args = parser.parse_args()
 
-facteur = args.facteur
+factor = args.factor
 regrouper = args.regrouper
 
 def read_resultpi(path):
@@ -30,16 +30,16 @@ def read_resultpi(path):
     return points_histo, points_ortho
 
 
-def reproj_points_histo(points_histo, resultpi_name, facteur):
+def reproj_points_histo(points_histo, resultpi_name, factor):
     resultpi_name_splitted = resultpi_name.replace(".resultpi", "").split("--")[1].split("_")
-    X0_histo = int(resultpi_name_splitted[1])*1000*facteur
-    Y0_histo = int(resultpi_name_splitted[0])*1000*facteur
+    X0_histo = int(resultpi_name_splitted[1])*1000*factor
+    Y0_histo = int(resultpi_name_splitted[0])*1000*factor
 
     resultpi_name_modif = resultpi_name.replace("OIS-Reech_", "").split("--")[0]
     ortho_name = "{}_rectifiee.tif".format(resultpi_name_modif)
     image_src = rasterio.open(ortho_name)
     gt = image_src.transform
-    gt_facteur = rasterio.Affine(gt.a*facteur, gt.b*facteur, gt.c, gt.d*facteur, gt.e*facteur, gt.f)
+    gt_factor = rasterio.Affine(gt.a*factor, gt.b*factor, gt.c, gt.d*factor, gt.e*factor, gt.f)
     
 
     points_histo_projected = []
@@ -47,7 +47,7 @@ def reproj_points_histo(points_histo, resultpi_name, facteur):
         
         x_image = point[0]+X0_histo
         y_image = point[1]+Y0_histo
-        x, y = rasterio.transform.xy(gt_facteur, y_image, x_image)
+        x, y = rasterio.transform.xy(gt_factor, y_image, x_image)
         
         points_histo_projected.append([x,y])
 
@@ -93,7 +93,7 @@ for resultpi_name in sorted(resultpi_names):
     # On lit tous les points contenus dans le fichier. Ils sont en coordonnées image
     points_histo, points_ortho = read_resultpi(os.path.join("dallage", resultpi_name))
     # On reprojette les points qui sont sur l'ortho historique dans le système de coordonnées approché de l'ortho ancienne
-    points_histo_projected = reproj_points_histo(points_histo, resultpi_name, facteur)
+    points_histo_projected = reproj_points_histo(points_histo, resultpi_name, factor)
     # On reprojette les points qui sont sur l'ortho de référence dans le système de projection de l'ortho de référence
     points_ortho_projected = reproj_points_ortho(points_ortho, resultpi_name)
 

@@ -1,11 +1,11 @@
-repertoire_scripts=$1
+scripts_dir=$1
 metadata=$2
 
 #On calcul le MNS
 echo "Calcul du MNS"
-echo ${repertoire_scripts}
-python ${repertoire_scripts}/create_Z_Num_tfw.py --input_Malt MEC-Malt-Final
-python ${repertoire_scripts}/build_mns_micmac.py --input_Malt MEC-Malt-Final  >> logfile
+echo ${scripts_dir}
+python ${scripts_dir}/create_Z_Num_tfw.py --input_Malt MEC-Malt-Final
+python ${scripts_dir}/build_mns_micmac.py --input_Malt MEC-Malt-Final  >> logfile
 
 cd MEC-Malt-Final
 mkdir -p mns_sans_masque
@@ -13,9 +13,9 @@ mv MNS_Final_Num8_DeZoom2_STD-MALT* mns_sans_masque/
 mv MNS_Final_Num9_DeZoom2_STD-MALT* mns_sans_masque/
 cd ..
 #On applique le masque sur le MNS historique et on l'enregistre en Lambert 93
-python ${repertoire_scripts}/appliquer_masque.py --orthoHistoPath MEC-Malt-Final/mns_sans_masque/  --orthoHistoResultPath  MEC-Malt-Final/ --masque MEC-Malt-Final/Masq_STD-MALT_DeZoom2.tif --metadata ${metadata}
+python ${scripts_dir}/apply_mask.py --orthoHistoPath MEC-Malt-Final/mns_sans_masque/  --orthoHistoResultPath  MEC-Malt-Final/ --masque MEC-Malt-Final/Masq_STD-MALT_DeZoom2.tif --metadata ${metadata}
 #On calcule la différence de MNS entre le MNS historique et le MNS actuel
-python ${repertoire_scripts}/soustraction.py --mnsHistoPath MEC-Malt-Final/  --mnsPath  ${metadata}/mns/ --masque MEC-Malt-Final/Masq_STD-MALT_DeZoom2.tif --metadata ${metadata}
+python ${scripts_dir}/compute_MNS_diff.py --mnsHistoPath MEC-Malt-Final/  --mnsPath  ${metadata}/mns/ --masque MEC-Malt-Final/Masq_STD-MALT_DeZoom2.tif --metadata ${metadata}
 
 cd Ortho-MEC-Malt-Final-Corr
 mkdir ortho_sans_masque
@@ -24,7 +24,7 @@ mv Orthophotomosaic_Tile*.tif.ovr ortho_sans_masque
 cp Orthophotomosaic_Tile*.tfw ortho_sans_masque
 cd ..
 #On applique le masque aux dalles de l'orthophoto historique et on l'enregistre en Lambert 93
-python ${repertoire_scripts}/appliquer_masque.py --orthoHistoPath Ortho-MEC-Malt-Final-Corr/ortho_sans_masque/  --orthoHistoResultPath  Ortho-MEC-Malt-Final-Corr/ --masque MEC-Malt-Final/Masq_STD-MALT_DeZoom1.tif --metadata ${metadata}
+python ${scripts_dir}/apply_mask.py --orthoHistoPath Ortho-MEC-Malt-Final-Corr/ortho_sans_masque/  --orthoHistoResultPath  Ortho-MEC-Malt-Final-Corr/ --masque MEC-Malt-Final/Masq_STD-MALT_DeZoom1.tif --metadata ${metadata}
 
 
 cd MEC-Malt-Final/

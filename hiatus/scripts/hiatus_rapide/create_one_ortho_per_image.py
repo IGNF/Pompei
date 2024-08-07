@@ -8,14 +8,14 @@ import rasterio
 parser = argparse.ArgumentParser(description="Script permettant de créer les imagettes pour Aubry dans hiatus_rapide.sh")
 parser.add_argument('--metadata', help="Répertoire contenant les métadonnées")
 parser.add_argument('--ta_xml', help="Fichier TA.xml")
-parser.add_argument('--facteur', help="facteur pour le sous-échantillonage", type=int)
+parser.add_argument('--factor', help="factor pour le sous-échantillonage", type=int)
 parser.add_argument('--workdir', help="Répertoire où écrire les imagettes")
 parser.add_argument('--decalage', help="Appliquer un décalage")
 args = parser.parse_args()
 
 metadata = args.metadata
 ta_xml_path = args.ta_xml
-facteur_sous_ech = args.facteur
+factor_sous_ech = args.factor
 workdir = args.workdir
 decalage = True
 if args.decalage=="False":
@@ -105,7 +105,7 @@ def get_decalage(path):
         return 0, 0
 
 
-def one_image(path_appuis, image_name, facteur_sous_ech, ta_xml, gt_ortho_array, ortho, crs, decalage):
+def one_image(path_appuis, image_name, factor_sous_ech, ta_xml, gt_ortho_array, ortho, crs, decalage):
 
     # Open image
     image = open_image(image_name)
@@ -114,15 +114,15 @@ def one_image(path_appuis, image_name, facteur_sous_ech, ta_xml, gt_ortho_array,
     gt_image = get_footprint(ta_xml, image_name, image)
     _, l_image, c_image = image.shape
 
-    # Cut in tiles of 1000*facteur_sous_ech pixels
-    for l_count, l in enumerate(range(0, l_image, 1000*facteur_sous_ech)):
-        for c_count, c in enumerate(range(0, c_image, 1000*facteur_sous_ech)):
+    # Cut in tiles of 1000*factor_sous_ech pixels
+    for l_count, l in enumerate(range(0, l_image, 1000*factor_sous_ech)):
+        for c_count, c in enumerate(range(0, c_image, 1000*factor_sous_ech)):
             
             # get row column coordinates of each pixel
-            max_l = min(l+1000*facteur_sous_ech, l_image)
-            max_c = min(c+1000*facteur_sous_ech, c_image)
-            lignes = np.arange(l, max_l, facteur_sous_ech)
-            colonnes = np.arange(c, max_c, facteur_sous_ech)
+            max_l = min(l+1000*factor_sous_ech, l_image)
+            max_c = min(c+1000*factor_sous_ech, c_image)
+            lignes = np.arange(l, max_l, factor_sous_ech)
+            colonnes = np.arange(c, max_c, factor_sous_ech)
             size_l = lignes.shape[0]
             size_c = colonnes.shape[0]
             ll, cc = np.meshgrid(lignes, colonnes)
@@ -153,7 +153,7 @@ def one_image(path_appuis, image_name, facteur_sous_ech, ta_xml, gt_ortho_array,
             # save histo tile image
             extract_image = image[:,ll_reshaped[0,:], cc_reshaped[0:]].reshape((1, size_c, size_l))
             extract_image = np.transpose(extract_image, axes=(0,2,1))
-            geotransform_extract_image = rasterio.Affine(gt_image[0,0]*facteur_sous_ech, gt_image[0,1]*facteur_sous_ech, coords_xy[0,0], gt_image[1,0]*facteur_sous_ech, gt_image[1,1]*facteur_sous_ech, coords_xy[1,0])
+            geotransform_extract_image = rasterio.Affine(gt_image[0,0]*factor_sous_ech, gt_image[0,1]*factor_sous_ech, coords_xy[0,0], gt_image[1,0]*factor_sous_ech, gt_image[1,1]*factor_sous_ech, coords_xy[1,0])
             
             try:# Il risque d'y avoir un problème si le décalage est important et qu'il n'y a pas une marge suffisante sur la BD Ortho
                 histo_name = "{}--{}_{}.tif".format(image_name.replace(".tif", ""), l_count, c_count)
@@ -187,4 +187,4 @@ os.makedirs(path_appuis, exist_ok=True)
 images_names = [i for i in os.listdir() if i[:10]=="OIS-Reech_" and i[-4:]==".tif"]
 for image_name in images_names:
     # For each image, cut in small tiles and get the equivalent from the BD Ortho
-    one_image(path_appuis, image_name, facteur_sous_ech, ta_xml, gt_ortho_array, ortho, crs, decalage)
+    one_image(path_appuis, image_name, factor_sous_ech, ta_xml, gt_ortho_array, ortho, crs, decalage)

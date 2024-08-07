@@ -15,7 +15,7 @@ def load_bbox(metadata):
     return bbox
 
 def getNbCouleurs(metadata):
-    with open(os.path.join(metadata, "nbCouleurs.txt"), "r") as f:
+    with open(os.path.join(metadata, "nb_colors.txt"), "r") as f:
         for line in f:
             return int(line)
 

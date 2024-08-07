@@ -13,7 +13,7 @@ args = parser.parse_args()
 
 
 
-def get_emprise(path_mns_histo):
+def get_footprint(path_mns_histo):
     inputds = gdal.Open(path_mns_histo)
     geoTransform = inputds.GetGeoTransform()
     image = inputds.GetRasterBand(1).ReadAsArray()
@@ -63,7 +63,7 @@ def download(pointsWGS84, path):
     
 
 
-points = get_emprise(args.MNS_Histo)  
+points = get_footprint(args.MNS_Histo)  
 EPSG = getEPSG(args.metadata)  
 pointsWGS84 = transform_Points_WGS84(EPSG, points)
 download(pointsWGS84, args.output)

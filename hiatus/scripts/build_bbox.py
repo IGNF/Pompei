@@ -3,13 +3,13 @@ from lxml import etree
 import argparse
 
 parser = argparse.ArgumentParser(description="On enregistre dans un fichier la boîte englobante du chantier")
-parser.add_argument('--input_xml', help='Fichier xml du chantier')
+parser.add_argument('--TA', help='Fichier xml du chantier')
 parser.add_argument('--metadata', help='Chemin où enregistrer la BD Ortho et le MNS')
 args = parser.parse_args()
 
 
 
-def getListeImages():
+def get_images_list():
     #Récupère la liste des images présentes dans le dossier
     liste_fichiers = os.listdir()
     liste_images = []
@@ -19,7 +19,7 @@ def getListeImages():
     return liste_images
 
 
-def lecture_xml(path):
+def read_xml(path):
     #Récupère pour chaque cliché le nom de l'image et l'emprise donnée par le fichier xml
     tree = etree.parse(path)
     root = tree.getroot()
@@ -66,13 +66,13 @@ def save_bbox(bbox):
         for i in bbox:
             f.write("{}\n".format(i))
 
-path_xml = args.input_xml
+path_xml = args.TA
 
 #Récupère la liste des images présentes dans le dossier
-liste_images = getListeImages()
+liste_images = get_images_list()
 
 #Récupère les emprises indiquées dans le fichier de métadonnées xml du chantier 
-images= lecture_xml(path_xml)
+images= read_xml(path_xml)
 
 
 

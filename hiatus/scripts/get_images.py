@@ -8,19 +8,19 @@ from osgeo import gdal
 from lxml import etree
 from pyproj import CRS, Transformer
 
-parser = argparse.ArgumentParser(description="Récupère les emprises au sol des chantiers disponibles sur la géoplateforme")
-parser.add_argument('--emprises_file', help="Fichier avec les emprises au sol des chantiers")
-parser.add_argument('--id', help="Fichier avec les emprises au sol des chantiers")
+parser = argparse.ArgumentParser(description="Récupère les footprints au sol des chantiers disponibles sur la géoplateforme")
+parser.add_argument('--footprints_file', help="Fichier avec les footprints au sol des chantiers")
+parser.add_argument('--id', help="Fichier avec les footprints au sol des chantiers")
 parser.add_argument('--epsg', help="EPSG du chantier")
 parser.add_argument('--outdir', help="Répertoire où préparer le chantier")
 args = parser.parse_args()
 
 
-def get_bbox(emprises_file, id):
-    with open(emprises_file, "r") as f:
-        emprises = json.loads(f.read())
+def get_bbox(footprints_file, id):
+    with open(footprints_file, "r") as f:
+        footprints = json.loads(f.read())
     
-    for feature in emprises["features"]:
+    for feature in footprints["features"]:
         if feature["id"] == "dataset."+id:
             bbox = feature["bbox"]
             bbox_polygon = Polygon([[bbox[0], bbox[1]], [bbox[0], bbox[3]], [bbox[2], bbox[3]], [bbox[2], bbox[1]], [bbox[0], bbox[1]]])
@@ -192,14 +192,14 @@ def create_xml_file(images_metadata, outdir, epsg):
 
 
 
-emprises_file = args.emprises_file
+footprints_file = args.footprints_file
 id = args.id
 epsg = int(args.epsg)
 outdir = args.outdir
 
 os.makedirs(outdir, exist_ok=True)
 
-bbox = get_bbox(emprises_file, id)
+bbox = get_bbox(footprints_file, id)
 images_metadata = get_images_metadata(bbox, outdir, id)
 with open(os.path.join(outdir, "images.geojson"), "r") as f:
     images_metadata = json.loads(f.read())

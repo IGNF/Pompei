@@ -1,5 +1,5 @@
-repertoire_scripts=$1
-repertoire_chantier=$2
+scripts_dir=$1
+workspace=$2
 CPU=$3
 
 
@@ -10,11 +10,11 @@ mm3d Malt Ortho OIS.*tif TerrainFinal_10_10_0.5_AllFree_Final MasqImGlob=filtre.
 echo "Tawny"
 mm3d Tawny Ortho-MEC-Malt-Final/ RadiomEgal=false >> logfile
 
-python ${repertoire_scripts}/create_Z_Num_tfw.py --input_Malt MEC-Malt-Final
+python ${scripts_dir}/create_Z_Num_tfw.py --input_Malt MEC-Malt-Final
 
 
-sh ${repertoire_scripts}/radiometrie.sh ${repertoire_scripts} ${CPU}
+sh ${scripts_dir}/equalize_radiometry.sh ${scripts_dir} ${CPU}
 
-sh ${repertoire_scripts}/build_vrt.sh ${repertoire_scripts} metadata
+sh ${scripts_dir}/build_vrt.sh ${scripts_dir} metadata
 
-sh ${repertoire_scripts}/mise_en_forme_resultat.sh
+sh ${scripts_dir}/format_results.sh

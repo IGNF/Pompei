@@ -11,7 +11,7 @@ parser.add_argument('--ta_xml', help="Fichier TA.xml")
 args = parser.parse_args()
 
 """
-Les points d'appuis ont été trouvés une première fois sur les images sous-échantillonnées d'un facteur 10. 
+Les points d'appuis ont été trouvés une première fois sur les images sous-échantillonnées d'un factor 10. 
 Ces premiers points d'appuis servent à déterminer la translation à appliquer sur les imagettes afin qu'elles correspondent 
 au mieux lorsque l'on appliquera la recherche de points d'appuis à résolution normale
 
@@ -94,7 +94,7 @@ def one_image(path_appuis, image_name, ta_xml):
     _, l_image, c_image = image.shape
 
 
-    # Cut in tiles of 1000*facteur_sous_ech pixels
+    # Cut in tiles of 1000*factor_sous_ech pixels
     for l_count, l in enumerate(range(0, l_image, 1000)):
         for c_count, c in enumerate(range(0, c_image, 1000)):
             max_l = min(l+1000, l_image)

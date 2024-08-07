@@ -1,4 +1,4 @@
-repertoire_scripts=$1
+scripts_dir=$1
 
 
 #Saisie des repères de fond de chambre sur une image
@@ -11,10 +11,10 @@ mm3d SaisieMasq IGNF_PVA_1-0__1979-10-10__C0145-0501_1979_F1-23-6_0334.tif Gama=
 
 #Recherche des repères de fond de chambre
 echo "FFTKugelhupf"
-mm3d FFTKugelhupf IGNF.*tif MeasuresIm-IGNF_PVA_1-0__1979-10-10__C0145-0501_1979_F1-23-6_0334.tif-S2D.xml Masq=Masq | tee rapports/rapport_FFTKugelhupf.txt >> logfile 
+mm3d FFTKugelhupf IGNF.*tif MeasuresIm-IGNF_PVA_1-0__1979-10-10__C0145-0501_1979_F1-23-6_0334.tif-S2D.xml Masq=Masq | tee reports/rapport_FFTKugelhupf.txt >> logfile 
 
 echo "Analyse du rapport FFTKugelhupf"
-python ${repertoire_scripts}/analyse_FFTKugelhupf.py --input_rapport rapports/rapport_FFTKugelhupf.txt
+python ${scripts_dir}/analyze_FFTKugelhupf.py --input_report reports/rapport_FFTKugelhupf.txt
 
 #Suppression de fichiers de masques sinon ils sont traités comme faisant partie des images
 rm IGNF_PVA_1-0__1979-10-10__C0145-0501_1979_F1-23-6_0334_Masq.tif
@@ -25,14 +25,14 @@ rm Ori-InterneScan/MeasuresIm-IGNF_PVA_1-0__1979-10-10__C0145-0501_1979_F1-23-6_
 
 #Recherche des positions moyennes des repères de fond de chambre
 echo "Recherche des positions moyennes des repères de fonds de chambre"
-python ${repertoire_scripts}/reperemoyen_resoscan.py --input_micmac_folder=./ --input_resolutionscan=0.021166666666666667 --input_idreperesfile=id_reperes.txt >> logfile
+python ${scripts_dir}/compute_mean_fiducial_marks.py --input_micmac_folder=./ --input_resolutionscan=0.021166666666666667 --input_idreperesfile=id_reperes.txt >> logfile
 
 #Rééchantillonnage des clichés
 echo "Rééchantillonnage des clichés"
-mm3d ReSampFid IGNF.*tif 0.021166666666666667 | tee rapports/rapport_ReSampFid.txt >> logfile
+mm3d ReSampFid IGNF.*tif 0.021166666666666667 | tee reports/rapport_ReSampFid.txt >> logfile
 
 #Analyse du rapport de ReSampFid
-python ${repertoire_scripts}/analyse_ReSampFid.py --input_rapport rapports/rapport_ReSampFid.txt
+python ${scripts_dir}/analyze_ReSampFid.py --input_report reports/rapport_ReSampFid.txt
 
 #Mise à jour du fichier de calibration
-python ${repertoire_scripts}/maj_calibNum.py --input_micmac_folder=./ >> logfile
+python ${scripts_dir}/maj_calibNum.py --input_micmac_folder=./ >> logfile

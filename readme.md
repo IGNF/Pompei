@@ -70,11 +70,11 @@ mamba activate hiatus
 ### Récupération des chantiers disponibles 
 Pour récupérer les chantiers disponibles sur la Géoplateforme :
 ```
-python scripts/get_data.py --outdir emprises
+python scripts/get_data.py --outdir footprints
 ```
 
-Un fichier [outdir]/emprises.geojson est créé. Il contient :
-* les emprises au sol 
+Un fichier [outdir]/footprints.geojson est créé. Il contient :
+* les footprints au sol 
 * la date de la mission (ne tenir compte que de l'année et pas du jour ni du mois)
 * la résolution en mètres. Il s'agit d'une approximation calculée à partir de la hauteur de vol et de la focale définie dans les métadonnées de l'IGN
 * la couleur. C : en RVB, P : panchromatique, IRC : infrarouge fausse couleur, IR : infrarouge
@@ -88,11 +88,11 @@ Un fichier [outdir]/emprises.geojson est créé. Il contient :
 
 Pour récupérer les images et le TA d'un chantier :
 ```
-python scripts/get_images.py --emprises_file fichier_emprises --id id_chantier --epsg epsg --outdir outdir
+python scripts/get_images.py --footprints_file fichier_footprints --id id_chantier --epsg epsg --outdir outdir
 ```
 Avec :
-* fichier_emprises : chemin vers le fichier des chantiers disponibles, celui qui a été téléchargé avec le get_data.py
-* id_chantier : l'identifiant du chantier souhaité : champ id du fichier emprises, sans le "dataset."
+* fichier_footprints : chemin vers le fichier des chantiers disponibles, celui qui a été téléchargé avec le get_data.py
+* id_chantier : l'identifiant du chantier souhaité : champ id du fichier footprints, sans le "dataset."
 * epsg : epsg du chantier : il n'y a pas moyen de récupérer automatiquement l'EPSG du chantier, donc il faut le rentrer à la main ici
 * outdir : répertoire où mettre les données pour le chantier
 
@@ -101,9 +101,9 @@ Avec :
 
 ```
 cd hiatus
-sh visualisation_plan_vol.sh metadonnees_xml
+sh visualize_flight_plan.sh TA
 
-sh hiatus.sh metadonnees_xml nb_reperes_fiduciaux cibles Kugelhupf_image_filtree presence_artefacts forcer_verticale ortho algo pt_appuis_filtres create_ortho_mns create_ortho_mnt
+sh hiatus.sh TA nb_fiducial_marks targets Kugelhupf_image_filtree remove_artefacts force_vertical ortho algo filter_GCP create_ortho_mns create_ortho_mnt
 ```
   
 
@@ -120,9 +120,9 @@ Le script hiatus.sh ne fonctionne pas si les images ne se recouvrent pas suffisa
 
 ```
 cd hiatus
-sh visualisation_plan_vol.sh metadonnees_xml
+sh visualize_flight_plan.sh TA
 
-sh hiatus_rapide.sh metadonnees_xml nb_reperes_fiduciaux cibles Kugelhupf_image_filtree presence_artefacts ortho nb_cpus
+sh hiatus_rapide.sh TA nb_fiducial_marks targets Kugelhupf_image_filtree remove_artefacts ortho nb_cpus
 ```
 
 

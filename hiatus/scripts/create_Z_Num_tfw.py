@@ -7,7 +7,6 @@ parser.add_argument('--input_Malt', default='', help='Dossier MEC-Malt')
 args = parser.parse_args()
 
 def read_tfw(path):
-    print("path : ", path)
     with open(path, "r") as f:
         compte = 0
         for line in f:
@@ -36,7 +35,6 @@ def create_tfw(folder, radical):
 
     if len(Z_Nums_not_Tile)>=1:
         X0, Y0, res_X, res_Y = read_tfw(os.path.join(folder, Z_Nums_not_Tile[0].replace(".tif", ".tfw")))
-        print(X0, Y0, res_X, res_Y)
 
         for compte, tile in enumerate(Z_Nums_Tile):
             if radical == "Orthophotomosaic":
