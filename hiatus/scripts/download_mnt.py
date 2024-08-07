@@ -2,7 +2,7 @@ import math
 import os
 import shutil
 import argparse
-from download_Ortho_MNS_wms import download_data
+from download_ortho_MNS_wms import download_data
 from osgeo import gdal
 import gzip
 from tools import getEPSG, load_bbox

@@ -62,11 +62,11 @@ def test_position_cliche(cursor):
             print("L'image {} du chantier {} n'a pas de quaternion".format(data[1], data[0]))
 
         #if data[8] == None:
-        #    print("L'image {} du chantier {} n'a pas d'emprise au sol {}, {}".format(data[1], data[0], data[9], data[10]))
+        #    print("L'image {} du chantier {} n'a pas d'footprintau sol {}, {}".format(data[1], data[0], data[9], data[10]))
         else:
             footprint = json.loads(data[8])
             if len(footprint["coordinates"][0]) != 9:
-                print("L'image {} du chantier {} n'a pas 8 points pour l'emprise au sol {}, {}".format(data[1], data[0], data[9], data[10]))
+                print("L'image {} du chantier {} n'a pas 8 points pour l'footprintau sol {}, {}".format(data[1], data[0], data[9], data[10]))
         
     print("min_x, max_x : ", min_x, max_x)
     print("min_y, max_y : ", min_y, max_y)
@@ -94,7 +94,7 @@ def test_quaternion(cursor):
     print("Dans {} chantiers, au moins une image n'a pas de quaternion renseignée".format(compte))
 
 
-def test_emprise_au_sol(cursor):
+def test_footprint_au_sol(cursor):
     cursor.execute("SELECT c.id_missta, cl.image, ST_AsGeoJSON(cl.footprint), c.name, EXTRACT(YEAR FROM c.t0) FROM misphot.chantiers as c JOIN misphot.cliches as cl ON c.id = cl.chantier")
     records = cursor.fetchall()
 
@@ -102,12 +102,12 @@ def test_emprise_au_sol(cursor):
         if data[2] != None:
             footprint = json.loads(data[2])
             if len(footprint["coordinates"][0]) != 9 and len(footprint["coordinates"][0]) != 10:
-                print("L'image {} du chantier {} {} n'a pas 8 points pour l'emprise au sol mais {}".format(data[1], data[3], data[4], len(footprint["coordinates"][0])-1))
+                print("L'image {} du chantier {} {} n'a pas 8 points pour l'footprintau sol mais {}".format(data[1], data[3], data[4], len(footprint["coordinates"][0])-1))
         
 
 
 
-def test_emprise_au_sol_None(cursor):
+def test_footprint_au_sol_None(cursor):
     cursor.execute("SELECT c.id_missta, c.name, EXTRACT(YEAR FROM c.t0) FROM misphot.chantiers as c JOIN misphot.cliches as cl ON c.id = cl.chantier WHERE ST_AsGeoJSON(cl.footprint) IS NULL GROUP BY c.id")
     records = cursor.fetchall()
 
@@ -115,7 +115,7 @@ def test_emprise_au_sol_None(cursor):
     for data in records:
         print(data)
         compte += 1
-    print("Dans {} chantiers, au moins une image n'a pas d'emprise au sol renseignée".format(compte))
+    print("Dans {} chantiers, au moins une image n'a pas d'footprintau sol renseignée".format(compte))
 
 
 def get_projection(cursor):
@@ -165,7 +165,7 @@ def chantiers_obliques(cursor):
 
 def chantiers_a_faire(cursor):
     """
-    Chantiers sans obliques, avec au moins 3 images, et où toutes les images ont des sommets de prise de vue et des emprises au sol et antérieurs à 2003
+    Chantiers sans obliques, avec au moins 3 images, et où toutes les images ont des sommets de prise de vue et des footprints au sol et antérieurs à 2003
     """
     
     cursor.execute("SELECT count(*), AVG(compte) FROM (SELECT count(*) AS compte FROM misphot.cliches AS c JOIN misphot.chantiers AS ch ON ch.id = c.chantier WHERE ((ch.note NOT LIKE '%OBLIQUE%' AND  ch.note NOT LIKE '%oblique%') OR ch.note IS NULL) AND EXTRACT(YEAR FROM ch.t0) <= 2003 AND ch.id NOT IN (SELECT c.id FROM misphot.chantiers as c JOIN misphot.cliches as cl ON c.id = cl.chantier WHERE cl.point IS NULL OR ST_AsGeoJSON(cl.footprint) IS NULL OR cl.quaternion IS NULL GROUP BY c.id)  GROUP BY c.chantier HAVING count(*) >= 3) AS d")
@@ -308,10 +308,10 @@ cursor = connection.cursor()
 
 
 
-#Vérifie qu'il existe une emprise au sol pour toutes les images
-#test_emprise_au_sol_None(cursor)
+#Vérifie qu'il existe une footprintau sol pour toutes les images
+#test_footprint_au_sol_None(cursor)
 
-#test_emprise_au_sol(cursor)
+#test_footprint_au_sol(cursor)
 
 #chantiers_problemes(cursor)
 

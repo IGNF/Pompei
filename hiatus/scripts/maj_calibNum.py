@@ -49,16 +49,16 @@ if __name__ == "__main__":
 		
 
 
-	with open("tapioca.sh", "r") as f:
+	with open("find_tie_points.sh", "r") as f:
 		text = f.readlines()
 	
-	with open("tapioca.sh", "w") as f:
+	with open("find_tie_points.sh", "w") as f:
 		for line in text:
 			if "mm3d Tapioca File CouplesTA.xml" in line:
 				if len(list_OIS) >= 4:
-					line = "mm3d Tapioca File CouplesTA.xml " + str(max(half_w, half_h)) + " | tee rapports/rapport_Tapioca.txt >> logfile \n"
+					line = "mm3d Tapioca File CouplesTA.xml " + str(max(half_w, half_h)) + " | tee reports/rapport_Tapioca.txt >> logfile \n"
 				else:
-					line = "mm3d Tapioca All OIS-Reech.*.tif " + str(max(half_w, half_h)) + " | tee rapports/rapport_Tapioca.txt >> logfile \n"
+					line = "mm3d Tapioca All OIS-Reech.*.tif " + str(max(half_w, half_h)) + " | tee reports/rapport_Tapioca.txt >> logfile \n"
 			if "mm3d OriConvert OriTxtInFile" in line:
 				if len(list_OIS) >= 4:
 					line = "mm3d OriConvert OriTxtInFile SommetsNav.csv Nav NameCple=CouplesTA.xml >> logfile \n"

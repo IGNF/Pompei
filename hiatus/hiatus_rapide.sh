@@ -1,11 +1,11 @@
 # Chaîne de traitement pour traiter les chantiers Hiatus compliqués
 
 
-metadonnees_xml=$1
-nb_reperes_fiduciaux=$2 #int
-cibles=$3 # [0, 1]
-Kugelhupf_image_seuillee=$4 #[0, 1]
-presence_artefacts=$5 #[0, 1]
+TA=$1
+nb_fiducial_marks=$2 #int
+targets=$3 # [0, 1]
+Kugelhupf_apply_threshold=$4 #[0, 1]
+remove_artefacts=$5 #[0, 1]
 ortho=$6 # storeref, wms, histo, dalles
 CPU=$7
 
@@ -15,44 +15,44 @@ CPU=$7
 
 if test "$#" = 0; then
     echo "hiatus_complique.sh : Chaîne de traitement complète"
-    echo "metadonnees_xml : path"
-    echo "nb_reperes_fiduciaux : int"
-    echo "cibles : [0, 1]"
-    echo "Kugelhupf_image_seuillee : [0, 1]"
-    echo "presence_artefacts : [0, 1]"
+    echo "TA : path"
+    echo "nb_fiducial_marks : int"
+    echo "targets : [0, 1]"
+    echo "Kugelhupf_apply_threshold : [0, 1]"
+    echo "remove_artefacts : [0, 1]"
     echo "ortho : [storeref, wms, histo, dalles]"
     echo "CPU : int"
 else
 
-    repertoire_chantier=$(dirname ${metadonnees_xml})
-    repertoire_scripts=$(realpath "scripts")
-    cd ${repertoire_chantier}
-    metadonnees_xml=$(basename ${metadonnees_xml})
+    workspace=$(dirname ${TA})
+    scripts_dir=$(realpath "scripts")
+    cd ${workspace}
+    TA=$(basename ${TA})
 
-    mkdir rapports
+    mkdir reports
     if test ${ortho} = "storeref"; then
         echo "N'oubliez pas de monter store-ref sur votre ordinateur"
     fi
 
-    sh ${repertoire_scripts}/convert_jp2.sh
+    sh ${scripts_dir}/convert_jp2_to_tif.sh
 
-    python ${repertoire_scripts}/preparer_chantier.py --scripts ${repertoire_scripts} --TA ${metadonnees_xml} --nb_fiduciaux ${nb_reperes_fiduciaux} --resolution_scannage 0.021 --presence_artefacts ${presence_artefacts} --cibles ${cibles} --images_seuillees ${Kugelhupf_image_seuillee}
+    python ${scripts_dir}/initialize_files.py --scripts ${scripts_dir} --TA ${TA} --nb_fiducial_marks ${nb_fiducial_marks} --scan_resolution 0.021 --remove_artefacts ${remove_artefacts} --targets ${targets} --apply_threshold ${Kugelhupf_apply_threshold}
 
-    sh correction_cliches.sh ${repertoire_scripts}
+    sh correct_geometrically_images.sh ${scripts_dir}
 
-    sh tapioca.sh ${repertoire_scripts}
+    sh find_tie_points.sh ${scripts_dir}
 
-    sh ${repertoire_scripts}/HomolFilterMasq.sh ${presence_artefacts} ${repertoire_scripts} >> logfile
+    sh ${scripts_dir}/filter_tie_points.sh ${remove_artefacts} ${scripts_dir} >> logfile
 
-    sh ${repertoire_scripts}/download_ortho_MNS.sh ${repertoire_scripts} ${ortho} ${metadonnees_xml} >> logfile
+    sh ${scripts_dir}/download_ortho_MNS.sh ${scripts_dir} ${ortho} ${TA} >> logfile
 
-    sh ${repertoire_scripts}/hiatus_rapide/appuisSousEch10.sh ${repertoire_scripts} ${metadonnees_xml} ${CPU}
+    sh ${scripts_dir}/hiatus_rapide/appuisSousEch10.sh ${scripts_dir} ${TA} ${CPU}
 
-    sh ${repertoire_scripts}/hiatus_rapide/appuis.sh ${repertoire_scripts} ${metadonnees_xml} ${CPU}
+    sh ${scripts_dir}/hiatus_rapide/appuis.sh ${scripts_dir} ${TA} ${CPU}
 
-    sh ${repertoire_scripts}/hiatus_rapide/aero.sh ${repertoire_scripts}
+    sh ${scripts_dir}/hiatus_rapide/aero.sh ${scripts_dir}
 
-    sh ${repertoire_scripts}/create_ortho.sh ${repertoire_scripts} ${metadonnees_xml} ${ortho} ${CPU}
+    sh ${scripts_dir}/create_ortho.sh ${scripts_dir} ${TA} ${ortho} ${CPU}
 
 fi
 
