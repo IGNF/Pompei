@@ -18,7 +18,7 @@ La documentation détaillée de Hiatus se trouve dans [hiatus.pdf](documentation
 ## Installation
 
 
-### Avec Docker
+### Avec Docker sur Linux
 
 Construction de l'image Docker :
 
@@ -32,15 +32,42 @@ Pour lancer le conteneur Docker (renseigner le répertoire de montage dans la ma
 docker run --name hiatus -it -e DISPLAY -v [point de montage sur la machine hôte]:/home/hiatus/hiatus/hiatus/chantiers -v /tmp/.X11-unix:/tmp/.X11-unix --user="$(id --user)" hiatus /bin/bash
 ```
 
-Ou bien : pour lancer le conteneur Docker après avoir monté store-ref en local (interne à l'IGN) :
+Ou bien (interne à l'IGN) : pour lancer le conteneur Docker après avoir monté store-ref en local (renseigner le répertoire de montage de store-ref) :
 ```
-docker run --name hiatus -it -e DISPLAY --mount type=bind,src=/media/store-ref,dst=/media/store-ref,readonly -v [point de montage sur la machine hôte]:/home/hiatus/hiatus/hiatus/chantiers -v /tmp/.X11-unix:/tmp/.X11-unix --user="$(id --user)" hiatus /bin/bash
+docker run --name hiatus -it -e DISPLAY --mount type=bind,src=[chemin vers store-ref],dst=/media/store-ref,readonly -v [point de montage sur la machine hôte]:/home/hiatus/hiatus/hiatus/chantiers -v /tmp/.X11-unix:/tmp/.X11-unix --user="$(id --user)" hiatus /bin/bash
 ```
 
-
-Ouvrir le terminal pour exécuter les commandes Hiatus
+Activer l'environnement conda :
 ```
-docker exec -it hiatus /bin/bash
+mamba activate hiatus
+```
+
+### Avec Docker sur Mac
+
+Construction de l'image Docker :
+
+```
+docker build -t hiatus --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTPS_PROXY --build-arg USER_ID=$(id -u) .
+```
+
+Lancer le serveur X11 (installer XQuartz si nécessaire):
+```
+open -a XQuartz
+```
+
+Autorisez les connexions locales:
+```
+xhost +localhost
+```
+
+Lancer le conteneur Docker (renseigner le répertoire de montage dans la machine hôte):
+```
+docker run --name hiatus -it --env="DISPLAY=host.docker.internal:0" -v [point de montage sur la machine hôte]:/home/hiatus/hiatus/hiatus/chantiers -v /tmp/.X11-unix:/tmp/.X11-unix --user="$(id -u)" hiatus /bin/bash
+```
+
+Ou bien (interne à l'IGN) : pour lancer le conteneur Docker après avoir monté store-ref en local (renseigner le répertoire de montage de store-ref) :
+```
+docker run --name hiatus -it --env="DISPLAY=host.docker.internal:0" --mount type=bind,src=[chemin vers store-ref],dst=/media/store-ref,readonly -v [point de montage sur la machine hôte]:/home/hiatus/hiatus/hiatus/chantiers -v /tmp/.X11-unix:/tmp/.X11-unix --user="$(id -u)" hiatus /bin/bash
 ```
 
 Activer l'environnement conda :
