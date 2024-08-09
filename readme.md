@@ -153,8 +153,31 @@ sh hiatus_rapide.sh TA nb_fiducial_marks targets Kugelhupf_image_filtree remove_
 ```
 
 
+# Contributeurs
+
+Contributeurs IGN : Célestin Huet, Arnaud Le Bris
+
+
 # Citations
 
 * Aubry et al, Painting-to-3D Model Alignment Via Discriminative Visual Elements, 2014
 * Giordano et al, Toward automatic georeferencing of archival aerial photogrammetric surveys, 2018
 * Zhang et al, Feature matching for multi-epoch historical aerial images, 2021
+
+
+# How to Cite
+
+Please cite Hiatus and IGN if you use this software in your research or project.
+Proper citations help others find and reference this work and support its continued development.
+
+To cite this software, please use the following reference:
+
+```bibtex
+@software{Hiatus,
+  author = {IGN},
+  title = {Hiatus},
+  version = {1},
+  year = {2024},
+  url = {https://github.com/IGNF/Hiatus}
+}
+```
