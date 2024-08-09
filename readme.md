@@ -20,6 +20,11 @@ La documentation détaillée de Hiatus se trouve dans [hiatus.pdf](documentation
 
 ### Avec Docker sur Linux
 
+
+Prérequis : Docker est déjà installé
+
+
+
 Construction de l'image Docker :
 
 ```
@@ -43,6 +48,10 @@ mamba activate hiatus
 ```
 
 ### Avec Docker sur Mac
+
+
+Prérequis : Docker est déjà installé
+
 
 Construction de l'image Docker :
 
@@ -76,7 +85,17 @@ mamba activate hiatus
 ```
 
 
+
+### Avec Docker sur Windows
+
+Prérequis : WSL est déjà installé et Docker fonctionne sur WSL.
+
+Dans ce cas, l'installation fonctionne en suivant toutes les étapes de l'installation avec Docker sur Linux.
+
+
 ### Sans Docker
+
+Ne fonctionne qu'avec Linux
 
 * Installer Micmac en suivant les consignes d'installation sur la page [GitHub](https://github.com/micmacIGN/micmac).
 
