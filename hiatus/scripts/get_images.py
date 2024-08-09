@@ -22,9 +22,11 @@ from shapely import Polygon
 from osgeo import gdal
 from lxml import etree
 from pyproj import CRS, Transformer
+import geopandas as gpd
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description="Récupère les footprints au sol des chantiers disponibles sur la géoplateforme")
-parser.add_argument('--footprints_file', help="Fichier avec les footprints au sol des chantiers")
+parser.add_argument('--selection', help="Fichier avec les footprints au sol des chantiers")
 parser.add_argument('--id', help="Fichier avec les footprints au sol des chantiers")
 parser.add_argument('--epsg', help="EPSG du chantier")
 parser.add_argument('--outdir', help="Répertoire où préparer le chantier")
@@ -44,8 +46,19 @@ def get_bbox(footprints_file, id):
     raise ValueError("Aucun chantier avec l'identifiant {} n'a été trouvé".format(id))
 
 
+def load_selection_file(selection):
+    gdf = gpd.read_file(selection)
+    bbox = gdf.total_bounds
+    bbox_polygon = Polygon([[bbox[0], bbox[1]], [bbox[0], bbox[3]], [bbox[2], bbox[3]], [bbox[2], bbox[1]], [bbox[0], bbox[1]]])
 
-def get_images_metadata(bbox, outdir, id):
+    selected_images = list(gdf["id"])
+    selected_images = [i.replace("image.", "") for i in selected_images]
+
+    return bbox_polygon, selected_images
+    
+
+
+def get_images_metadata(bbox, id, selected_images):
     url = "https://data.geopf.fr/wfs?service=WFS&version=2.0.0&typeName=pva:image&request=GetFeature&outputFormat=json&cql_filter=INTERSECTS(geom,{})".format(bbox)
 
     r = requests.get(url)
@@ -66,19 +79,16 @@ def get_images_metadata(bbox, outdir, id):
 
         keep_features = []
         for feature in data0["features"]:
-            if feature["properties"]["dataset_identifier"] == id:
+            if feature["properties"]["dataset_identifier"] == id and feature["properties"]["image_identifier"] in selected_images:
                 keep_features.append(feature)
 
         data0["features"] = keep_features
-        
-        with open(os.path.join(outdir, "images.geojson"), "w") as f:
-            f.write(geojson.dumps(data0))
 
         return data0
 
 
 def download_images(images_metadata, id, outdir):
-    for feature in images_metadata["features"]:
+    for feature in tqdm(images_metadata["features"]):
         image_id = feature["id"][6:]
 
         url = "https://data.geopf.fr/telechargement/download/pva/{}/{}.tif".format(id, image_id)
@@ -207,17 +217,17 @@ def create_xml_file(images_metadata, outdir, epsg):
 
 
 
-footprints_file = args.footprints_file
+selection = args.selection
 id = args.id
 epsg = int(args.epsg)
 outdir = args.outdir
 
 os.makedirs(outdir, exist_ok=True)
 
-bbox = get_bbox(footprints_file, id)
-images_metadata = get_images_metadata(bbox, outdir, id)
-with open(os.path.join(outdir, "images.geojson"), "r") as f:
-    images_metadata = json.loads(f.read())
+bbox, selected_images = load_selection_file(selection)
+
+images_metadata = get_images_metadata(bbox, id, selected_images)
+
 download_images(images_metadata, id, outdir)
 
 create_xml_file(images_metadata, outdir, epsg)

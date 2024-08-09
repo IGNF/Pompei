@@ -130,14 +130,29 @@ Un fichier [outdir]/footprints.geojson est créé. Il contient :
 
 
 
+### Récupération du plan de vol
+
+Pour récupérer les emprises au sol d'un chantier :
+```
+python scripts/get_flight_plan.py --footprints_file fichier_emprises --id id_chantier --outdir outdir
+```
+
+Un fichier [outdir]/images.geojson est créé. Vous pouvez l'ouvrir dans Qgis. Ce fichier contient les emprises au sol de tous les clichés du chantier. Sélectionnez les clichés qui vous intéressent et sauvegardez-les dans un nouveau fichier shapefile.
+
+Paramètres :
+* fichier_footprints : chemin vers le fichier des chantiers disponibles, celui qui a été téléchargé avec le get_data.py
+* id_chantier : l'identifiant du chantier souhaité : champ id du fichier footprints, sans le "dataset."
+* outdir : répertoire où mettre les données pour le chantier
+
+
 ### Récupération des données pour un chantier spécifique
 
 Pour récupérer les images et le TA d'un chantier :
 ```
-python scripts/get_images.py --footprints_file fichier_footprints --id id_chantier --epsg epsg --outdir outdir
+python scripts/get_images.py --selection selection --id id_chantier --epsg epsg --outdir outdir
 ```
 Avec :
-* fichier_footprints : chemin vers le fichier des chantiers disponibles, celui qui a été téléchargé avec le get_data.py
+* selection : chemin vers le fichier contenant les images sélectionnées
 * id_chantier : l'identifiant du chantier souhaité : champ id du fichier footprints, sans le "dataset."
 * epsg : epsg du chantier : il n'y a pas moyen de récupérer automatiquement l'EPSG du chantier, donc il faut le rentrer à la main ici
 * outdir : répertoire où mettre les données pour le chantier
