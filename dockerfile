@@ -1,4 +1,4 @@
-FROM ubuntu:focal-20220426
+FROM --platform=linux/amd64 ubuntu:focal-20220426
 
 ARG HTTP_PROXY
 ENV http_proxy=${HTTP_PROXY}
