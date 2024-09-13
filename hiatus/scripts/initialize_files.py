@@ -60,7 +60,17 @@ def openXml(TA_path):
 
 
 def checkSensor(root):
-    sensors = root.findall(".//sensor")
+
+    sensors = []
+    for vol in root.findall(".//vol"):
+        add = False
+        for cliche in vol.findall(".//cliche"):
+            image_path = os.path.join("{}.tif".format(cliche.find("image").text.strip()))
+            if os.path.exists(image_path):
+                add = True
+        if add:
+            sensors += vol.findall(".//sensor")
+
     if len(sensors) >= 2:
         raise Exception("Attention, il y a {} caméras dans le chantier".format(len(sensors)))
     elif len(sensors)==0:

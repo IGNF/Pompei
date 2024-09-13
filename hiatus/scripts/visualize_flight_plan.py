@@ -99,22 +99,24 @@ def lecture_xml(path):
 
     images = []
     min_distance_buffer = 1e15
-    
-    for cliche in root.getiterator("cliche"):
-        image = {}
-        image["nom"] = cliche.find("image").text.strip()
-        polygon2d = cliche.find("polygon2d")
-        x = polygon2d.findall("x")
-        y = polygon2d.findall("y")
-        x = [float(i.text) for i in x]
-        y = [float(i.text) for i in y]
-        distance_buffer = find_recouvrement(x, y)
-        if distance_buffer < min_distance_buffer:
-            min_distance_buffer = distance_buffer
-        
-        image["x"] = x
-        image["y"] = y
-        images.append(image)
+
+    for nb_vol, vol in enumerate(root.getiterator("vol")):
+        for cliche in vol.getiterator("cliche"):
+            image = {}
+            image["nom"] = cliche.find("image").text.strip()
+            polygon2d = cliche.find("polygon2d")
+            x = polygon2d.findall("x")
+            y = polygon2d.findall("y")
+            x = [float(i.text) for i in x]
+            y = [float(i.text) for i in y]
+            distance_buffer = find_recouvrement(x, y)
+            if distance_buffer < min_distance_buffer:
+                min_distance_buffer = distance_buffer
+            
+            image["x"] = x
+            image["y"] = y
+            image["nb_vol"] = nb_vol
+            images.append(image)
     print("La distance appliquée sur le buffer est {} m".format(distance_buffer))
 
     EPSG = findEPSG(root)
@@ -147,7 +149,9 @@ def save_shapefile(liste_images, images, path_footprint_chantier, EPSG):
     layer = ds.CreateLayer("line", srs, ogr.wkbPolygon)
 
     nameField = ogr.FieldDefn("nom", ogr.OFTString)
+    volField = ogr.FieldDefn("nb_vol", ogr.OFTString)
     layer.CreateField(nameField)
+    layer.CreateField(volField)
 
     featureDefn = layer.GetLayerDefn()
 
@@ -165,6 +169,7 @@ def save_shapefile(liste_images, images, path_footprint_chantier, EPSG):
             feature = ogr.Feature(featureDefn)
             feature.SetGeometry(poly)
             feature.SetField("nom", image["nom"])
+            feature.SetField("nb_vol", image["nb_vol"])
             layer.CreateFeature(feature)
 
             feature = None
