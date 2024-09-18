@@ -22,6 +22,10 @@ import requests
 import argparse
 from lxml import etree
 from tools import getEPSG, load_bbox
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Filtrage des points d'appuis du chantier par la BD Topo")
 parser.add_argument('--appuis', help="Points d'appuis de la BD Ortho")
@@ -179,16 +183,16 @@ def download_data(bbox):
 def filter_GCP(path_bati, path_vegetation, path_hydro):
 
     #On charge les différentes couches de la BD Topo
-    print("Chargement du bati")
+    logger.info("Chargement du bati")
     bati = geopandas.read_file(path_bati)
     #On réunit tous les géométries d'une couche en une seule afin que le sindex.query fonctionne sans avoir besoin d'itérer sur toutes les géométries
     bati_dissolved = bati.dissolve()
 
-    print("Chargement de la végétation")
+    logger.info("Chargement de la végétation")
     vegetation = geopandas.read_file(path_vegetation)
     vegetation_dissolved = vegetation.dissolve()
 
-    print("Chargement de l'hydro")
+    logger.info("Chargement de l'hydro")
     hydro = geopandas.read_file(path_hydro)
     hydro_dissolved = hydro.dissolve()
 
@@ -252,11 +256,11 @@ def filter_GCP(path_bati, path_vegetation, path_hydro):
             appui.find("Incertitude").text = "{} {} {}".format(-1, -1, 1)
         
 
-    print("Répartition des points d'appuis : ")
-    print("Bati : {}".format(compte_bati))
-    print("Forêt : {}".format(compte_foret))
-    print("Eau : {}".format(compte_eau))
-    print("Champs : {}".format(compte_champs))
+    logger.info("Répartition des points d'appuis : ")
+    logger.info("Bati : {}".format(compte_bati))
+    logger.info("Forêt : {}".format(compte_foret))
+    logger.info("Eau : {}".format(compte_eau))
+    logger.info("Champs : {}".format(compte_champs))
 
     with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
         f.write("Répartition des points d'appuis : \n")
@@ -305,7 +309,7 @@ bbox = load_bbox(args.metadata)
 EPSG = getEPSG(args.metadata)
 
 
-print("Téléchargement de la BD Topo")
+logger.info("Téléchargement de la BD Topo")
 if args.etape=="1":
     #On télécharge le bâti, la végétation et l'hydrographie de la BD Topo
     path_bati, path_vegetation, path_hydro = download_data(bbox)

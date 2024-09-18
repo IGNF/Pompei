@@ -3,3 +3,4 @@ hiatus/chantiers/*
 hiatus/metadata/*
 log.txt
 *.pyc
+*.log

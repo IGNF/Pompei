@@ -18,6 +18,10 @@ import numpy as np
 import argparse
 import os
 import shutil
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 
 parser = argparse.ArgumentParser(description="Analyse des résultats Campari où chaque image est calculée individuellement")
@@ -95,7 +99,7 @@ path_rapport_residus = args.report_residuals
 
 if check_compute_failed(path_rapport_residus):
     # Si le calcul est un échec, alors on retire l'image du chantier
-    print("Echec du calcul")
+    logger.warning("Echec du calcul")
     image_name = path_rapport_residus.split(".")[0]+".tif"
     if os.path.exists(image_name):
         os.makedirs("echec_campari", exist_ok=True)
@@ -108,12 +112,12 @@ else:
 
     #On calcule les résidus pour chaque point d'appui
     dict_appuis, delta_plani, delta_alti = lecture_rapport_residus(path_rapport_residus, liste_plani)
-    print("Nombre de points alti : {}".format(len(delta_alti)))
-    print("Nombre de points plani : {}".format(len(delta_plani)))
+    logger.info("Nombre de points alti : {}".format(len(delta_alti)))
+    logger.info("Nombre de points plani : {}".format(len(delta_plani)))
 
     #On calcule les écart-types pour les points plani et les points alti
     ecart_type_plani = calcul_ecart_type(delta_plani)
     ecart_type_alti = calcul_ecart_type(delta_alti)
-    print("Ecart-type des points plani : {} mètres".format(ecart_type_plani))
-    print("Ecart-type des points alti : {} mètres".format(ecart_type_alti))
+    logger.info("Ecart-type des points plani : {} mètres".format(ecart_type_plani))
+    logger.info("Ecart-type des points alti : {} mètres".format(ecart_type_alti))
 

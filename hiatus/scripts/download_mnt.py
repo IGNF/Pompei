@@ -21,6 +21,10 @@ from download_ortho_MNS_wms import download_data
 from osgeo import gdal
 import gzip
 from tools import getEPSG, load_bbox
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 
 parser = argparse.ArgumentParser(description="Récupère le MNT de la zone")
@@ -56,7 +60,7 @@ def get_dalle_MNT(bbox):
                 if not os.path.exists(nom_fichier):
                     shutil.copy(chemin_fichier, os.path.join("metadata", "mnt", nom_fichier))
             else:
-                print("Impossible de trouver : {}".format(chemin_fichier))
+                logger.warning("Impossible de trouver : {}".format(chemin_fichier))
 
 
 #On récupère l'EPSG du chantier

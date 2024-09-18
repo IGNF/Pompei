@@ -21,6 +21,10 @@ import geojson
 import os
 from lxml import etree
 import argparse
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Recherche automatique des repères de fond de chambre qui sont sous forme de targets")
 parser.add_argument('--nb_points', help='Nombre de repères de fond de chambre à trouver')
@@ -57,7 +61,7 @@ def detect_image_maitresse(nom_image, model):
 
                         if confidence >= 0.9 and np.abs(h-w) <= 5:
                             resultats.append({"confidence": confidence, "w":w, "h":h, "ligne":ligne, "colonne":colonne})  
-    print(resultats)
+    logger.info(resultats)
 
     return resultats
 
@@ -185,7 +189,7 @@ def save_xml(liste_points):
 
             #Si le nombre de points trouvés ne correspond à celui qui aurait dû être trouvé, alors l'utilisateur est invité à saisir les points avec Micmac
         if compte_point != int(args.nb_points)+1:
-            print("Attention, {} points ont été trouvés sur l'image {}. Saisissez les points avec mm3d SaisieAppuisInit".format(str(compte_point-1), nom_image))
+            logger.warning("Attention, {} points ont été trouvés sur l'image {}. Saisissez les points avec mm3d SaisieAppuisInit".format(str(compte_point-1), nom_image))
             liste_probleme.append(nom_image)
         
         else:
@@ -204,7 +208,7 @@ def chercher_image_maitresse(model):
     pas_trouve = True
     while pas_trouve and len(images) > 0:
         image_maitresse = images.pop()
-        print("Image maitresse : ", image_maitresse)
+        logger.info("Image maitresse : ", image_maitresse)
 
         # On détecte les repères de fond de chambre sur l'image maîtresse avec Yolo
         resultats = detect_image_maitresse(image_maitresse, model)
@@ -213,19 +217,19 @@ def chercher_image_maitresse(model):
         points_tries = trier_points(resultats)
         # Pour chaque repère de fond de chambre, on conserve le point qui a la probabilité la plus élevée
         points_image_maitresse = selectionner_points(points_tries)
-        print(points_image_maitresse)
+        logger.info(points_image_maitresse)
         if len(points_image_maitresse) == int(args.nb_points):
             pas_trouve = False
 
     if len(points_image_maitresse) != int(args.nb_points):
-        print("Erreur : sur aucune image, le nombre exact de repères de fond de chambre n'a été trouvé. Essayez avec la méthode par corrélation de MicMac")
+        logger.error("Erreur : sur aucune image, le nombre exact de repères de fond de chambre n'a été trouvé. Essayez avec la méthode par corrélation de MicMac")
     
     liste_points[image_maitresse] = points_image_maitresse
 
     return liste_points, points_image_maitresse, image_maitresse
 
 def SaisieAppuisInit(liste_probleme):
-    print("liste_probleme : ", liste_probleme)
+    logger.warning("liste_probleme : ", liste_probleme)
     for image in liste_probleme:
         commande = "mm3d SaisieAppuisInit {} NONE id_reperes.txt MeasuresIm-{}.xml Gama=2".format(image, image)
         os.system(commande)
@@ -323,7 +327,7 @@ def run(chemin_sauvegarde):
     # On parcourt les images secondaires
     images_secondaires = [i for i in os.listdir() if i[-4:]==".tif" and i!=image_maitresse]
     for image_secondaire in images_secondaires:
-        print("image_secondaire : ", image_secondaire)
+        logger.info("image_secondaire : ", image_secondaire)
         # On détecte les repères de fond de chambre sur l'image secondaire avec Yolo
         resultats = detect(image_secondaire, points_image_maitresse, model)
         # On trie les points trouvés afin de regrouper ceux qui correspondent au même repère de fond de chambre

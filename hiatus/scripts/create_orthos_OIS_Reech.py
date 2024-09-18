@@ -23,6 +23,10 @@ from scipy import ndimage
 from multiprocessing import Pool
 from tqdm import tqdm
 from tools import getEPSG, load_bbox, getNbCouleurs, getResolution
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Crée une ortho pour chaque image")
 
@@ -181,10 +185,10 @@ def initImage(x_min, x_max, y_min, y_max, image, nbCouleurs):
     n = y.shape[0]
     m = x.shape[0]
     if n > 30000 or m > 30000:
-        print("Attention, pour l'image {}, n vaut {} et m {}".format(image, n, m))
-        print("x_min : {}, x_max : {}".format(x_min, x_max))
-        print("y_min : {}, y_max : {}".format(y_min, y_max))
-        print("Résolution : {}".format(resolution))
+        logger.warning("Attention, pour l'image {}, n vaut {} et m {}".format(image, n, m))
+        logger.warning("x_min : {}, x_max : {}".format(x_min, x_max))
+        logger.warning("y_min : {}, y_max : {}".format(y_min, y_max))
+        logger.warning("Résolution : {}".format(resolution))
         return None, None, None
     else:
         array = np.zeros((nbCouleurs, n, m))

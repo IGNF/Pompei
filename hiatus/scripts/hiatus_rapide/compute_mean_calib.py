@@ -17,6 +17,10 @@ import os
 from lxml import etree
 import numpy as np
 import shutil
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 
 """
@@ -128,14 +132,13 @@ for image in images:
 # Pour chaque paramètre, on calcule la moyenne et l'écart-type des valeurs trouvées pour chaque image
 resultats = {}
 for value_name in dict_values.keys():
-    print(value_name)
+    logger.info(value_name)
     array = np.array(dict_values[value_name])
     mean = np.mean(array)
     std = np.std(array)
-    print("Moyenne : {}".format(mean))
-    print("Ecart-type : {}".format(std))
+    logger.info("Moyenne : {}".format(mean))
+    logger.info("Ecart-type : {}".format(std))
     resultats[value_name] = mean
-    print("")
 
 # On écrit le nouveau fichier de calibration avec les valeurs moyennes
 if root_not_None is None:

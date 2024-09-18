@@ -17,6 +17,10 @@ import os
 import argparse
 from osgeo import gdal
 import numpy as np
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Supprime les dalles noires pour éviter d'y faire la recherche de points d'appuis")
 
@@ -36,4 +40,4 @@ for image in liste_images:
         if np.sum(array_count) / (inputlyr.shape[0] * inputlyr.shape[1]) >= float(args.seuil_prop):
             os.remove(os.path.join(args.path, image))
             compte += 1
-print("{} dalles ont été supprimées".format(compte))
+logger.info("{} dalles ont été supprimées".format(compte))

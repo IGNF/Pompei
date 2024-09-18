@@ -20,6 +20,10 @@ from lxml import etree
 import numpy as np
 from osgeo import gdal, osr
 from tools import getEPSG, load_bbox, getResolution
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Téléchargement des dalles de la BD Ortho ou des orthos historiques déjà calculées et du MNS du chantier")
 parser.add_argument('--metadata', help='Chemin où enregistrer la BD Ortho et le MNS')
@@ -37,14 +41,14 @@ def footprint_commune(bbox1, bbox2):
 
 
 def verification(chemin):
-    print("début de la vérification")
+    logger.info("début de la vérification")
     #S'il y a plus de 75 % de pixels de nodata dans l'image, on renvoie False et on cherchera une ortho d'un chantier plus récent
     inputds = gdal.Open(chemin)
     inputlyr = np.array(inputds.GetRasterBand(1).ReadAsArray())
     valeur_non_nulle = np.ones(inputlyr.shape)
     valeur_non_nulle[inputlyr==0] = 0
     valeur_non_nulle[inputlyr==255] = 0
-    print("Proportion : ",np.sum(valeur_non_nulle) / (inputlyr.shape[1]*inputlyr.shape[0]) * 100)
+    logger.info("Proportion : ",np.sum(valeur_non_nulle) / (inputlyr.shape[1]*inputlyr.shape[0]) * 100)
     if np.sum(valeur_non_nulle) / (inputlyr.shape[1]*inputlyr.shape[0]) * 100 < 75:
         return False
     driver = gdal.GetDriverByName('GTiff')
@@ -128,7 +132,7 @@ def download_MNS(url, path_meta_MNS, path_tuile_MNS, i, j, e_min_dalle, n_max_da
             write_hdr(os.path.join(path_meta_MNS, 'MNS_dalle_{}_{}.hdr'.format(i, j)), e_min_dalle, n_max_dalle, width, height, resolution)
         set_projection(chemin, gdal.GDT_Float32)
     except:
-        print('MNS failed to download.')
+        logger.error('MNS failed to download.')
 
 
 def download_data(bbox, liste_layers):
@@ -173,8 +177,6 @@ def download_data(bbox, liste_layers):
         e_min_dalle = liste_e[i]
         e_max_dalle = liste_e[i+1]
         for j in range(len(liste_n) - 1):
-            print("")
-            print(i, j)
             n_min_dalle = liste_n[j]
             n_max_dalle = liste_n[j+1]
             bbox_tuile = [e_min_dalle, n_min_dalle, e_max_dalle, n_max_dalle]
@@ -191,7 +193,7 @@ def download_data(bbox, liste_layers):
                     if footprint_commune(liste_layers[layer], bbox_tuile):
                         #On télécharge la couche d'ortho historique
 
-                        print("On télécharge la couche : ", layer)
+                        logger.info("On télécharge la couche : ", layer)
                         url = '{}wms?LAYERS={}&FORMAT=image/geotiff&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:{}&BBOX={}&WIDTH={}&HEIGHT={}'.format(adresse_geoserver, layer, EPSG, bbox_string, width, height)
                         r = requests.get(url)
                         chemin = os.path.join(path_tuile_ortho, 'ORTHO_dalle_{}_{}.tif'.format(i, j))
@@ -200,16 +202,16 @@ def download_data(bbox, liste_layers):
                                 out.write(bytes(r.content))
                             if verification(chemin):
                             #Si la dalle ne contient pas que du nodata, alors on crée le fichier tfw et on télécharge le MNS                            if verification(chemin):
-                                print("La tuile a été bien trouvée")
+                                logger.info("La tuile a été bien trouvée")
                                 tuile_trouvee = True
                                 write_tfw(os.path.join(path_meta_ortho, 'ORTHO_dalle_{}_{}.tfw'.format(i, j)), e_min_dalle, n_max_dalle, resolution)
                                 download_MNS(url, path_meta_MNS, path_tuile_MNS, i, j, e_min_dalle, n_max_dalle, width, height, resolution)
                         except:
-                            print('File failed to download.')
+                            logger.warning('File failed to download.')
 
             #Si aucune orthophoto historique ne convient, alors on télécharge la BD Ortho et le MNS actuel
             if not tuile_trouvee:
-                print("On télécharge la BD Ortho")
+                logger.info("On télécharge la BD Ortho")
                 url = '{}?LAYERS={}&FORMAT=image/geotiff&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:{}&BBOX={}&WIDTH={}&HEIGHT={}'.format(adresse_wxs_ortho, layer_BD_Ortho, EPSG, bbox_string, width, height)
                 r = requests.get(url)
                 chemin = os.path.join(path_tuile_ortho, 'ORTHO_dalle_{}_{}.tif'.format(i, j))
@@ -224,7 +226,7 @@ def download_data(bbox, liste_layers):
                     url_MNS = '{}?LAYERS={}&FORMAT=image/geotiff&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:{}&BBOX={}&WIDTH={}&HEIGHT={}'.format(adresse_wxs_MNS, layer_MNS, EPSG, bbox_string, width, height)
                     download_MNS(url_MNS, path_meta_MNS, path_tuile_MNS, i, j, e_min_dalle, n_max_dalle, width, height, resolution)
                 except:
-                    print('File failed to download.')
+                    logger.warning('File failed to download.')
 
 def get_capabilities():
     #Récupère la liste des orthophotos historiques disponibles dans le geoserver
@@ -288,11 +290,11 @@ EPSG = getEPSG(args.metadata)
 
 #On récupère la liste des orthophotos déjà disponibles
 liste_layers = get_capabilities()
-print(liste_layers)
+logger.info(liste_layers)
 
 #On ne conserve que les orthos qui ont une surface commune avec le chantier
 liste_layers = filter_layers(liste_layers, bbox)
-print(liste_layers)
+logger.info(liste_layers)
 
 #On télécharge les dalles
 download_data(bbox, liste_layers)

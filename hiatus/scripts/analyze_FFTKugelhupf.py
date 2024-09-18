@@ -16,6 +16,10 @@ You should have received a copy of the GNU General Public License along with Hia
 import argparse
 import os
 from lxml import etree
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description='Analyse du rapport de FFTKugelhupf pour vérifier que tous les repères de fond de chambre ont été trouvés')
 
@@ -35,7 +39,7 @@ def find_problem(chemin_rapport):
                 if value > 20:
                     name_splitted = line_splitted[4].split("_")
                     if name_splitted[-1] != "Masq.tif":
-                        print("Attention : le résidu de l'image {} est trop élevé : {}".format(line_splitted[4], value))
+                        logger.warning("Attention : le résidu de l'image {} est trop élevé : {}".format(line_splitted[4], value))
                         liste_probleme.append(line_splitted[4])
     return liste_probleme
 

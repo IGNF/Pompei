@@ -21,6 +21,10 @@ import numpy as np
 from osgeo import gdal, osr
 from multiprocessing import Pool
 from tools import getEPSG, load_bbox, getNbCouleurs, getResolution
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Crée un nouveau fichier TA avec les valeurs déterminées pendant le chantier (orientation, position...")
 
@@ -222,7 +226,7 @@ def get_path_ortho():
     with open(os.path.join("radiom_ortho_mnt", "ini", "coef_reetal_walis.txt"), "r") as f:
         for line in f:
             if "nan" in line:
-                print("Attention, la correction radiométrique a échoué ! L'ortho n'utilisera donc pas la correction radiométrique")
+                logger.warning("Attention, la correction radiométrique a échoué ! L'ortho n'utilisera donc pas la correction radiométrique")
                 return "ortho_mnt"
     return os.path.join("radiom_ortho_mnt", "ini", "corr")
 

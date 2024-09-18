@@ -18,6 +18,10 @@ import json
 import geojson
 import argparse
 import os
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 
 
@@ -39,7 +43,7 @@ def find_chantier(identifiant, json_focale):
     for chantier in json_focale:
         if chantier["chantier"]==identifiant:
             return chantier
-    print("La focale et la résolution n'ont pas été trouvées pour le chantier {}".format(identifiant))
+    logger.warning("La focale et la résolution n'ont pas été trouvées pour le chantier {}".format(identifiant))
     return None
 
 def getFocale(data):

@@ -14,7 +14,10 @@ You should have received a copy of the GNU General Public License along with Hia
 """
 
 import os
+import log # Chargement des configurations des logs
+import logging
 
+logger = logging.getLogger("root")
 
 def getEPSG(metadata):
     with open(os.path.join(metadata, "EPSG.txt"), "r") as f:
@@ -44,5 +47,5 @@ def getResolution():
     with open(path, "r") as f:
         for line in f:
             resolution = float(line)
-            print("Résolution du chantier : {} mètres".format(resolution))
+            logger.info("Résolution du chantier : {} mètres".format(resolution))
             return float(resolution)

@@ -15,6 +15,10 @@ You should have received a copy of the GNU General Public License along with Hia
 
 import argparse
 import os
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Analyse du rapport de ReSampFid pour vérifier qu'il n'y a pas de problèmes lors du rééchantillonnage des images")
 
@@ -35,7 +39,7 @@ def find_problem(chemin_rapport):
                 if residu > residu_max:
                     residu_max = residu
                     image_residu_max = line_splitted[1]
-    print("Le résidu le plus élevé est celui de l'image {} : {}".format(image_residu_max, residu_max))
+    logger.info("Le résidu le plus élevé est celui de l'image {} : {}".format(image_residu_max, residu_max))
 
     with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
         f.write("Analyse de ReSampFid\n")
@@ -46,11 +50,8 @@ def find_problem(chemin_rapport):
 
 if __name__ == "__main__":
 
-    print("")
-    print("Analyse du rapport ReSampFid")
-
+    logger.info("Analyse du rapport ReSampFid")
     find_problem(args.input_report)
-    print("")
 
 
     

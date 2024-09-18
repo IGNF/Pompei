@@ -20,6 +20,10 @@ from lxml import etree
 import os
 import numpy as np
 from tools import getResolution
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Analyse de VecteursResidusAppuis.geojson")
 
@@ -59,11 +63,11 @@ def compute_mean_error(chemin_geojson, planimetrie, resolution):
 
     erreur_moyenne_plani = np.mean(np.array(distance_totale_plani))
     erreur_moyenne_alti = np.mean(np.array(distance_totale_alti))
-    print("Erreur moyenne en planimétrie sur les points d'appuis : {} mètres".format(erreur_moyenne_plani))
-    print("Erreur moyenne en altimétrie sur les points d'appuis : {} mètres".format(erreur_moyenne_alti))
+    logger.info("Erreur moyenne en planimétrie sur les points d'appuis : {} mètres".format(erreur_moyenne_plani))
+    logger.info("Erreur moyenne en altimétrie sur les points d'appuis : {} mètres".format(erreur_moyenne_alti))
 
     erreur_moyenne_plani_pixel = erreur_moyenne_plani / resolution
-    print("Erreur moyenne en planimétrie sur les points d'appuis : {} pixels".format(erreur_moyenne_plani / resolution))
+    logger.info("Erreur moyenne en planimétrie sur les points d'appuis : {} pixels".format(erreur_moyenne_plani / resolution))
 
 
     with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
@@ -79,15 +83,14 @@ def compute_mean_error(chemin_geojson, planimetrie, resolution):
 
     if erreur_moyenne_plani_pixel > 50 and args.etape=="1":
         #Si l'erreur en pixel est supérieure à 25 pixels, alors on relance les calculs avec les points d'appuis trouvés sur les images sous-échantillonnées
-        print("L'erreur moyenne en planimétrie est supérieure à 25 pixels. Les points d'appuis utilisés sont ceux du sous échantillonnage")
+        logger.warning("L'erreur moyenne en planimétrie est supérieure à 25 pixels. Les points d'appuis utilisés sont ceux du sous échantillonnage")
         os.system("sh {0}/aeroSousEch10.sh {0} {1}".format(args.scripts, args.filter_GCP))
 
 
 
 if __name__ == "__main__":
 
-    print("")
-    print("Analyse de VecteursResidusAppuis.geojson")
+    logger.info("Analyse de VecteursResidusAppuis.geojson")
 
     planimetrie = open_xml(args.input_appuis)
 

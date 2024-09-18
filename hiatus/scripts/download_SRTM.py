@@ -19,6 +19,10 @@ import os
 from pyproj import CRS, Transformer
 import requests
 from tools import getEPSG
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Téléchargement des dalles du SRTM du chantier")
 parser.add_argument('--MNS_Histo', help='MNS de MEC-Malt-Abs-Ratafia')
@@ -71,7 +75,7 @@ def download(pointsWGS84, path):
         west = min(west, point[1])
         east = max(east, point[1])
     url = "https://portal.opentopography.org/API/globaldem?demtype=SRTMGL1&south={}&north={}&west={}&east={}&outputFormat=GTiff&API_Key=demoapikeyot2022".format(south, north, west, east)
-    print(url)
+    logger.info(url)
     r = requests.get(url)
     with open(path, 'wb') as out:
         out.write(bytes(r.content))

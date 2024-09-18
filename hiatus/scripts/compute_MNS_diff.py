@@ -19,6 +19,10 @@ import os
 import cv2
 import argparse
 from tools import getEPSG
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Effectue la différence entre le MNS actuel et celui issu de l'orthomosaïque")
 
@@ -142,8 +146,7 @@ def get_mask(masque, coordsMNSHisto, coordsChantier):
             extractionMasque = compute_extraction(coordsChantier, footprint_commune) 
             masque_extracted = masque_array[extractionMasque[2]:extractionMasque[3], extractionMasque[0]:extractionMasque[1]]
     else:
-        print("Pas d'footprintcommune !")
-        print(footprint_commune)
+        logger.warning(f"Pas de footprint commune : {footprint_commune} !")
     
     return masque_extracted
 

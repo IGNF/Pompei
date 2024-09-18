@@ -21,6 +21,10 @@ import argparse
 import shutil
 from osgeo import gdal, osr
 from tools import getEPSG
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Vérification qu'il n'y a pas d'images isolées sur le chantier")
 parser.add_argument('--metadata', help='Chemin où se trouvent les fichiers bbox.txt et EPSG.txt')
@@ -306,7 +310,7 @@ def get_dalles(footprint_tiles, MNS_disponibles_chantiers, EPSG):
                             os.remove(chemin_image_local)
             
         if not trouve:
-            print("La dalle {} {} n'a pas été trouvée".format(e_min, n_min))
+            logger.warning("La dalle {} {} n'a pas été trouvée".format(e_min, n_min))
 
 
 def save_tfw(name, e_min, n_max):
@@ -351,7 +355,7 @@ def get_dalle_ortho(e_min, n_min, annee, departement, tile, EPSG):
             else:
                 os.remove(chemin_image_local)
     else:
-        print("Le répertoire {} n'existe pas".format(chemin_ortho))
+        logger.warning("Le répertoire {} n'existe pas".format(chemin_ortho))
         
 
 

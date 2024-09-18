@@ -24,6 +24,10 @@ import argparse
 import shutil
 from math import sqrt
 from osgeo import gdal
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Visualisation de la position approximative des chantiers")
 parser.add_argument('--chantier', help='Répertoire du chantier')
@@ -68,7 +72,7 @@ def findEPSG(root):
     with open(os.path.join(chemin_metadata, "EPSG.txt"), "w") as f:
         f.write(str(EPSG))
 
-    print("L'EPSG du chantier est {}".format(EPSG))
+    logger.info("L'EPSG du chantier est {}".format(EPSG))
 
     return EPSG
 
@@ -81,6 +85,7 @@ def getListeImages():
     for fichier in liste_fichiers:
         if fichier[-4:] == ".tif" or fichier[-4:] == ".jp2":
             liste_images.append(fichier.split(".")[0])
+    logger.info(f"{len(liste_images)} images à traiter")
     return liste_images
 
 def find_recouvrement(x, y):
@@ -117,7 +122,7 @@ def lecture_xml(path):
             image["y"] = y
             image["nb_vol"] = nb_vol
             images.append(image)
-    print("La distance appliquée sur le buffer est {} m".format(distance_buffer))
+    logger.info("La distance appliquée sur le buffer est {} m".format(distance_buffer))
 
     EPSG = findEPSG(root)
 
@@ -135,7 +140,7 @@ def remove_images_without_metadata(liste_images, images):
                 booleen = True
         if not booleen:
             shutil.move(os.path.join(chemin_chantier, image+".jp2"), os.path.join(path_without_metadata, image+".jp2"))
-            print("L'image {} n'a pas de métadonnées. Elle est retirée des données.".format(image))
+            logger.warning("L'image {} n'a pas de métadonnées. Elle est retirée des données.".format(image))
 
 def save_shapefile(liste_images, images, path_footprint_chantier, EPSG):
     #Sauvegarde les footprints dans un fichier shapefile
@@ -229,9 +234,9 @@ def merge(src, dst, typeData):
                 
     if id > 1:
         if typeData=="buffer":
-            print("Attention : des images sont isolées sur le chantier. Regardez les fichiers {} et {}". format(path_footprint_chantier, path_buffer))
+            logger.warning("Attention : des images sont isolées sur le chantier. Regardez les fichiers {} et {}". format(path_footprint_chantier, path_buffer))
         elif typeData=="recouvrement":
-            print("Attention : le recouvrement n'est pas idéal. Regardez les fichiers {} et {}". format(path_footprint_chantier, path_buffer))
+            logger.warning("Attention : le recouvrement n'est pas idéal. Regardez les fichiers {} et {}". format(path_footprint_chantier, path_buffer))
 
 
 def recouvrement(chemin_footprint, chemin_resultat):
@@ -253,7 +258,7 @@ def calcul_proportion_recouvrement(path_recouvrement_merged, path_footprint_chan
         aire_recouvrement += shape(emp1['geometry']).area
     for emp2 in fiona.open(path_footprint_chantier_merged):
         aire_chantier += shape(emp2['geometry']).area
-    print("{0:.2f} % du chantier est vu depuis au moins deux points de vue".format(aire_recouvrement/aire_chantier*100))
+    logger.info("{0:.2f} % du chantier est vu depuis au moins deux points de vue".format(aire_recouvrement/aire_chantier*100))
 
 
 def get_nb_couleurs():

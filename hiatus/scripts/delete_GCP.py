@@ -17,6 +17,10 @@ from lxml import etree
 import numpy as np
 import argparse
 import os
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 
 parser = argparse.ArgumentParser(description="Suppression des points d'appuis les moins bons")
@@ -94,9 +98,9 @@ def define_deleted_GCP(dict_appuis, ecart_type_plani, ecart_type_alti, factor):
             if point["delta"] > ecart_type_alti * factor:
                 liste_points_a_supprimer.append(point["nom"])
                 compte_alti += 1
-    print("Points plani supprimés : ", compte_plani)
-    print("Points alti supprimés : ", compte_alti)
-    print("Points supprimés : ", len(liste_points_a_supprimer))
+    logger.info("Points plani supprimés : ", compte_plani)
+    logger.info("Points alti supprimés : ", compte_alti)
+    logger.info("Points supprimés : ", len(liste_points_a_supprimer))
     with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
         f.write("Points plani supprimés : {}\n".format(compte_plani))
         f.write("Points alti supprimés : {}\n".format(compte_alti))
@@ -132,11 +136,11 @@ def delete_GCP_S2D(liste_points_a_supprimer, path_S2D, path_S2D_save):
         if nom_point in liste_points_a_supprimer:
             appui.getparent().remove(appui)
 
-    print("Nombre de points d'appuis restants : ")
+    logger.info("Nombre de points d'appuis restants : ")
     for mesureImage in root.findall(".//MesureAppuiFlottant1Im"):
         image = mesureImage.find(".//NameIm").text
         nb_points = len(mesureImage.findall(".//OneMesureAF1I"))
-        print("{} : {}".format(image, nb_points))
+        logger.info("{} : {}".format(image, nb_points))
 
     #On sauvegarde le fichier
     with open(path_S2D_save, "w") as f:
@@ -154,8 +158,8 @@ factor = float(args.factor)
 
 #On parcourt la liste des points d'appuis et on les sépare en deux catégories : ceux qui sont dépondérés en plani et les autres
 liste_alti, liste_plani = read_GCP(path_appuis_xml)
-print("Nombre de points alti : {}".format(len(liste_alti)))
-print("Nombre de points plani : {}".format(len(liste_plani)))
+logger.info("Nombre de points alti : {}".format(len(liste_alti)))
+logger.info("Nombre de points plani : {}".format(len(liste_plani)))
 
 #On calcule les résidus pour chaque point d'appui
 dict_appuis, delta_plani, delta_alti = read_report_residuals(path_rapport_residus, liste_plani)
@@ -163,8 +167,8 @@ dict_appuis, delta_plani, delta_alti = read_report_residuals(path_rapport_residu
 #On calcule les écart-types pour les points plani et les points alti
 ecart_type_plani = compute_std(delta_plani)
 ecart_type_alti = compute_std(delta_alti)
-print("Ecart-type des points plani : {} mètres".format(ecart_type_plani))
-print("Ecart-type des points alti : {} mètres".format(ecart_type_alti))
+logger.info("Ecart-type des points plani : {} mètres".format(ecart_type_plani))
+logger.info("Ecart-type des points alti : {} mètres".format(ecart_type_alti))
 
 with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
     f.write("Nombre de points plani : {}\n".format(len(liste_plani)))

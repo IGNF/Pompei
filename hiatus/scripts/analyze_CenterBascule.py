@@ -16,6 +16,10 @@ You should have received a copy of the GNU General Public License along with Hia
 import argparse
 from math import sqrt
 import os
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Analyse du rapport de CenterBascule pour vérifier qu'il n'y a pas de problèmes lors du passage en coordonnées absolues approximatives")
 
@@ -42,7 +46,7 @@ def find_problem(chemin_rapport):
                     distance_max = distance
                     image_distance_min = line_splitted[1]
 
-    print("Le plus gros résidu concerne l'image {} : {} mètres".format(image_distance_min, distance_max))
+    logger.info("Le plus gros résidu concerne l'image {} : {} mètres".format(image_distance_min, distance_max))
     
     
     with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
@@ -54,11 +58,8 @@ def find_problem(chemin_rapport):
 
 if __name__ == "__main__":
 
-    print("")
-    print("Analyse du rapport Tapas")
-
+    logger.info("Analyse du rapport Tapas")
     find_problem(args.input_report)
-    print("")
 
 
     

@@ -19,6 +19,10 @@ from lxml import etree
 from osgeo import gdal
 import numpy as np
 import shutil
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description='Construction du MNS à partir des Z Num Max')
 parser.add_argument('--input_Malt', default='', help='Dossier MEC-Malt')
@@ -54,7 +58,7 @@ def get_a_b(Z_Nums_max_not_Tile):
         ResolutionAlti = float(root.find("ResolutionAlti").text)
         return OrigineAlti, ResolutionAlti
     else:
-        print("Impossible d'ouvrir le fichier {}".format(xml_path))
+        logger.warning("Impossible d'ouvrir le fichier {}".format(xml_path))
 
 def create_MNS(Z_Nums_max_Tile, OrigineAlti, ResolutionAlti):
     for tile in Z_Nums_max_Tile:

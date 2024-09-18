@@ -68,7 +68,6 @@ def create_tfw(folder, radical):
                 else:
                     y = y + res_Y * dy
 
-            print(os.path.join(folder, tile.replace(".tif", ".tfw")))
             write_tfw(os.path.join(folder, tile.replace(".tif", ".tfw")), x, y, res_X, res_Y)
             
             input_ds = gdal.Open(os.path.join(folder, tile))

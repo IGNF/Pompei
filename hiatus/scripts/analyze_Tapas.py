@@ -16,6 +16,10 @@ You should have received a copy of the GNU General Public License along with Hia
 import argparse
 import os
 import shutil
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Analyse du rapport de Tapas pour vérifier qu'il n'y a pas de problèmes lors du calcul de l'orientation relative. Si des images posent problème, alors on les supprime et on relance Tapas")
 
@@ -29,7 +33,7 @@ def remove_images_without_homol(dictionnaire):
     images = [i for i in os.listdir() if i[-4:]==".tif" and i[:9]=="OIS-Reech"]
     for image in images:
         if image not in dictionnaire.keys():
-            print("On retire l'image {} car elle n'a plus de points de liaisons avec des images encore existantes".format(image))
+            logger.warning("On retire l'image {} car elle n'a plus de points de liaisons avec des images encore existantes".format(image))
             shutil.move(image, "Poubelle_Tapas")
 
 
@@ -37,7 +41,7 @@ def remove_images_without_homol(dictionnaire):
 def find_problem(chemin_rapport, chemin_scripts):
     dictionnaire = {}  
 
-    print("Analyse du rapport Tapas")
+    logger.info("Analyse du rapport Tapas")
 
     with open(chemin_rapport, "r") as f:
         fatal_error = False
@@ -79,7 +83,7 @@ def find_problem(chemin_rapport, chemin_scripts):
     
     if fatal_error or val_min <= 60.0:
         Recommencer_Tapas = True
-        print("L'image {} est retirée du jeu de données car Tapas n'est pas parvenu à déterminer son orientation relative".format(image_min))
+        logger.warning("L'image {} est retirée du jeu de données car Tapas n'est pas parvenu à déterminer son orientation relative".format(image_min))
         if not os.path.exists("Poubelle_Tapas"):
             os.mkdir("Poubelle_Tapas")
         shutil.move(image_min, "Poubelle_Tapas")
@@ -106,10 +110,7 @@ def find_problem(chemin_rapport, chemin_scripts):
 
 if __name__ == "__main__":
 
-    print("")
-
     find_problem(args.input_report, args.scripts_dir)
-    print("")
 
 
     

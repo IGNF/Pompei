@@ -14,6 +14,10 @@ You should have received a copy of the GNU General Public License along with Hia
 """
 
 import argparse
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 
 parser = argparse.ArgumentParser(description="Analyse du rapport de Tapioca pour vérifier que tous les clichés disposent d'un nombre suffisant de points de liaison")
@@ -38,7 +42,6 @@ def analyse(chemin_rapport):
                     dictionnaire[image1] = {}
                 dictionnaire[image1][image2] = nb_pts
             
-    print(dictionnaire)
     return dictionnaire
 
 
@@ -59,12 +62,7 @@ def save(dictionnaire):
 
 if __name__ == "__main__":
 
-    print("")
-    print("Analyse de {}".format(args.input_report))
+    logger.info("Analyse de {}".format(args.input_report))
 
     dictionnaire = analyse(args.input_report)
-    save(dictionnaire)
-    print("")
-
-
-    
+    save(dictionnaire)    

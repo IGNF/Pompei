@@ -17,6 +17,10 @@ You should have received a copy of the GNU General Public License along with Hia
 import argparse
 import os
 from lxml import etree
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 parser = argparse.ArgumentParser(description="Analyse du rapport de Campari pour vérifier qu'il n'y a pas de problèmes lors du calcul de l'orientation absolue")
 
@@ -36,8 +40,8 @@ def find_problem(chemin_rapport):
             if "Worst" in line:
                 line_worst = line
 
-    print(line_residual)
-    print(line_worst)
+    logger.info(line_residual)
+    logger.info(line_worst)
 
 
     with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
@@ -49,11 +53,7 @@ def find_problem(chemin_rapport):
 
 if __name__ == "__main__":
 
-    print("")
-    print("Analyse du rapport Campari")
-
+    logger.info("Analyse du rapport Campari")
     find_problem(args.input_report)
-    print("")
-
 
     

@@ -17,6 +17,10 @@ import os
 import argparse
 import requests
 from tools import load_bbox, getEPSG
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger("root")
 
 
 def download_data(bbox, type, metadata, EPSG):
@@ -79,11 +83,9 @@ def download_data(bbox, type, metadata, EPSG):
                     with open(os.path.join(path_tuile, '{}_dalle_{}_{}.tif'.format(type, i, j)), 'wb') as out:
                         out.write(bytes(r.content))
                 except:
-                    print(url)
-                    print('File failed to download.')
+                    logger.warning(f'File failed to download : {url}')
             else:
-                print(url)
-                print('File failed to download.')
+                logger.warning(f'File failed to download : {url}')
 
             if type=="ORTHO":
                 with open(os.path.join(path_meta, '{}_dalle_{}_{}.tfw'.format(type, i, j)), 'w') as out:
