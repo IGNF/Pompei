@@ -24,7 +24,7 @@ from tools import getEPSG, load_bbox, getNbCouleurs, getResolution
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Crée un nouveau fichier TA avec les valeurs déterminées pendant le chantier (orientation, position...")
 

@@ -22,7 +22,7 @@ from tools import getEPSG
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Téléchargement des dalles du SRTM du chantier")
 parser.add_argument('--MNS_Histo', help='MNS de MEC-Malt-Abs-Ratafia')

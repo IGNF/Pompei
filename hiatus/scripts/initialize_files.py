@@ -16,6 +16,10 @@ You should have received a copy of the GNU General Public License along with Hia
 import argparse
 from lxml import etree
 import os
+import log # Chargement des configurations des logs
+import logging
+
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Préparation des différents fichiers pour le chantier")
 parser.add_argument('--scripts', help='Répertoire du chantier')
@@ -88,6 +92,8 @@ def checkSensor(root):
         focal = sensor_xml.find(".//focal")
         f = int(float(focal.find(".//z").text.strip()))
         sensor.setFocale(f)
+        logger.debug(f"Taille du capteur : ({w}, {h})")
+        logger.debug(f"Focale de la caméra : {f}")
 
     return sensor
 

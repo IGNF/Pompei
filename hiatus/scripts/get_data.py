@@ -21,7 +21,7 @@ import os
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 
 

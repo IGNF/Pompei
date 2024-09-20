@@ -18,7 +18,7 @@ import os
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Analyse du rapport de ReSampFid pour vérifier qu'il n'y a pas de problèmes lors du rééchantillonnage des images")
 
@@ -41,16 +41,8 @@ def find_problem(chemin_rapport):
                     image_residu_max = line_splitted[1]
     logger.info("Le résidu le plus élevé est celui de l'image {} : {}".format(image_residu_max, residu_max))
 
-    with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
-        f.write("Analyse de ReSampFid\n")
-        f.write("Le résidu le plus élevé est celui de l'image {} : {}\n".format(image_residu_max, residu_max))
-        f.write("\n\n\n")
-
-
-
 if __name__ == "__main__":
 
-    logger.info("Analyse du rapport ReSampFid")
     find_problem(args.input_report)
 
 

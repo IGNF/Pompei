@@ -23,7 +23,7 @@ from tools import getEPSG, load_bbox, getResolution
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Téléchargement des dalles de la BD Ortho ou des orthos historiques déjà calculées et du MNS du chantier")
 parser.add_argument('--metadata', help='Chemin où enregistrer la BD Ortho et le MNS')
@@ -48,7 +48,7 @@ def verification(chemin):
     valeur_non_nulle = np.ones(inputlyr.shape)
     valeur_non_nulle[inputlyr==0] = 0
     valeur_non_nulle[inputlyr==255] = 0
-    logger.info("Proportion : ",np.sum(valeur_non_nulle) / (inputlyr.shape[1]*inputlyr.shape[0]) * 100)
+    logger.info(f"Proportion : {np.sum(valeur_non_nulle) / (inputlyr.shape[1]*inputlyr.shape[0]) * 100}")
     if np.sum(valeur_non_nulle) / (inputlyr.shape[1]*inputlyr.shape[0]) * 100 < 75:
         return False
     driver = gdal.GetDriverByName('GTiff')
@@ -193,7 +193,7 @@ def download_data(bbox, liste_layers):
                     if footprint_commune(liste_layers[layer], bbox_tuile):
                         #On télécharge la couche d'ortho historique
 
-                        logger.info("On télécharge la couche : ", layer)
+                        logger.info("On télécharge la couche : {layer}")
                         url = '{}wms?LAYERS={}&FORMAT=image/geotiff&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:{}&BBOX={}&WIDTH={}&HEIGHT={}'.format(adresse_geoserver, layer, EPSG, bbox_string, width, height)
                         r = requests.get(url)
                         chemin = os.path.join(path_tuile_ortho, 'ORTHO_dalle_{}_{}.tif'.format(i, j))
@@ -290,11 +290,11 @@ EPSG = getEPSG(args.metadata)
 
 #On récupère la liste des orthophotos déjà disponibles
 liste_layers = get_capabilities()
-logger.info(liste_layers)
+logger.info(f"{liste_layers}")
 
 #On ne conserve que les orthos qui ont une surface commune avec le chantier
 liste_layers = filter_layers(liste_layers, bbox)
-logger.info(liste_layers)
+logger.info(f"{liste_layers}")
 
 #On télécharge les dalles
 download_data(bbox, liste_layers)

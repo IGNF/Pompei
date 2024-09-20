@@ -1,0 +1,6 @@
+Exit with code 1 
+Generated from line 202  of file /home/CHuet2/Documents/Logiciels/micmac_05_04_2024/micmac/src/util/error.cpp 
+PID=1947101
+Context=[cEliseFatalErrorHandler::cEFEH_OnErreur]
+GMEC:mes=Not enough arg line=392 file=/home/CHuet2/Documents/Logiciels/micmac_05_04_2024/micmac/src/uti_phgrm/CPP_Malt.cpp
+MM3D-Command=["mm3d" "Malt" ]

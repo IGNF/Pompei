@@ -23,7 +23,7 @@ from tools import getResolution
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Analyse de VecteursResidusAppuis.geojson")
 
@@ -63,25 +63,14 @@ def compute_mean_error(chemin_geojson, planimetrie, resolution):
 
     erreur_moyenne_plani = np.mean(np.array(distance_totale_plani))
     erreur_moyenne_alti = np.mean(np.array(distance_totale_alti))
-    logger.info("Erreur moyenne en planimétrie sur les points d'appuis : {} mètres".format(erreur_moyenne_plani))
-    logger.info("Erreur moyenne en altimétrie sur les points d'appuis : {} mètres".format(erreur_moyenne_alti))
-
     erreur_moyenne_plani_pixel = erreur_moyenne_plani / resolution
-    logger.info("Erreur moyenne en planimétrie sur les points d'appuis : {} pixels".format(erreur_moyenne_plani / resolution))
+    logger.info("Erreur moyenne en planimétrie sur les points d'appuis : {} mètres".format(erreur_moyenne_plani))
+    logger.info("Ecart-type des résidus en planimétrie sur les points d'appuis : {} mètres\n".format(np.std(np.array(distance_totale_plani))))
+    logger.info("Erreur moyenne en planimétrie sur les points d'appuis : {} pixels\n".format(erreur_moyenne_plani_pixel))
+    logger.info("Erreur moyenne en altimétrie sur les points d'appuis : {} mètres".format(erreur_moyenne_alti))
+    logger.info("Ecart-type des résidus en altimétrie sur les points d'appuis : {} mètres\n".format(np.std(np.array(distance_totale_alti))))    
 
-
-    with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
-        f.write("Analyse des résidus sur les points d'appuis\n")
-        f.write("Erreur moyenne en planimétrie sur les points d'appuis : {} mètres\n".format(erreur_moyenne_plani))
-        f.write("Erreur moyenne en planimétrie sur les points d'appuis : {} pixels\n".format(erreur_moyenne_plani_pixel))
-        f.write("Erreur moyenne en altimétrie sur les points d'appuis : {} mètres\n".format(erreur_moyenne_alti))
-        f.write("Ecart-type des résidus en planimétrie sur les points d'appuis : {} mètres\n".format(np.std(np.array(distance_totale_plani))))
-        f.write("Ecart-type des résidus en altimétrie sur les points d'appuis : {} mètres\n".format(np.std(np.array(distance_totale_alti))))
-        f.write("\n\n\n")
-
-    
-
-    if erreur_moyenne_plani_pixel > 50 and args.etape=="1":
+    if erreur_moyenne_plani_pixel > 25 and args.etape=="1":
         #Si l'erreur en pixel est supérieure à 25 pixels, alors on relance les calculs avec les points d'appuis trouvés sur les images sous-échantillonnées
         logger.warning("L'erreur moyenne en planimétrie est supérieure à 25 pixels. Les points d'appuis utilisés sont ceux du sous échantillonnage")
         os.system("sh {0}/aeroSousEch10.sh {0} {1}".format(args.scripts, args.filter_GCP))

@@ -21,7 +21,7 @@ import shutil
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 
 parser = argparse.ArgumentParser(description="Analyse des résultats Campari où chaque image est calculée individuellement")

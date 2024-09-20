@@ -38,6 +38,8 @@ else
 
     rm -f ${workspace}
     mkdir ${workspace}
+    rm workspace.txt
+    echo $workspace >> workspace.txt
     scripts_dir=$(realpath "scripts")
     ancien_repertoire=$(dirname ${TA})
 

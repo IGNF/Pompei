@@ -24,7 +24,7 @@ from tools import getEPSG, load_bbox
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 
 parser = argparse.ArgumentParser(description="Récupère le MNT de la zone")

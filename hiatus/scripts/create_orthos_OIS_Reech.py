@@ -26,7 +26,7 @@ from tools import getEPSG, load_bbox, getNbCouleurs, getResolution
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Crée une ortho pour chaque image")
 

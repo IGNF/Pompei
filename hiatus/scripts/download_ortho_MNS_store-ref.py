@@ -24,7 +24,7 @@ from tools import getEPSG
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Vérification qu'il n'y a pas d'images isolées sur le chantier")
 parser.add_argument('--metadata', help='Chemin où se trouvent les fichiers bbox.txt et EPSG.txt')

@@ -20,7 +20,7 @@ import numpy as np
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Supprime les dalles noires pour éviter d'y faire la recherche de points d'appuis")
 

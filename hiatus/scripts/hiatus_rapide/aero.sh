@@ -46,11 +46,11 @@ python ${scripts_dir}/hiatus_rapide/compute_mean_calib.py
 
 # On fait deux aéros, d'abord sur les paramètres externes, puis sur les paramètres internes. On utilise la même caméra pour tous les clichés
 mm3d Campari OIS.*tif Aero_0 Aero_1 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_1.txt >> logfile
-python ${scripts_dir}/analyze_Campari.py --input_report reports/rapport_CampariAero_1.txt
+python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_1.txt
 
 if [ -d Ori-Aero_1 ];then
     mm3d Campari OIS.*tif Aero_1 Aero_2 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt PoseFigee=true AllFree=true | tee reports/rapport_CampariAero_2.txt >> logfile
-    python ${scripts_dir}/analyze_Campari.py --input_report reports/rapport_CampariAero_2.txt
+    python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_2.txt
 fi
 
 
@@ -64,12 +64,12 @@ if [ -d Ori-Aero_2 ];then
 
     # On fait deux aéros, d'abord sur les paramètres externes, puis sur les paramètres internes
     mm3d Campari OIS.*tif Aero_2 Aero_3 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_3.txt >> logfile
-    python ${scripts_dir}/analyze_Campari.py --input_report reports/rapport_CampariAero_3.txt
+    python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_3.txt
 fi
 
 if [ -d Ori-Aero_3 ];then
     mm3d Campari OIS.*tif Aero_3 Aero_4 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt PoseFigee=true AllFree=true | tee reports/rapport_CampariAero_4.txt >> logfile
-    python ${scripts_dir}/analyze_Campari.py --input_report reports/rapport_CampariAero_4.txt
+    python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_4.txt
 fi
 
 if [ -d Ori-Aero_4 ];then
@@ -82,12 +82,12 @@ if [ -d Ori-Aero_4 ];then
 
     # On fait deux aéros, d'abord sur les paramètres externes, puis sur les paramètres internes. On réduit cette fois l'écart-type sur les points de liaisons
     mm3d Campari OIS.*tif Aero_4 Aero_5 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_5.txt >> logfile
-    python ${scripts_dir}/analyze_Campari.py --input_report reports/rapport_CampariAero_5.txt
+    python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_5.txt
 fi
 
 if [ -d Ori-Aero_5 ];then
     mm3d Campari OIS.*tif Aero_5 Aero_6 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 RapTxt=ResidualsReport.txt AllFree=true | tee reports/rapport_CampariAero_6.txt >> logfile
-    python ${scripts_dir}/analyze_Campari.py --input_report reports/rapport_CampariAero_6.txt
+    python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_6.txt
 fi
 
 if [ -d Ori-Aero_6 ];then
@@ -100,7 +100,7 @@ if [ -d Ori-Aero_6 ];then
 
     # On fait une aéro sur tous les paramètres
     mm3d Campari OIS.*tif Aero_6 Aero_7 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 RapTxt=ResidualsReport.txt AllFree=true | tee reports/rapport_CampariAero_7.txt >> logfile
-    python ${scripts_dir}/analyze_Campari.py --input_report reports/rapport_CampariAero_7.txt
+    python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_7.txt
 fi 
 
 if [ -d Ori-Aero_7 ];then
@@ -117,4 +117,4 @@ python ${scripts_dir}/hiatus_rapide/get_best_aero.py
 
 # On calcule la résolution terrain qu'il faudra utiliser pour produire l'ortho
 python ${scripts_dir}/compute_resolution.py --input_ori Ori-TerrainFinal_10_10_0.5_AllFree_Final/ --metadata metadata/
-${scripts_dir}/AnalyseRapportMicMac.LINUX AnalyseRapportResidusMICMAC ResidualsReport.txt --export_ogr_appuis_mesure PtsAppuiMesure.geojson --export_ogr_appuis_calcul PtsAppuiCalcul.geojson --export_ogr_residus_appuis VecteursResidusAppui.geojson --epsg 2154 >> reports/rapport_complet.txt
+${scripts_dir}/AnalyseRapportMicMac.LINUX AnalyseRapportResidusMICMAC ResidualsReport.txt --export_ogr_appuis_mesure PtsAppuiMesure.geojson --export_ogr_appuis_calcul PtsAppuiCalcul.geojson --export_ogr_residus_appuis VecteursResidusAppui.geojson --epsg 2154 >> hiatus.log

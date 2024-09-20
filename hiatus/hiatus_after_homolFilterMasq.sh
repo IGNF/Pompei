@@ -39,6 +39,8 @@ if test "$#" = 0; then
 else
 
     mkdir ${workspace}
+    rm workspace.txt
+    echo $workspace >> workspace.txt
     scripts_dir=$(realpath "scripts")
     ancien_repertoire=$(dirname ${TA})
 

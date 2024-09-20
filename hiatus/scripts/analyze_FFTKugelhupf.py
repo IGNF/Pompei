@@ -19,7 +19,7 @@ from lxml import etree
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description='Analyse du rapport de FFTKugelhupf pour vérifier que tous les repères de fond de chambre ont été trouvés')
 

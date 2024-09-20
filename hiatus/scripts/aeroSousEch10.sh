@@ -101,7 +101,7 @@ echo "Campari 10_10_10"
 mm3d Campari OIS.*tif Abs-Ratafia-AllFree TerrainFinal_10_10_10 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt| tee reports/rapport_CampariAero_10_10_10.txt >> logfile
 
 #Analyse de rapport_CampariAero_10_10_10 
-python ${scripts_dir}/analyze_Campari.py --input_report reports/rapport_CampariAero_10_10_10.txt
+python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_10.txt
 
 mkdir iter0
 mv GCP-S2D.xml iter0/
@@ -115,7 +115,7 @@ echo "Campari 10_10_10_AllFree"
 mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree_temp GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport.txt| tee reports/rapport_CampariAero_10_10_10_AllFree_temp.txt >> logfile
 
 #Analyse de rapport_CampariAero_10_10_10_AllFree_temp
-python ${scripts_dir}/analyze_Campari.py --input_report reports/rapport_CampariAero_10_10_10_AllFree_temp.txt
+python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_10_AllFree_temp.txt
 
 mkdir iter0
 mv GCP-S2D.xml iter0/
@@ -126,14 +126,14 @@ python ${scripts_dir}/delete_GCP.py --factor 3 --GCP iter0/GCP.xml --S2D iter0/G
 mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport.txt| tee reports/rapport_CampariAero_10_10_10_AllFree.txt >> logfile
 
 #Analyse de rapport_CampariAero_10_10_10_AllFree 
-python ${scripts_dir}/analyze_Campari.py --input_report reports/rapport_CampariAero_10_10_10_AllFree.txt
+python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_10_AllFree.txt
 
 #On réduit l'écart-type
 echo "Campari 10_10_0.5_AllFree"
 mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFree GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 AllFree=true RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_10_10_0.5_AllFree.txt >> logfile
 
 #Analyse de rapport_CampariAero_10_10_0.5_AllFree 
-python ${scripts_dir}/analyze_Campari.py --input_report reports/rapport_CampariAero_10_10_0.5_AllFree.txt
+python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_0.5_AllFree.txt
 
 
 mkdir iter1
@@ -148,7 +148,7 @@ mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFr
 ${scripts_dir}/AnalyseRapportMicMac.LINUX AnalyseRapportResidusMICMAC ResidualsReport.txt --export_ogr_appuis_mesure PtsAppuiMesure.geojson --export_ogr_appuis_calcul PtsAppuiCalcul.geojson --export_ogr_residus_appuis VecteursResidusAppui.geojson --epsg ${EPSG} >> logfile
 
 #Analyse de rapport_CampariAero_10_10_0.5_AllFree_Final
-python ${scripts_dir}/analyze_Campari.py --input_report reports/rapport_CampariAero_10_10_0.5_AllFree_Final.txt
+python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_0.5_AllFree_Final.txt
 
 #Analyse des résidus sur les points d'appuis
 python ${scripts_dir}/analyze_residual_vectors.py --input_geojson VecteursResidusAppui.geojson --input_appuis GCP.xml --scripts ${scripts_dir} --etape 10

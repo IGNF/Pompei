@@ -19,5 +19,7 @@ if test "$#" = 0; then
     echo "TA : path"
 else
     workspace=$(dirname ${TA})
+    rm workspace.txt
+    echo $workspace >> workspace.txt
     python scripts/visualize_flight_plan.py --TA ${TA} --chantier ${workspace}
 fi

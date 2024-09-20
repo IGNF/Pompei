@@ -4,3 +4,4 @@ hiatus/metadata/*
 log.txt
 *.pyc
 *.log
+workspace.txt

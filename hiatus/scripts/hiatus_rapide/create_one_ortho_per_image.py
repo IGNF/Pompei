@@ -22,7 +22,7 @@ import rasterio
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Script permettant de créer les imagettes pour Aubry dans hiatus_rapide.sh")
 parser.add_argument('--metadata', help="Répertoire contenant les métadonnées")
@@ -120,7 +120,7 @@ def get_decalage(path):
                 line_splitted = line.split()
                 return float(line_splitted[0]), float(line_splitted[1])
     else:
-        logger.warning("Pas trouvé : ", path)
+        logger.warning(f"Pas trouvé : {path}")
         return 0, 0
 
 

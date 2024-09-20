@@ -19,12 +19,12 @@ import shutil
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
 
-parser = argparse.ArgumentParser(description="Analyse du rapport de Tapas pour vérifier qu'il n'y a pas de problèmes lors du calcul de l'orientation relative. Si des images posent problème, alors on les supprime et on relance Tapas")
+logger = logging.getLogger()
 
-parser.add_argument('--input_report', help='Rapport Tapas')
-parser.add_argument('--scripts_dir', help='Rapport Tapas')
+parser = argparse.ArgumentParser(description="Analyse du rapport de Tapas ou de Campari. Pour Tapas, on vérifie qu'il n'y a pas de problèmes lors du calcul de l'orientation relative. Si des images posent problème, alors on les supprime et on relance Tapas.")
+parser.add_argument('--input_report', help='Rapport Tapas ou Campari')
+parser.add_argument('--scripts_dir', help='Répertoire des scripts', default=None)
 args = parser.parse_args()
 
 
@@ -39,71 +39,89 @@ def remove_images_without_homol(dictionnaire):
 
 
 def find_problem(chemin_rapport, chemin_scripts):
-    dictionnaire = {}  
-
-    logger.info("Analyse du rapport Tapas")
+    dictionnaire = {}
 
     with open(chemin_rapport, "r") as f:
         fatal_error = False
         for line in f:
             if "RES" in line and "ER2" in line:
+                # Si c'est une ligne avec les informations concernant les résidus d'une image
+                # nom de l'image
                 line_replaced = line.replace("]", "[")
                 line_splitted = line_replaced.split("[")
                 nom_image = line_splitted[1]
 
+                # proportion de points de liaisons conservés
                 line_splitted_space = line.split()
-                valeur = line_splitted_space[4]
-                if valeur == "-nan":
-                    valeur = 0
+                proportion = line_splitted_space[4]
+                if proportion == "-nan":
+                    proportion = 0
 
-                dictionnaire[nom_image] = valeur
+
+                # Résidus
+                residus = line_splitted_space[2]
+                dictionnaire[nom_image] = {"residus":residus, "proportion":proportion}
+
             if "NON INIT" in line:
                 line_splitted = line.split(" ")
                 nom_image = line_splitted[6][:-1]
-                dictionnaire[nom_image] = "-nan"
+                dictionnaire[nom_image] = {"residus":0, "proportion":0}
             
-            if "Residual" in line:
+            # Ligne avec les résidus moyens
+            if "Residual =" in line:
                 line_residual = line
+            # Ligne avec les moins bons résultats 
             if "Worst" in line:
                 line_worst = line
+            
+            # Erreurs diverses
             if "Sorry, the following FATAL ERROR happened" in line:
+                logger.warning(f"{line}")
                 fatal_error = True
             if "Warn tape enter to continue" in line:
+                logger.warning(f"{line}")
                 fatal_error = True
 
+    if "Tapas" in os.path.basename(chemin_rapport):
+        algo="Tapas"
+    else:
+        algo = "Campari"
+
     
-    Recommencer_Tapas = False
-    compte_images_retirees = 0
+    # On récupère l'image qui a la proportion de points de liaisons conservés la plus faible
     image_min = None
     val_min = 100.00
     for image in dictionnaire:
-        if float(dictionnaire[image]) < val_min:
-            val_min = float(dictionnaire[image])
+        logger.debug(f"Image : {image}, points de liaisons conservés : {dictionnaire[image]['proportion']}, résidus : {dictionnaire[image]['residus']}")
+        if float(dictionnaire[image]["proportion"]) < val_min:
+            val_min = float(dictionnaire[image]["proportion"])
             image_min = image
     
-    if fatal_error or val_min <= 60.0:
-        Recommencer_Tapas = True
-        logger.warning("L'image {} est retirée du jeu de données car Tapas n'est pas parvenu à déterminer son orientation relative".format(image_min))
-        if not os.path.exists("Poubelle_Tapas"):
-            os.mkdir("Poubelle_Tapas")
-        shutil.move(image_min, "Poubelle_Tapas")
-        compte_images_retirees += 1
+    logger.info(line_residual)
+    logger.info(line_worst)
 
-    with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
-        f.write("Analyse de Tapas\n")
-        f.write(line_residual)
-        f.write(line_worst)
-        f.write("{} images ont été retirées".format(compte_images_retirees))
-        f.write("\n\n\n")
-
-    remove_images_without_homol(dictionnaire)
-    
-    if Recommencer_Tapas:        
-        os.system("rm -r Ori-Rel")
-        os.system("rm -r reports/report_Tapas.txt")
-        os.system("mm3d Martini \"OIS-Reech_.*tif\" OriCalib=CalibNum >> logfile")
-        os.system("mm3d Tapas FraserBasic \"OIS-Reech_.*tif\" InOri=MartiniCalibNum InCal=CalibNum Out=Rel @ExitOnWarn | tee reports/report_Tapas.txt >> logfile")
-        os.system("python {}/analyze_Tapas.py --input_report reports/report_Tapas.txt --scripts_dir {}".format(chemin_scripts, chemin_scripts))
+    # Si on est dans le premier calcul d'orientation relative
+    if algo=="Tapas":
+        recommencer_Tapas = False
+        # Si le calcul n'a pas abouti ou que la proportion minimale de points de liaisons utilisés est inférieure à 60, on supprime la moins bonne image
+        if fatal_error or val_min <= 60.0:
+            recommencer_Tapas = True
+            logger.warning("L'image {} est retirée du jeu de données car Tapas n'est pas parvenu à déterminer son orientation relative".format(image_min))
+            if not os.path.exists("Poubelle_Tapas"):
+                os.mkdir("Poubelle_Tapas")
+            shutil.move(image_min, "Poubelle_Tapas")
+        
+        # Supprime les images qui ne sont pas apparues dans le rapport de Tapas car elle n'ont pas de points de liaisons avec les autres images
+        remove_images_without_homol(dictionnaire)   
+        
+        # Si une image a été supprimée, alors on recommence le calcul (sauf si l'image n'apparaît pas dans le rapport Tapas et dans ce cas elle n'avait déjà pas été prise en compte dans le calcul)
+        if recommencer_Tapas:
+            logger.info("On recommence un calcul d'orientation relative avec Tapas")     
+            os.system("rm -r Ori-Rel")
+            os.system("rm -r reports/report_Tapas.txt")
+            os.system("mm3d Martini \"OIS-Reech_.*tif\" OriCalib=CalibNum >> logfile")
+            os.system("mm3d Tapas FraserBasic \"OIS-Reech_.*tif\" InOri=MartiniCalibNum InCal=CalibNum Out=Rel @ExitOnWarn | tee reports/report_Tapas.txt >> logfile")
+            os.system("python {}/analyze_Tapas.py --input_report reports/report_Tapas.txt --scripts_dir {}".format(chemin_scripts, chemin_scripts))
 
     
 

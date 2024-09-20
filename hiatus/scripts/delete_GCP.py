@@ -20,7 +20,7 @@ import os
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 
 parser = argparse.ArgumentParser(description="Suppression des points d'appuis les moins bons")
@@ -98,16 +98,10 @@ def define_deleted_GCP(dict_appuis, ecart_type_plani, ecart_type_alti, factor):
             if point["delta"] > ecart_type_alti * factor:
                 liste_points_a_supprimer.append(point["nom"])
                 compte_alti += 1
-    logger.info("Points plani supprimés : ", compte_plani)
-    logger.info("Points alti supprimés : ", compte_alti)
-    logger.info("Points supprimés : ", len(liste_points_a_supprimer))
-    with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
-        f.write("Points plani supprimés : {}\n".format(compte_plani))
-        f.write("Points alti supprimés : {}\n".format(compte_alti))
-        f.write("Points supprimés : {}\n".format(len(liste_points_a_supprimer)))
-        f.write("\n\n\n")
-
-
+    logger.info(f"Points plani supprimés : {compte_plani}")
+    logger.info(f"Points alti supprimés : {compte_alti}")
+    logger.info(f"Points supprimés : {len(liste_points_a_supprimer)}" )
+    
     return liste_points_a_supprimer
 
 
@@ -169,12 +163,6 @@ ecart_type_plani = compute_std(delta_plani)
 ecart_type_alti = compute_std(delta_alti)
 logger.info("Ecart-type des points plani : {} mètres".format(ecart_type_plani))
 logger.info("Ecart-type des points alti : {} mètres".format(ecart_type_alti))
-
-with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
-    f.write("Nombre de points plani : {}\n".format(len(liste_plani)))
-    f.write("Nombre de points alti : {}\n".format(len(liste_alti)))
-    f.write("Ecart-type des points plani : {} mètres\n".format(ecart_type_plani))
-    f.write("Ecart-type des points alti : {} mètres\n".format(ecart_type_alti))
 
 
 if args.delete:

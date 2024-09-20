@@ -20,7 +20,7 @@ from tools import load_bbox, getEPSG
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 
 def download_data(bbox, type, metadata, EPSG):

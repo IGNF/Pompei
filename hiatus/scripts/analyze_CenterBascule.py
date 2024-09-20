@@ -19,7 +19,7 @@ import os
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Analyse du rapport de CenterBascule pour vérifier qu'il n'y a pas de problèmes lors du passage en coordonnées absolues approximatives")
 
@@ -46,19 +46,12 @@ def find_problem(chemin_rapport):
                     distance_max = distance
                     image_distance_min = line_splitted[1]
 
-    logger.info("Le plus gros résidu concerne l'image {} : {} mètres".format(image_distance_min, distance_max))
-    
-    
-    with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
-        f.write("Analyse de CenterBascule\n")
-        f.write("Le plus gros résidu concerne l'image {} : {} mètres\n".format(image_distance_min, distance_max))
-        f.write("\n\n\n")
+    logger.info("Le plus gros déplacement concerne l'image {} : {} mètres".format(image_distance_min, distance_max))
 
 
 
 if __name__ == "__main__":
 
-    logger.info("Analyse du rapport Tapas")
     find_problem(args.input_report)
 
 

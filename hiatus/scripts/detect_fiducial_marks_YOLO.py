@@ -24,7 +24,7 @@ import argparse
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Recherche automatique des repères de fond de chambre qui sont sous forme de targets")
 parser.add_argument('--nb_points', help='Nombre de repères de fond de chambre à trouver')
@@ -61,7 +61,7 @@ def detect_image_maitresse(nom_image, model):
 
                         if confidence >= 0.9 and np.abs(h-w) <= 5:
                             resultats.append({"confidence": confidence, "w":w, "h":h, "ligne":ligne, "colonne":colonne})  
-    logger.info(resultats)
+    logger.debug(f"Détections sur l'image maîtresse : {resultats}")
 
     return resultats
 
@@ -187,9 +187,11 @@ def save_xml(liste_points):
             PtIm.text = "{} {}".format(point["colonne"], point["ligne"])
             compte_point += 1
 
-            #Si le nombre de points trouvés ne correspond à celui qui aurait dû être trouvé, alors l'utilisateur est invité à saisir les points avec Micmac
+        logger.debug(f"Image {nom_image} : {liste_points[nom_image]}")
+
+        #Si le nombre de points trouvés ne correspond à celui qui aurait dû être trouvé, alors l'utilisateur est invité à saisir les points avec Micmac
         if compte_point != int(args.nb_points)+1:
-            logger.warning("Attention, {} points ont été trouvés sur l'image {}. Saisissez les points avec mm3d SaisieAppuisInit".format(str(compte_point-1), nom_image))
+            logger.warning("{} points ont été trouvés sur l'image {}.".format(str(compte_point-1), nom_image))
             liste_probleme.append(nom_image)
         
         else:
@@ -208,7 +210,7 @@ def chercher_image_maitresse(model):
     pas_trouve = True
     while pas_trouve and len(images) > 0:
         image_maitresse = images.pop()
-        logger.info("Image maitresse : ", image_maitresse)
+        logger.info(f"Image maitresse : {image_maitresse}")
 
         # On détecte les repères de fond de chambre sur l'image maîtresse avec Yolo
         resultats = detect_image_maitresse(image_maitresse, model)
@@ -217,9 +219,12 @@ def chercher_image_maitresse(model):
         points_tries = trier_points(resultats)
         # Pour chaque repère de fond de chambre, on conserve le point qui a la probabilité la plus élevée
         points_image_maitresse = selectionner_points(points_tries)
-        logger.info(points_image_maitresse)
+        logger.debug(f"Détections sur l'image maîtresse après filtrage : {points_image_maitresse}")
         if len(points_image_maitresse) == int(args.nb_points):
             pas_trouve = False
+            logger.debug(f"{len(points_image_maitresse)} ont été trouvés au lieu de {int(args.nb_points)}. On essaye avec une nouvelle image maîtresse")
+        else:
+            logger.debug(f"Le bon nombre de points ont été trouvés sur l'image maîtresse")
 
     if len(points_image_maitresse) != int(args.nb_points):
         logger.error("Erreur : sur aucune image, le nombre exact de repères de fond de chambre n'a été trouvé. Essayez avec la méthode par corrélation de MicMac")
@@ -229,7 +234,8 @@ def chercher_image_maitresse(model):
     return liste_points, points_image_maitresse, image_maitresse
 
 def SaisieAppuisInit(liste_probleme):
-    logger.warning("liste_probleme : ", liste_probleme)
+    if len(liste_probleme) > 0:
+        logger.warning(f"Sur les images suivantes, le bon nombre de repères de fond de chambre n'ont pas été trouvés. Vous devrez les saisir à la main : {liste_probleme}")
     for image in liste_probleme:
         commande = "mm3d SaisieAppuisInit {} NONE id_reperes.txt MeasuresIm-{}.xml Gama=2".format(image, image)
         os.system(commande)
@@ -327,7 +333,7 @@ def run(chemin_sauvegarde):
     # On parcourt les images secondaires
     images_secondaires = [i for i in os.listdir() if i[-4:]==".tif" and i!=image_maitresse]
     for image_secondaire in images_secondaires:
-        logger.info("image_secondaire : ", image_secondaire)
+        logger.info(f"image_secondaire : {image_secondaire}")
         # On détecte les repères de fond de chambre sur l'image secondaire avec Yolo
         resultats = detect(image_secondaire, points_image_maitresse, model)
         # On trie les points trouvés afin de regrouper ceux qui correspondent au même repère de fond de chambre

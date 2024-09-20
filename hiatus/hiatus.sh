@@ -48,6 +48,8 @@ if test "$#" = 0; then
 else
 
     workspace=$(dirname ${TA})
+    rm workspace.txt
+    echo $workspace >> workspace.txt
     scripts_dir=$(realpath "scripts")
     cd ${workspace}
     TA=$(basename ${TA})

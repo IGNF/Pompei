@@ -17,7 +17,7 @@ import argparse
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 
 parser = argparse.ArgumentParser(description="Analyse du rapport de Tapioca pour vérifier que tous les clichés disposent d'un nombre suffisant de points de liaison")
@@ -55,14 +55,13 @@ def save(dictionnaire):
             liste_images_image1_triees = sorted(liste_images_image1)
             for image2 in liste_images_image1_triees:
                 f.write("        Image {} : {} points de liaison\n".format(image2, dictionnaire[image1][image2]))
+                logger.info("Image {}, image {} : {} points de liaison".format(image1, image2, dictionnaire[image1][image2]))
             f.write("\n\n\n")
 
 
 
 
 if __name__ == "__main__":
-
-    logger.info("Analyse de {}".format(args.input_report))
 
     dictionnaire = analyse(args.input_report)
     save(dictionnaire)    

@@ -25,7 +25,7 @@ from tools import getEPSG, load_bbox
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Filtrage des points d'appuis du chantier par la BD Topo")
 parser.add_argument('--appuis', help="Points d'appuis de la BD Ortho")
@@ -261,14 +261,6 @@ def filter_GCP(path_bati, path_vegetation, path_hydro):
     logger.info("Forêt : {}".format(compte_foret))
     logger.info("Eau : {}".format(compte_eau))
     logger.info("Champs : {}".format(compte_champs))
-
-    with open(os.path.join("reports", "rapport_complet.txt"), 'a') as f:
-        f.write("Répartition des points d'appuis : \n")
-        f.write("Bati : {}\n".format(compte_bati))
-        f.write("Forêt : {}\n".format(compte_foret))
-        f.write("Eau : {}\n".format(compte_eau))
-        f.write("Champs : {}\n".format(compte_champs))
-        f.write("\n\n\n")
 
 
     #On sauvegarde le fichier

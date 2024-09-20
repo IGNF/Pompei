@@ -27,7 +27,7 @@ from osgeo import gdal
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Visualisation de la position approximative des chantiers")
 parser.add_argument('--chantier', help='Répertoire du chantier')
@@ -123,6 +123,10 @@ def lecture_xml(path):
             image["nb_vol"] = nb_vol
             images.append(image)
     logger.info("La distance appliquée sur le buffer est {} m".format(distance_buffer))
+    if nb_vol == 0:
+        logger.info("Le chantier a été acquis en une seule fois")
+    else:
+        logger.warning(f"Le chantier a été acquis en {nb_vol+1} vols. Hiatus ne fonctionne qu'avec un seul vol. Supprimez les images pour n'avoir plus qu'un seul vol")
 
     EPSG = findEPSG(root)
 

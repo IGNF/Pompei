@@ -22,7 +22,7 @@ import shutil
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description='Construction du MNS à partir des Z Num Max')
 parser.add_argument('--input_Malt', default='', help='Dossier MEC-Malt')

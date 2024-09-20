@@ -17,7 +17,7 @@ import os
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 def getEPSG(metadata):
     with open(os.path.join(metadata, "EPSG.txt"), "r") as f:

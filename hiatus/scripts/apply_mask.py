@@ -22,7 +22,7 @@ from tools import getEPSG
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Effectue la différence entre le MNS actuel et celui issu de l'orthomosaïque")
 

@@ -20,7 +20,7 @@ import shutil
 import log # Chargement des configurations des logs
 import logging
 
-logger = logging.getLogger("root")
+logger = logging.getLogger()
 
 
 """
@@ -132,7 +132,7 @@ for image in images:
 # Pour chaque paramètre, on calcule la moyenne et l'écart-type des valeurs trouvées pour chaque image
 resultats = {}
 for value_name in dict_values.keys():
-    logger.info(value_name)
+    logger.info(f"{value_name}")
     array = np.array(dict_values[value_name])
     mean = np.mean(array)
     std = np.std(array)
