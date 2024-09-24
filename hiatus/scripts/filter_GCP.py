@@ -77,21 +77,41 @@ def download_data_BDTopo(bbox, layer, name):
             #Curieusement, il semble qu'il n'y ait pas moyen de récupérer les coordonnées en 2154, mais on peut quand même définir la bounding box en 2154
             bbox_string = "{},{},{},{},EPSG:{}".format(e_min_dalle, n_min_dalle, e_max_dalle, n_max_dalle, EPSG).strip()
             
-            r = requests.get(wfs_url, params={
-                'service': 'WFS',
-                'version': '2.0.0',
-                'request': 'GetFeature',
-                'resultType': 'results',
-                'typename': layer,
-                'bbox': bbox_string,
-                'outputFormat': 'application/json'
-            })
+            
+            r = None
+            try:
+                r = requests.get(wfs_url, params={
+                    'service': 'WFS',
+                    'version': '2.0.0',
+                    'request': 'GetFeature',
+                    'resultType': 'results',
+                    'typename': layer,
+                    'bbox': bbox_string,
+                    'outputFormat': 'application/json'
+                })
+            
+            except requests.exceptions.RequestException as e:
+                logger.warning(e)
+                try:
+                    r = requests.get(wfs_url, params={
+                        'service': 'WFS',
+                        'version': '2.0.0',
+                        'request': 'GetFeature',
+                        'resultType': 'results',
+                        'typename': layer,
+                        'bbox': bbox_string,
+                        'outputFormat': 'application/json'
+                    })
+                except:
+                    pass
 
 
-            #On sauvegarde dans un fichier json les dalles
-            chemin4326 = os.path.join(path_tuile, '{}_dalle_{}_{}.GeoJSON'.format(type_data, i, j))
-            with open(chemin4326, 'wb') as f:
-                f.write(bytes(r.content))
+
+            if r is not None and r.status_code==200:
+                #On sauvegarde dans un fichier json les dalles
+                chemin4326 = os.path.join(path_tuile, '{}_dalle_{}_{}.GeoJSON'.format(type_data, i, j))
+                with open(chemin4326, 'wb') as f:
+                    f.write(bytes(r.content))
 
     return path_tuile
 
