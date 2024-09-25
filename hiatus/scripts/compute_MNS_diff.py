@@ -21,6 +21,7 @@ import argparse
 from tools import getEPSG
 import log # Chargement des configurations des logs
 import logging
+from tqdm import tqdm
 
 logger = logging.getLogger()
 
@@ -53,7 +54,7 @@ def open_MNS(path):
 def get_MNS(mnsPath):
     #On récupère la liste des dalles du MNS
     liste_files = os.listdir(mnsPath)
-    listeMNS = [os.path.join(mnsPath, i) for i in liste_files if i[-4:]==".tif"]
+    listeMNS = [os.path.join(mnsPath, i) for i in liste_files if "MNS_CORREL" in i and i[-4:]==".tif"]
     return listeMNS
 
 def compute_intersection_footprint(coordsMNSHisto, coordsMNS):
@@ -94,7 +95,7 @@ def process(mnsHisto, coordsMNSHisto, MNSFiles):
     mnsDiff = np.zeros(mnsHisto.shape)
 
     #On parcourt toutes les dalles du MNS
-    for mns_dalle in MNSFiles:
+    for mns_dalle in tqdm(MNSFiles):
         #On ouvre une dalle du MNS
         mns, coordsMNS = open_MNS(mns_dalle)
         #On calcule son footprintcommune avec le MNS historique

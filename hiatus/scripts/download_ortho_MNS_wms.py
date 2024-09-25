@@ -31,7 +31,7 @@ def download_data(bbox, type, metadata, EPSG):
         path_meta = os.path.join(metadata, "ortho")
         resolution = 0.5
 
-    if type=="MNS":
+    if type=="MNS_CORREL":
         layer='ELEVATION.ELEVATIONGRIDCOVERAGE.HIGHRES.MNS'
         path_tuile = os.path.join(metadata, "mns_temp")
         path_meta = os.path.join(metadata, "mns")
@@ -96,7 +96,7 @@ def download_data(bbox, type, metadata, EPSG):
                     out.write("{}\n".format(e_min_dalle+0.25))
                     out.write("{}\n".format(n_max_dalle-0.25))
             
-            elif type=="MNS":
+            elif type=="MNS_CORREL":
                 with open(os.path.join(path_meta, '{}_dalle_{}_{}.ori'.format(type, i, j)), 'w') as out:
                     out.write("CARTO\n")
                     out.write("{} {}\n".format(e_min_dalle*1000, n_max_dalle*1000))
@@ -141,4 +141,4 @@ if __name__=="__main__":
     download_data(bbox, "ORTHO", args.metadata, EPSG)
 
     #Télécharge le MNS sous forme de dalles
-    download_data(bbox, "MNS", args.metadata, EPSG)
+    download_data(bbox, "MNS_CORREL", args.metadata, EPSG)
