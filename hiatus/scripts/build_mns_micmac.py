@@ -13,12 +13,11 @@ of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Publ
 You should have received a copy of the GNU General Public License along with Hiatus. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import argparse
 import os
+import rasterio
 from lxml import etree
-from osgeo import gdal
 import numpy as np
-import shutil
+import argparse
 import log # Chargement des configurations des logs
 import logging
 
@@ -28,52 +27,153 @@ parser = argparse.ArgumentParser(description='Construction du MNS à partir des 
 parser.add_argument('--input_Malt', default='', help='Dossier MEC-Malt')
 args = parser.parse_args()
 
+"""
+Malt construit le MNS niveau par niveau. Il commence d'abord avec un sous-échantillonage fort pour terminer à un niveau beaucoup plus fin.
+A chaque niveau, il dispose d'une carte de corrélation qui indique les lieux où la corrélation fonctionne.
+Si à un niveau la corrélation ne fonctionne pas, alros elle ne fonctionnera pas à un niveau plus précis.
+L'idée est ici de récupérer pour chaque pixel la dernière altitude calculée avant que la corrélation ne fonctionne plus.
+On produit également une carte indicateur.tif qui contient l'identifiant de la couche utilisée. 
+"""
 
-def get_Z_Nums_max():
-    Z_Nums = [i for i in os.listdir(args.input_Malt) if "Z_Num" in i and i[-4:]==".tif"]
 
-    indice_max = 0
-    for Z_Num in Z_Nums:
-        indice_max = max(indice_max, int(Z_Num[5]))
+class LevelMNS:
 
-    Z_Nums_max = [i for i in Z_Nums if int(i[5])==indice_max]
+    def __init__(self, image_path) -> None:
+        self.image_path = image_path
+        self.level = int(os.path.basename(image_path)[5])
+        self.dezoom = self.getDezoom()
+        self.origineAlti, self.resolutionAlti = self.read_xml()
+        self.mns, self.transform = self.compute_mns()
+        self.correlation = self.open_correlation()
 
-    Z_Nums_max_Tile = [i for i in Z_Nums_max if "Tile" in i]
-    Z_Nums_max_not_Tile = [i for i in Z_Nums_max if not "Tile" in i]
-
-    if len(Z_Nums_max_Tile)==0:
-        Z_Nums_max_Tile = Z_Nums_max_not_Tile.copy()
+    def getDezoom(self):
+        """
+        Renvoie le niveau de dezoom de la couche
+        """
+        filename = os.path.basename(self.image_path)
+        dezoom = int(int(filename.split("_")[2].replace("DeZoom", ""))/2)
+        return dezoom
+        
+    def open_mns(self):
+        """
+        Ouvre le MNS calculé par Micmac
+        """
+        input_dst = rasterio.open(self.image_path)
+        return input_dst.read(), input_dst.transform
     
-    return Z_Nums_max_Tile, Z_Nums_max_not_Tile
+    def compute_mns(self):
+        """
+        Met en forme le MNS calculé par Micmac
+        """
+        #Ouverture du MNS
+        mns, transform = self.open_mns()
+        # Calcul le MNS à partir des métadonnées Micmac
+        mns = self.compute_elevation(mns)
+        mns = self.resample_image(mns)
+        return mns, transform
 
-def get_a_b(Z_Nums_max_not_Tile):
-    xml_file = Z_Nums_max_not_Tile[0].replace(".tif", ".xml")
-
-    xml_path = os.path.join(args.input_Malt, xml_file)
-
-    if os.path.exists(xml_path):
+    def read_xml(self):
+        xml_path = f"{self.image_path[:-4]}.xml"
         tree = etree.parse(xml_path)
         root = tree.getroot()
-        OrigineAlti = float(root.find("OrigineAlti").text)
-        ResolutionAlti = float(root.find("ResolutionAlti").text)
-        return OrigineAlti, ResolutionAlti
-    else:
-        logger.warning("Impossible d'ouvrir le fichier {}".format(xml_path))
+        origineAlti = float(root.find("OrigineAlti").text)
+        resolutionAlti = float(root.find("ResolutionAlti").text)
+        resolutionPlani = float(root.find("ResolutionPlani").text.split(" ")[0])
+        logger.info(f"La résolution altimétrique du MNS pour l'identifiant {self.level} est de {resolutionAlti} mètres.")
+        logger.info(f"La résolution planimétrique du MNS pour l'identifiant {self.level} est de {resolutionPlani} mètres.")
+        return origineAlti, resolutionAlti
 
-def create_MNS(Z_Nums_max_Tile, OrigineAlti, ResolutionAlti):
-    for tile in Z_Nums_max_Tile:
-        MNS_name = tile.replace("Z_", "MNS_Final_")
-        input_ds = gdal.Open(os.path.join(args.input_Malt, tile))
-        inputlyr = np.array(input_ds.ReadAsArray())
-        inputlyr = OrigineAlti + inputlyr * ResolutionAlti
+    
+    def compute_elevation(self, mns):
+        """
+        Calcule le MNS à partir des métadonnées
+        """
+        mns = mns*self.resolutionAlti + self.origineAlti
+        return mns
 
-        driver = gdal.GetDriverByName('GTiff')
-        outRaster = driver.Create(os.path.join(args.input_Malt, MNS_name), inputlyr.shape[1], inputlyr.shape[0], 1, gdal.GDT_Float32)
-        outRaster.SetGeoTransform(input_ds.GetGeoTransform())
-        outRaster.GetRasterBand(1).WriteArray(inputlyr)
-        shutil.copy(os.path.join(args.input_Malt, tile.replace(".tif", ".tfw")), os.path.join(args.input_Malt, MNS_name.replace(".tif", ".tfw")))
+    
+    def resample_image(self, mns):
+        """
+        Rééchantillonne le MNS de manière à ce que chaque couche soit à la même résolution 
+        """
+        mns = np.repeat(mns, self.dezoom, axis=1)
+        mns = np.repeat(mns, self.dezoom, axis=2)
+        return mns
+    
+    def open_correlation(self):
+        """
+        Ouvre la carte de corrélation
+        """
+        if self.level != 8:
+            filename = f"Correl_STD-MALT_Num_{self.level}.tif"
+        else:
+            filename = "Correl_STD-MALT_Num_7.tif"
+        input_dst = rasterio.open(os.path.join(input_Malt, filename))
+        correlation = input_dst.read()
+        correlation = self.resample_image(correlation)
+        return correlation
+        
+    def resize(self, l, c):
+        """
+        Redécoupe le mns et la carte de corrélation pour qu'elle ait la taille définie par c et l
+        """
+        mns = np.ones((1, l, c))
+        correlation = np.ones((1, l, c))
+        l_current, c_current = self.get_size()
+        l_min = min(l, l_current)
+        c_min = min(c, c_current)
+        mns[0,:l_min,:c_min] = self.mns[0,:l_min,:c_min]
+        correlation[0,:l_min,:c_min] = self.correlation[0,:l_min,:c_min]
+        self.mns = mns
+        self.correlation = correlation
+
+    def get_size(self):
+        _, l, c = self.mns.shape
+        return l, c
 
 
-Z_Nums_max_Tile, Z_Nums_max_not_Tile = get_Z_Nums_max()
-OrigineAlti, ResolutionAlti = get_a_b(Z_Nums_max_not_Tile)
-create_MNS(Z_Nums_max_Tile, OrigineAlti, ResolutionAlti)
+
+def save_image(image, path, transform, encoding):
+    with rasterio.open(
+        path, "w",
+        driver = "GTiff",
+        transform = transform,
+        dtype = encoding,
+        count = image.shape[0],
+        width = image.shape[2],
+        height = image.shape[1]) as dst:
+        dst.write(image)
+
+        
+def compute_mns(input_Malt):
+
+    # On ouvre le MNS du niveau 8 (le plus fin)
+    level8 = LevelMNS(os.path.join(input_Malt, "Z_Num8_DeZoom2_STD-MALT.tif"))
+    l, c = level8.get_size()
+    mns = level8.mns
+    correlation = level8.correlation
+    indicateur = np.ones(mns.shape)*8
+    transform = level8.transform
+
+    # On parcourt tous les niveaux de MNS (sauf le 7 car il a la même carte de corrélation que le 8)
+    Z_Nums = [i for i in os.listdir(input_Malt) if "Z_Num" in i and i[-4:]==".tif" and "Z_Num8" not in i and "Z_Num7" not in i]
+    for z_num in reversed(sorted(Z_Nums)):
+        # On prépare mns et carte de corrélation
+        level = LevelMNS(os.path.join(input_Malt, z_num))
+        # On redécoupe le mns et la carte de corrélation pour qu'elle ait la même taille que celui de la couche 8
+        level.resize(l, c)
+        # On conserve les informations précédentes que pour les endroits où la corrélation 
+        # est différente de 1 (1 faible corrélation, 255 très forte corrélation)
+        mns = np.where(correlation!=1, mns, level.mns)
+        indicateur = np.where(correlation!=1, indicateur, level.level)
+        correlation = np.where(correlation!=1, correlation, level.correlation)
+
+    indicateur = np.where(correlation!=1, indicateur, 0)
+    save_image(mns, os.path.join(input_Malt, "MNS_Final_Num8_DeZoom2_STD-MALT.tif"), transform, rasterio.float32)
+    save_image(indicateur, os.path.join(input_Malt, "indicateur.tif"), transform, rasterio.uint8)
+    save_image(correlation, os.path.join(input_Malt, "correlation.tif"), transform, rasterio.uint8)
+    
+
+
+input_Malt = args.input_Malt 
+compute_mns(input_Malt)

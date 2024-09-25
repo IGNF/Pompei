@@ -66,3 +66,6 @@ gdalbuildvrt COG/MNS_difference/MNS_difference.vrt COG/MNS_difference/*.tif
 cd ..
 cp MEC-Malt-Final/Correl_STD-MALT_Num_7.tif  resultat/carte_correlation/carte_correlation.tif
 cp MEC-Malt-Final/Z_Num7_DeZoom2_STD-MALT.tfw  resultat/carte_correlation/carte_correlation.tfw
+cp MEC-Malt-Final/correlation.tif resultat/carte_correlation/correlation_fusion.tif
+cp MEC-Malt-Final/indicateur.tif resultat/carte_correlation/indicateur_fusion.tif
+cp MEC-Malt-Final/MNS_Final_Num8_DeZoom2_STD-MALT.tif resultat/carte_correlation/MNS_fusion.tif

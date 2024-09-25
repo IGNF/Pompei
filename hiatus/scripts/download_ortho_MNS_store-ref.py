@@ -267,8 +267,7 @@ def get_dalles(footprint_tiles, MNS_disponibles_chantiers, EPSG):
                                     resolution = geotransform[1]
                                     save_hdr(filename.replace(".tif", ".hdr"), e_min_mns, n_max_mns, input_ds2.RasterXSize, input_ds2.RasterYSize, resolution)
                                     get_dalle_ortho(e_min, n_min, 2000 + int(chantier["annee"]), departement_tile, tile, EPSG)
-                                else:
-                                    os.remove(chemin_image_local)
+                                os.remove(chemin_image_local)
 
                 else:    
                 
@@ -306,8 +305,7 @@ def get_dalles(footprint_tiles, MNS_disponibles_chantiers, EPSG):
                             resolution = geotransform[1]
                             save_hdr(fichier.replace(".tif", ".hdr"), e_min_mns, n_max_mns, input_ds2.RasterXSize, input_ds2.RasterYSize, resolution)
                             get_dalle_ortho(e_min, n_min, 2000 + int(chantier["annee"]), departement_tile, tile, EPSG)
-                        else:
-                            os.remove(chemin_image_local)
+                        os.remove(chemin_image_local)
             
         if not trouve:
             logger.warning("La dalle {} {} n'a pas été trouvée".format(e_min, n_min))
@@ -352,8 +350,7 @@ def get_dalle_ortho(e_min, n_min, annee, departement, tile, EPSG):
                 n_max = geotransform[3]
 
                 save_tfw("ORTHO_{}.tfw".format(tile["properties"]["name"]), e_min+0.25, n_max-0.25)
-            else:
-                os.remove(chemin_image_local)
+            os.remove(chemin_image_local)
     else:
         logger.warning("Le répertoire {} n'existe pas".format(chemin_ortho))
         

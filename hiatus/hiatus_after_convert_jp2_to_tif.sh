@@ -74,7 +74,7 @@ else
 
     sh ${scripts_dir}/first_absolute_orientation.sh ${scripts_dir} ${force_vertical}
 
-    sh ${scripts_dir}/second_absolute_orientation.sh ${scripts_dir}
+    sh ${scripts_dir}/second_absolute_orientation.sh ${scripts_dir} ${CPU}
 
 
     if test ${algo} = "srtm"; then
@@ -93,7 +93,7 @@ else
 
     if test ${create_ortho_mns} = "1"; then
 
-        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${workspace} ${CPU}
+        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${CPU}
     
     fi
 

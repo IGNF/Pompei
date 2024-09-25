@@ -12,6 +12,7 @@
 #You should have received a copy of the GNU General Public License along with Hiatus. If not, see <https://www.gnu.org/licenses/>.
 
 scripts_dir=$1
+CPU=$2
 
 #Filtrage des points homologues
 echo "TesLib NO_AllOri2Im"
@@ -39,7 +40,7 @@ python ${scripts_dir}/analyze_Tapas.py --input_report reports/report_CampariRata
 
 #Calcul d'une première orthophoto
 echo "Malt"
-mm3d Malt Ortho OIS.*tif Abs-Ratafia-AllFree MasqImGlob=filtre.tif NbVI=2 UseTA=0 NbProc=30 EZA=1 DirMEC=MEC-Malt-Abs-Ratafia >> logfile
+mm3d Malt Ortho OIS.*tif Abs-Ratafia-AllFree MasqImGlob=filtre.tif NbVI=2 UseTA=0 NbProc=${CPU} EZA=1 DirMEC=MEC-Malt-Abs-Ratafia >> logfile
 
 echo "Tawny"
 mm3d Tawny Ortho-MEC-Malt-Abs-Ratafia/ RadiomEgal=false >> logfile

@@ -49,18 +49,40 @@ fi
 #Sans cela, il arrive que les scripts de recherche de points d'appuis ne fonctionnent pas. 
 
 cd metadata
-find mns_temp -name "*.tif" -exec basename {} ';' | parallel -I% --max-args 1 gdal_translate mns_temp/% mns/%
-
+find mns_temp -name "*.tif" -exec basename {} ';' | parallel -I% --max-args 1 "gdal_translate mns_temp/% mns/% && rm mns_temp/%"
+rm -rf mns_temp
 #On construit un vrt qui sert uniquement à la visualisation afin de comparer plus facilement le résultat final à l'ortho de référence
 cd mns
 gdalbuildvrt MNS.vrt MNS*tif
-cd ..
-rm -rf mns_temp
+
+# On construit un MNS sous-échantillonné qui servira de valeurs initiales pour le deuxième Malt (construction de l'ortho)
+# Note : Comment fonctionne exactement le format tif de Micmac avec sa division en tuiles ? La seule solution trouvée est de créer une seule image, 
+# mais pour cela il faut la sous-échantilloner car c'est impossible sinon de traiter le MNS à 20 cm de résolution en float32 sur des centaines de kilomètres carré
+# Mais comme il ne s'agit que d'une approximation, cela suffit amplement pour Malt
+gdalbuildvrt -tr 4 4 MNS_ssech4.vrt MNS*tif
+gdal_translate -ot Int16 MNS_ssech4.vrt MNS_ssech4_temp.tif
+cd ../..
+
+# Dans les zones frontalières, on ne dispose pas de MNS sur les territoires étrangers. 
+# En conséquence, Malt ne parvient pas à y reconstruire le MNS historique si on lui
+# donne un MNS approximatif avec des valeurs nulles sur les territoires étrangers, surtout en haute montagne.
+# La meilleure manière est donc de compléter ce MNS avec le MNT du SRTM. 
+
+# Récupération du SRTM sur l'emprise du MNS récupéré
+python ${scripts_dir}/download_SRTM.py --MNS_Histo MEC-Malt-Abs-Ratafia/MNS_Final_Num8_DeZoom2_STD-MALT.tif --metadata metadata --output metadata/mns/MNS_SRTM.tif
+# On le convertit dans l'EPSG du chantier et à une résolution de 4 mètres 
+gdalwarp -t_srs EPSG:${EPSG} -tr 4 4  -overwrite metadata/mns/MNS_SRTM.tif metadata/mns/MNS_SRTM_2154.tif
+# On fusionne le MNS précis et celui issu du SRTM en gardant en priorité le MNS précis
+gdal_calc.py -a metadata/mns/MNS_SRTM_2154.tif -b metadata/mns/MNS_ssech4_temp.tif --overwrite --outfile metadata/mns/MNS_ssech4.tif --calc="b*(b>0)+a*(b==0)" --extent union
+# On crée le fichier xml contenant les informations du MNS nécessaires à Micmac
+python ${scripts_dir}/create_xml_micmac.py --tif_image metadata/mns/MNS_ssech4.tif --xml_file metadata/mns/MNS_ssech4.xml
+cd metadata
+
 
 if test ${ortho} != "dalles"; then
-    find ortho_temp -name "*.jp2" -exec basename {} .jp2 ';' | parallel -I% --max-args 1 gdal_translate ortho_temp/%.jp2 ortho/%.tif
+    find ortho_temp -name "*.jp2" -exec basename {} .jp2 ';' | parallel -I% --max-args 1 "gdal_translate ortho_temp/%.jp2 ortho/%.tif && rm ortho_temp/%.jp2"
 
-    find ortho_temp -name "*.tif" -exec basename {} ';' | parallel -I% --max-args 1 gdal_translate ortho_temp/% ortho/%
+    find ortho_temp -name "*.tif" -exec basename {} ';' | parallel -I% --max-args 1 "gdal_translate ortho_temp/% ortho/% && rm ortho_temp/%"
 fi
 
 rm -rf ortho_temp

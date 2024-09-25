@@ -82,7 +82,7 @@ else
 
     if test ${create_ortho_mns} = "1"; then
 
-        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${workspace} ${CPU}
+        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${CPU}
     
     fi
 

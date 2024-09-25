@@ -24,7 +24,6 @@ python ${scripts_dir}/build_mns_micmac.py --input_Malt MEC-Malt-Final  >> logfil
 cd MEC-Malt-Final
 mkdir -p mns_sans_masque
 mv MNS_Final_Num8_DeZoom2_STD-MALT* mns_sans_masque/
-mv MNS_Final_Num9_DeZoom2_STD-MALT* mns_sans_masque/
 cd ..
 #On applique le masque sur le MNS historique et on l'enregistre en Lambert 93
 python ${scripts_dir}/apply_mask.py --orthoHistoPath MEC-Malt-Final/mns_sans_masque/  --orthoHistoResultPath  MEC-Malt-Final/ --masque MEC-Malt-Final/Masq_STD-MALT_DeZoom2.tif --metadata ${metadata}

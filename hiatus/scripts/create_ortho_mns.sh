@@ -13,13 +13,13 @@
 
 
 scripts_dir=$1
-workspace=$2
-CPU=$3
+CPU=$2
 
 
-#Calcul d'une première orthophoto
+#Calcul de l'orthophoto
+# On passe à Malt un MNS sous-échantillonné pour qu'il sache à quelle altitude chercher. Cela permet d'améliorer un peu la reconstruction du MNS dans les zones de montagne
 echo "Malt"
-mm3d Malt Ortho OIS.*tif TerrainFinal_10_10_0.5_AllFree_Final MasqImGlob=filtre.tif NbVI=2 UseTA=0 NbProc=30 EZA=1 DirMEC=MEC-Malt-Final >> logfile
+mm3d Malt Ortho OIS.*tif TerrainFinal_10_10_0.5_AllFree_Final MasqImGlob=filtre.tif NbVI=2 UseTA=0 NbProc=${CPU} EZA=1 DirMEC=MEC-Malt-Final DEMInitIMG=metadata/mns/MNS_ssech4.tif DEMInitXML=metadata/mns/MNS_ssech4.xml >> logfile
 
 echo "Tawny"
 mm3d Tawny Ortho-MEC-Malt-Final/ RadiomEgal=false >> logfile
