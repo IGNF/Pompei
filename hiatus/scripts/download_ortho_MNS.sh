@@ -69,7 +69,7 @@ cd ../..
 # La meilleure manière est donc de compléter ce MNS avec le MNT du SRTM. 
 
 # Récupération du SRTM sur l'emprise du MNS récupéré
-python ${scripts_dir}/download_SRTM.py --MNS_Histo MEC-Malt-Abs-Ratafia/MNS_Final_Num8_DeZoom2_STD-MALT.tif --metadata metadata --output metadata/mns/MNS_SRTM.tif
+python ${scripts_dir}/download_SRTM.py --MNS_Histo MEC-Malt-Abs-Ratafia/MNS_Final.vrt --metadata metadata --output metadata/mns/MNS_SRTM.tif
 # On le convertit dans l'EPSG du chantier et à une résolution de 4 mètres 
 gdalwarp -t_srs EPSG:${EPSG} -tr 4 4  -overwrite metadata/mns/MNS_SRTM.tif metadata/mns/MNS_SRTM_2154.tif
 # On fusionne le MNS précis et celui issu du SRTM en gardant en priorité le MNS précis

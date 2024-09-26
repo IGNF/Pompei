@@ -49,3 +49,4 @@ mm3d Tawny Ortho-MEC-Malt-Abs-Ratafia/ RadiomEgal=false >> logfile
 echo "Calcul du MNS"
 python ${scripts_dir}/create_Z_Num_tfw.py --input_Malt MEC-Malt-Abs-Ratafia
 python ${scripts_dir}/build_mns_micmac.py --input_Malt MEC-Malt-Abs-Ratafia
+gdalbuildvrt MEC-Malt-Abs-Ratafia/MNS_Final.vrt  MEC-Malt-Abs-Ratafia/MNS_Final*tif
