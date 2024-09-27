@@ -193,8 +193,10 @@ def compute_mns(input_Malt):
     # On récupère toutes les tuiles du niveau 8
     level8_tiles = get_level(input_Malt, 8)
     # On construit un vrt sur les tuiles de niveau 8
-    os.system(f"gdalbuildvrt {input_Malt}/Z_Num8.vrt {input_Malt}/Z_Num8*Tile*tif")
-    
+    if len(level8_tiles) > 1:
+        os.system(f"gdalbuildvrt {input_Malt}/Z_Num8.vrt {input_Malt}/Z_Num8*Tile*tif")
+    else:
+        os.system(f"gdalbuildvrt {input_Malt}/Z_Num8.vrt {input_Malt}/Z_Num8_DeZoom*_STD-MALT.tif")
     # On parcourt chaque tuile de niveau 8
     for level8_filename in level8_tiles:
         level8 = LevelMNS(level8_filename)
@@ -227,7 +229,11 @@ def compute_mns(input_Malt):
             correlation = np.where(correlation!=1, correlation, level.correlation)
 
         indicateur = np.where(correlation!=1, indicateur, 0)
-        mns_name = "MNS_Final_"+("_".join(level8_filename.split("_")[4:]))
+
+        if len(level8_tiles) > 1:
+            mns_name = "MNS_Final_"+("_".join(level8_filename.split("_")[4:]))
+        else:
+            mns_name = "MNS_Final.tif"
         save_image(mns, os.path.join(input_Malt, mns_name), transform, rasterio.float32)
         
         # On sauvegarde le tfw, nécessaire pour HIATUS.LINUX AssocierZ_fichierpts2D:multiMNS

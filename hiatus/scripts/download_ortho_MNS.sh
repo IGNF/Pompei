@@ -30,7 +30,7 @@ if test ${ortho} = "dalles"; then
     #On télécharge le SRTM correspondant à la zone et on découpe les images en tuiles de 2000 pixels de côté
     mkdir metadata/mns_temp
     mkdir metadata/mns
-    python ${scripts_dir}/download_SRTM.py --MNS_Histo MEC-Malt-Abs-Ratafia/MNS_Final_Num8_DeZoom2_STD-MALT.tif --metadata metadata --output metadata/mns_temp/MNS_temp.tif
+    python ${scripts_dir}/download_SRTM.py --MNS_Histo MEC-Malt-Abs-Ratafia/MNS_Final.vrt --metadata metadata --output metadata/mns_temp/MNS_temp.tif
     gdalwarp -t_srs EPSG:${EPSG}   -overwrite metadata/mns_temp/MNS_temp.tif metadata/mns_temp/MNS.tif
     rm metadata/mns_temp/MNS_temp.tif
     python ${scripts_dir}/cut_pleiade_images.py --input "metadata/ortho_temp" --output "metadata/ortho" --metadata "metadata"

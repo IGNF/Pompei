@@ -10,7 +10,7 @@ cd ..
 mkdir MEC_SRTM
 
 #On télécharge le SRTM correspondant au terrain
-python ${scripts_dir}/download_SRTM.py --MNS_Histo MEC-Malt-Abs-Ratafia/MNS_Final_Num8_DeZoom2_STD-MALT.tif --metadata metadata --output metadata/mns_temp/mns.tif
+python ${scripts_dir}/download_SRTM.py --MNS_Histo MEC-Malt-Abs-Ratafia/MNS_Final.vrt --metadata metadata --output metadata/mns_temp/mns.tif
 
 #On reprojette le SRTM dans le bon EPSG
 EPSG=`cat metadata/EPSG.txt`
