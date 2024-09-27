@@ -30,7 +30,7 @@ done
 gdalbuildvrt resultat/tiff/Ortho/Ortho.vrt resultat/tiff/Ortho/*.tif
 
 cd MEC-Malt-Final
-ls MNS_Final_Num*_DeZoom2_STD-MALT*.tif > liste_tile.txt
+ls MNS_Final*.tif > liste_tile.txt
 cd ..
 for f in `cat MEC-Malt-Final/liste_tile.txt`; do 
     gdal_translate "MEC-Malt-Final/$f" "resultat/tiff/MNS/${f%.*}.tif" -a_srs EPSG:${EPSG}; 
@@ -64,7 +64,5 @@ done
 gdalbuildvrt COG/MNS_difference/MNS_difference.vrt COG/MNS_difference/*.tif
 
 cd ..
-cp MEC-Malt-Final/Correl_STD-MALT_Num_7.tif  resultat/carte_correlation/carte_correlation.tif
-cp MEC-Malt-Final/Z_Num7_DeZoom2_STD-MALT.tfw  resultat/carte_correlation/carte_correlation.tfw
-cp MEC-Malt-Final/correlation.tif resultat/carte_correlation/correlation_fusion.tif
-cp MEC-Malt-Final/indicateur.tif resultat/carte_correlation/indicateur_fusion.tif
+cp MEC-Malt-Final/correlation*tif resultat/carte_correlation/
+cp MEC-Malt-Final/indicateur*tif resultat/carte_correlation/

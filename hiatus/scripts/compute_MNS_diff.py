@@ -124,7 +124,7 @@ def get_MNS_histo(path):
     #On récupère la liste des tuiles du MNS historique
     liste = []
     for file in os.listdir(path):
-        if ("MNS_Final_Num8_DeZoom2_STD-MALT" in file or "MNS_Final_Num9_DeZoom2_STD-MALT" in file) and file[-4:] == ".tif":
+        if "MNS_Final" in file and file[-4:]==".tif":
             liste.append(file)
     #On trie la liste pour que la tuile la plus au nord-ouest se trouve en premier
     return sorted(liste)

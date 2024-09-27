@@ -24,6 +24,7 @@ from lxml import etree
 from tools import getEPSG, load_bbox
 import log # Chargement des configurations des logs
 import logging
+import time
 
 logger = logging.getLogger()
 
@@ -92,6 +93,7 @@ def download_data_BDTopo(bbox, layer, name):
             
             except requests.exceptions.RequestException as e:
                 logger.warning(e)
+                time.sleep(10)
                 try:
                     r = requests.get(wfs_url, params={
                         'service': 'WFS',

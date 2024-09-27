@@ -19,6 +19,7 @@ import requests
 from tools import load_bbox, getEPSG
 import log # Chargement des configurations des logs
 import logging
+import time
 
 logger = logging.getLogger()
 
@@ -77,15 +78,22 @@ def download_data(bbox, type, metadata, EPSG):
             width=str(int((e_max_dalle - e_min_dalle)/resolution))
             height=str(int((n_max_dalle - n_min_dalle)/resolution))
             url = "https://data.geopf.fr/wms-r?LAYERS="+layer+"&FORMAT="+format+"&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:"+str(EPSG)+'&BBOX='+bbox_string+'&WIDTH='+width+'&HEIGHT='+height
-            r = requests.get(url)
-            if r.status_code==200:
+            
+            r = None
+            try:
+                r = requests.get(url)
+                
+            except requests.exceptions.RequestException as e:
+                logger.warning(e)
+                time.sleep(10)
                 try:
-                    with open(os.path.join(path_tuile, '{}_dalle_{}_{}.tif'.format(type, i, j)), 'wb') as out:
-                        out.write(bytes(r.content))
+                    r = requests.get(url)
                 except:
-                    logger.warning(f'File failed to download : {url}')
-            else:
-                logger.warning(f'File failed to download : {url}')
+                    pass
+            
+            if r is not None and r.status_code==200:
+                with open(os.path.join(path_tuile, '{}_dalle_{}_{}.tif'.format(type, i, j)), 'wb') as out:
+                    out.write(bytes(r.content))
 
             if type=="ORTHO":
                 with open(os.path.join(path_meta, '{}_dalle_{}_{}.tfw'.format(type, i, j)), 'w') as out:

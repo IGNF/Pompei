@@ -67,7 +67,7 @@ def get_dalle_MNT(bbox):
 EPSG = getEPSG("metadata")
 
 bbox = load_bbox("metadata")
-if args.ortho == "ortho" and EPSG==2154:
+if args.ortho == "storeref" and EPSG==2154:
     get_dalle_MNT(bbox)
     tiles = [i for i in os.listdir(os.path.join("metadata", "mnt")) if i[-3:]==".gz"]
     for tile in tiles:
@@ -77,6 +77,7 @@ if args.ortho == "ortho" and EPSG==2154:
                 shutil.copyfileobj(f_in, f_out)
         os.remove(os.path.join("metadata", "mnt", tile))
     commande = "gdalbuildvrt {} {}".format(os.path.join("metadata", "mnt", "mnt.vrt"), os.path.join("metadata", "mnt", "*.asc"))
+    os.system(commande)
 else:
     download_data(bbox, "MNT", "metadata", EPSG)
     images = [i for i in os.listdir(os.path.join("metadata", "mnt_temp")) if i[-4:]==".tif"]
