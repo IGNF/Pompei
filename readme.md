@@ -112,6 +112,15 @@ mamba activate pompei
 ## Utilisation
 
 
+### Avertissement
+
+Attention, les chantiers Pompei sont très volumineux ! Voici quelques ordres de grandeurs approximatifs :
+* pour 6 images jp2 de 30 Mo et une emprise au sol de 184 km2, il faut compter 50 Go.
+* pour 50 images jp2 de 30 Mo et une emprise au sol de 989 km2, il faut compter 306 Go.
+* pour 84 images jp2 de 4 Mo et une emprise au sol de 494 km2, il faut compter 115 Go.
+* pour 25 images jp2 de 45 Mo et une emprise au sol de 56 km2, il faut compter 152 Go.
+
+
 ### Récupération des chantiers disponibles 
 Pour récupérer les chantiers disponibles sur la Géoplateforme :
 ```
