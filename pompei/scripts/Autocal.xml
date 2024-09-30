@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<ExportAPERO>
+<CalibrationInternConique>
+<KnownConv>eConvApero_DistM2C</KnownConv>
+<PP>115 115</PP>
+<F>7238.1</F>
+<SzIm>230 230</SzIm>
+<CalibDistortion>
+<ModPhgrStd>
+<RadialePart>
+<CDist>115 115</CDist>
+<CoeffDist>0</CoeffDist>
+<PPaEqPPs> true </PPaEqPPs>
+</RadialePart>
+<P1>0</P1>
+<P2>0</P2>
+<b1>0</b1>
+<b2>0</b2>
+</ModPhgrStd>
+</CalibDistortion>
+</CalibrationInternConique>
+</ExportAPERO>

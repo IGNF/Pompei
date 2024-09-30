@@ -46,11 +46,11 @@ RUN apt-get install -y python3-pip \
 
 
 
-#Ajout d'un utilisateur hiatus avec le même id que l'utilisateur actuel, pour afficher les interfaces MicMac
-RUN useradd -u $USER_ID --shell /bin/bash --create-home hiatus && passwd -d hiatus
-USER hiatus
+#Ajout d'un utilisateur pompei avec le même id que l'utilisateur actuel, pour afficher les interfaces MicMac
+RUN useradd -u $USER_ID --shell /bin/bash --create-home pompei && passwd -d pompei
+USER pompei
 
-ENV HOME=/home/hiatus
+ENV HOME=/home/pompei
 WORKDIR $HOME
 
 #Installation de Conda
@@ -71,15 +71,15 @@ RUN  cmake ../
 RUN make install -j16
 ENV PATH=$HOME/micmac/bin/:$PATH
 
-#Copie du code Hiatus dans l'image
-WORKDIR $HOME/hiatus
-COPY --chown=hiatus . .
+#Copie du code Pompei dans l'image
+WORKDIR $HOME/pompei
+COPY --chown=pompei . .
 
-WORKDIR $HOME/hiatus/hiatus
+WORKDIR $HOME/pompei/pompei
 
 #Activation de l'environnement Conda
 RUN mamba env create -f environment.yml
 
 RUN mamba init bash
 
-CMD echo "Hiatus"
+CMD echo "Pompei"
