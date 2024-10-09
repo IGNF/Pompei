@@ -23,6 +23,7 @@ dependencies:
   - geojson>=2.5.0
   - h5py
   - pip=22.2.2
+  - rasterio
   - pip:
     - opencv-python>=4.6.0.66
     - ultralytics>=8.0.50

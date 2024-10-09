@@ -33,12 +33,13 @@ parser = argparse.ArgumentParser(description="Crée une ortho pour chaque image"
 parser.add_argument('--ta_xml', help="Fichier TA avec les positions mises à jour")
 parser.add_argument('--mnt', help="MNT sous format vrt")
 parser.add_argument('--ori', help="Répertoire contenant les fichiers orientations")
+parser.add_argument('--cpu', help="Nombre de cpus à utiliser", type=int)
 args = parser.parse_args()
 
 ta_xml = args.ta_xml
-mnt = args.mnt
+mnt_path = args.mnt
 ori_path = args.ori
-
+nb_cpus = args.cpu
 
 # Une dalle : 2000 pixels
 tileSize = 2000
@@ -227,7 +228,7 @@ def createShotOrtho(shot, resolution, nbCouleurs, EPSG):
                 y1 = max(y_min, y0 - 1000*resolution)
                 work_data.append([x0, y0, x1, y1, shot, i, j, nbCouleurs])
 
-        with Pool(12) as pool:
+        with Pool(nb_cpus) as pool:
             for result in pool.map(poolProcess, work_data):
                 if result is not None:
                     orthoImage = result[0]
@@ -251,7 +252,7 @@ def createShotOrthos(shots, resolution, nbCouleurs, EPSG):
 
 os.makedirs("ortho_mnt", exist_ok=True)
 
-mnt = MNT(os.path.join("metadata", "mnt", "mnt.vrt"))
+mnt = MNT(mnt_path)
 # On charge la boite englobante du chantier
 bbox = load_bbox("metadata")
 

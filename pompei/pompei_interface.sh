@@ -41,7 +41,7 @@ else
 
     python ${scripts_dir}/initialize_files.py --scripts ${scripts_dir} --TA ${TA} --nb_fiducial_marks ${nb_fiducial_marks} --scan_resolution 0.021 --remove_artefacts ${remove_artefacts} --targets ${targets} --apply_threshold ${Kugelhupf_apply_threshold} 
 
-    sh ${workspace}/correct_geometrically_images.sh ${scripts_dir}
+    sh correct_geometrically_images.sh ${scripts_dir}
 
     echo "Prochain script à lancer : pompei_after_interface.sh"
 fi

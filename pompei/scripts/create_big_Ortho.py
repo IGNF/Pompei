@@ -30,10 +30,14 @@ parser = argparse.ArgumentParser(description="Crée un nouveau fichier TA avec l
 
 parser.add_argument('--ta_xml', help="Fichier TA avec les positions mises à jour")
 parser.add_argument('--ori', help="Répertoire contenant les fichiers orientations")
+parser.add_argument('--cpu', help="Nombre de cpus à utiliser", type=int)
+parser.add_argument('--mnt', help="MNT sous format vrt")
 args = parser.parse_args()
 
 ta_xml = args.ta_xml
 ori_path = args.ori
+nb_cpus = args.cpu
+mnt_path = args.mnt
 
 # Une dalle : 2000 pixels
 tileSize = 2000
@@ -304,13 +308,13 @@ def createTiles(bbox, shots, nbCouleurs, EPSG, path_ortho):
             work_data.append([x0, y0, sommetsArray, nbCouleurs, EPSG, path_ortho])
     
     # On parallélise le traitement
-    p = Pool(10)
+    p = Pool(nb_cpus)
     p.map(createOrthoProcess, work_data)
             
 
 os.makedirs("ortho_mnt", exist_ok=True)
 
-mnt = MNT(os.path.join("metadata", "mnt", "mnt.vrt"))
+mnt = MNT(mnt_path)
 
 # On charge la boite englobante du chantier
 bbox = load_bbox("metadata")

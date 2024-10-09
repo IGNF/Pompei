@@ -301,7 +301,7 @@ calibration = Calibration.createCalibration(calibrationFile)
 orientations = createOrientation(ori_path)
 
 # Facultatif : corrige les images de la distorsion. Pas suffisamment testé
-#transformImages(images_path, imagesSave_path, calibration)
+#transformImages("./", imagesSave_path, calibration)
 
 # On complète le nouveau fichier TA
 complete_TA(ta_xml, calibration, orientations)
