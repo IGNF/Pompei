@@ -224,11 +224,11 @@ def compute_mns(input_Malt):
             level.resize(l, c)
             # On conserve les informations précédentes que pour les endroits où la corrélation 
             # est différente de 1 (1 faible corrélation, 255 très forte corrélation)
-            mns = np.where(correlation!=1, mns, level.mns)
-            indicateur = np.where(correlation!=1, indicateur, level.level)
-            correlation = np.where(correlation!=1, correlation, level.correlation)
+            mns = np.where(correlation>1, mns, level.mns)
+            indicateur = np.where(correlation>1, indicateur, level.level)
+            correlation = np.where(correlation>1, correlation, level.correlation)
 
-        indicateur = np.where(correlation!=1, indicateur, 0)
+        indicateur = np.where(correlation>1, indicateur, 0)
 
         if len(level8_tiles) > 1:
             mns_name = "MNS_Final_"+("_".join(level8_filename.split("_")[4:]))
