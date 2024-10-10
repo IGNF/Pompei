@@ -23,6 +23,7 @@ from multiprocessing import Pool
 from tools import getEPSG, load_bbox, getNbCouleurs, getResolution
 import log # Chargement des configurations des logs
 import logging
+from tqdm import tqdm
 
 logger = logging.getLogger()
 
@@ -309,7 +310,8 @@ def createTiles(bbox, shots, nbCouleurs, EPSG, path_ortho):
     
     # On parallélise le traitement
     p = Pool(nb_cpus)
-    p.map(createOrthoProcess, work_data)
+    for i in tqdm(p.imap(createOrthoProcess, work_data), total=len(work_data)):
+        pass
             
 
 os.makedirs("ortho_mnt", exist_ok=True)
