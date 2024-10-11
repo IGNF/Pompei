@@ -13,52 +13,54 @@
 
 scripts_dir=$1
 CPU=$2
+outdir=$3
+ortho_path=$4
 
 nbCouleurs=`cat metadata/nb_colors.txt`
 
-mkdir radiom_ortho_mnt
+mkdir ${outdir}
 
 python ${scripts_dir}/compute_pas_radiometric_equalization.py
 pasEgalisationRadiometrique=`cat metadata/pas_egalisation_radiometrique.txt`
 
 
-ls ortho_mnt/Ort_*tif > radiom_ortho_mnt/liste_cliches.txt
-ls ortho_mnt/Ort_*tif > radiom_ortho_mnt/temp.txt
+ls ${ortho_path}/Ort_*tif > ${outdir}/liste_cliches.txt
+ls ${ortho_path}/Ort_*tif > ${outdir}/temp.txt
 
 #Nettoyage du fichier : on passe de "rep/Ort_nomcliche.tif" a "nomcliche"
-echo -n "" > radiom_ortho_mnt/liste_cliches.txttmp 
-for i in `cat radiom_ortho_mnt/liste_cliches.txt` ; do
+echo -n "" > ${outdir}/liste_cliches.txttmp 
+for i in `cat ${outdir}/liste_cliches.txt` ; do
     fichier=$(basename ${i});
     fichiersansext=`echo ${fichier}|cut -d"." -f1`
     fichier=`echo ${fichiersansext}|cut -b 5- ` ; 
-    echo ${fichier} >> radiom_ortho_mnt/liste_cliches.txttmp 
+    echo ${fichier} >> ${outdir}/liste_cliches.txttmp 
 done
-mv radiom_ortho_mnt/liste_cliches.txttmp radiom_ortho_mnt/liste_cliches.txt
+mv ${outdir}/liste_cliches.txttmp ${outdir}/liste_cliches.txt
 
-echo -n "" > radiom_ortho_mnt/monbash 
-for i in `cat radiom_ortho_mnt/liste_cliches.txt ` ; do 
-    echo "${scripts_dir}/Ech_noif.LINUX SousEchMoy ortho_mnt/Ort_${i}.tif radiom_ortho_mnt/Ort_${i}.tif  10 ;  \
-    ${scripts_dir}/convert_ori.LINUX tfw2ori ortho_mnt/Ort_${i}.tfw radiom_ortho_mnt/Ort_${i}.ini.ori ; \
-    ${scripts_dir}/POMPEI.LINUX SousechOri radiom_ortho_mnt/Ort_${i}.ini.ori 10 radiom_ortho_mnt/Ort_${i}.ori ; \
-    ${scripts_dir}/Ech_noif.LINUX HIATUS CorrectionRadiometrie:PreparerMasques ortho_mnt/Incid_${i}.tif 10 3 5 radiom_ortho_mnt/Incid_${i}.tif ; 
-    " >> radiom_ortho_mnt/monbash
+echo -n "" > ${outdir}/monbash 
+for i in `cat ${outdir}/liste_cliches.txt ` ; do 
+    echo "${scripts_dir}/Ech_noif.LINUX SousEchMoy ${ortho_path}/Ort_${i}.tif ${outdir}/Ort_${i}.tif  10 ;  \
+    ${scripts_dir}/convert_ori.LINUX tfw2ori ${ortho_path}/Ort_${i}.tfw ${outdir}/Ort_${i}.ini.ori ; \
+    ${scripts_dir}/POMPEI.LINUX SousechOri ${outdir}/Ort_${i}.ini.ori 10 ${outdir}/Ort_${i}.ori ; \
+    ${scripts_dir}/Ech_noif.LINUX HIATUS CorrectionRadiometrie:PreparerMasques ${ortho_path}/Incid_${i}.tif 10 3 5 ${outdir}/Incid_${i}.tif ; 
+    " >> ${outdir}/monbash
 done
 echo ${scripts_dir}/Bash2Make.LINUX
-${scripts_dir}/Bash2Make.LINUX radiom_ortho_mnt/monbash radiom_ortho_mnt/monmake 
-make -f radiom_ortho_mnt/monmake -j ${CPU}
+${scripts_dir}/Bash2Make.LINUX ${outdir}/monbash ${outdir}/monmake 
+make -f ${outdir}/monmake -j ${CPU}
 
 
 
-mkdir radiom_ortho_mnt/ini
-repertoire_ini=radiom_ortho_mnt/ini
-mv radiom_ortho_mnt/Ort_*tif ${repertoire_ini}/
-cp radiom_ortho_mnt/Ort_* ${repertoire_ini}/
+mkdir ${outdir}/ini
+repertoire_ini=${outdir}/ini
+mv ${outdir}/Ort_*tif ${repertoire_ini}/
+cp ${outdir}/Ort_* ${repertoire_ini}/
 
-cp radiom_ortho_mnt/liste_cliches.txt ${repertoire_ini}/
+cp ${outdir}/liste_cliches.txt ${repertoire_ini}/
 
 for b in $(seq 1 $nbCouleurs); do 
     mkdir ${repertoire_ini}/${b} ; 
-    for i in `cat radiom_ortho_mnt/liste_cliches.txt` ; do 
+    for i in `cat ${outdir}/liste_cliches.txt` ; do 
         gdal_translate -b ${b} ${repertoire_ini}/Ort_${i}.tif ${repertoire_ini}/${b}/Ort_${i}.tif  ; 
     done ; 
     cp ${repertoire_ini}/*.ori ${repertoire_ini}/${b} ; 
@@ -134,7 +136,7 @@ mkdir ${repertoire_ini}/corr
 echo -n "" > ${repertoire_ini}/monbash1 ;
 for i in `cat ${repertoire_ini}/liste_cliches.txt ` ; do 
     echo ${i} ; 
-    echo "${scripts_dir}/Ech_noif.LINUX HIATUS CorrectionRadiometrie:Appliquer ${repertoire_ini}/big_image.additif_moyenne.tif ${repertoire_ini}/Ort_${i}.tif ${repertoire_ini}/Ort_${i}.ini.ori ortho_mnt/Ort_${i}.tif 5 ${repertoire_ini}/coef_reetal_walis.txt ${repertoire_ini}/corr/Ort_${i}.tif" >> ${repertoire_ini}/monbash1
+    echo "${scripts_dir}/Ech_noif.LINUX HIATUS CorrectionRadiometrie:Appliquer ${repertoire_ini}/big_image.additif_moyenne.tif ${repertoire_ini}/Ort_${i}.tif ${repertoire_ini}/Ort_${i}.ini.ori ${ortho_path}/Ort_${i}.tif 5 ${repertoire_ini}/coef_reetal_walis.txt ${repertoire_ini}/corr/Ort_${i}.tif" >> ${repertoire_ini}/monbash1
 done
 ${scripts_dir}/Bash2Make.LINUX ${repertoire_ini}/monbash1 ${repertoire_ini}/monmake 
 make -f ${repertoire_ini}/monmake -j ${CPU}

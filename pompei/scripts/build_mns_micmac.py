@@ -231,9 +231,9 @@ def compute_mns(input_Malt):
         indicateur = np.where(correlation>1, indicateur, 0)
 
         if len(level8_tiles) > 1:
-            mns_name = "MNS_Final_"+("_".join(level8_filename.split("_")[4:]))
+            mns_name = "MNS_pyramide_"+("_".join(level8_filename.split("_")[4:]))
         else:
-            mns_name = "MNS_Final.tif"
+            mns_name = "MNS_pyramide.tif"
         save_image(mns, os.path.join(input_Malt, mns_name), transform, rasterio.float32)
         
         # On sauvegarde le tfw, nécessaire pour POMPEI.LINUX AssocierZ_fichierpts2D:multiMNS
@@ -245,8 +245,8 @@ def compute_mns(input_Malt):
             f.write(f"{transform.c}\n")
             f.write(f"{transform.f}\n")
         
-        save_image(indicateur, os.path.join(input_Malt, mns_name.replace("MNS_Final", "indicateur")), transform, rasterio.uint8)
-        save_image(correlation, os.path.join(input_Malt, mns_name.replace("MNS_Final", "correlation")), transform, rasterio.uint8)
+        save_image(indicateur, os.path.join(input_Malt, mns_name.replace("MNS_pyramide", "indicateur")), transform, rasterio.uint8)
+        save_image(correlation, os.path.join(input_Malt, mns_name.replace("MNS_pyramide", "correlation")), transform, rasterio.uint8)
     
 
 

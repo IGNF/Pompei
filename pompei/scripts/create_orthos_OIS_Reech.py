@@ -33,13 +33,17 @@ parser = argparse.ArgumentParser(description="Crée une ortho pour chaque image"
 parser.add_argument('--ta_xml', help="Fichier TA avec les positions mises à jour")
 parser.add_argument('--mnt', help="MNT sous format vrt")
 parser.add_argument('--ori', help="Répertoire contenant les fichiers orientations")
+parser.add_argument('--outdir', help="Répertoire contenant les fichiers orientations")
 parser.add_argument('--cpu', help="Nombre de cpus à utiliser", type=int)
+parser.add_argument('--mask', help="Nombre de cpus à utiliser", default=None)
 args = parser.parse_args()
 
 ta_xml = args.ta_xml
 mnt_path = args.mnt
 ori_path = args.ori
+outdir = args.outdir
 nb_cpus = args.cpu
+mask_path = args.mask
 
 # Une dalle : 2000 pixels
 tileSize = 2000
@@ -115,7 +119,8 @@ def createOrthoImage(shot:Shot, x_min, x_max, y_min, y_max, mnt, resolution, nbC
     z = mnt.get(xx, yy)
 
     # On récupère le masque des pixels qui ne sont pas dans la zone où le MNS a été calculé
-    mask_value = mask.get(xx, yy).reshape((1, y.shape[0], x.shape[0]))
+    if mask_path is not None:
+        mask_value = mask.get(xx, yy).reshape((1, y.shape[0], x.shape[0]))
     
     if z is None:
         return None
@@ -164,7 +169,8 @@ def createOrthoImage(shot:Shot, x_min, x_max, y_min, y_max, mnt, resolution, nbC
         for i in range(nbCouleurs):
             value_band = ndimage.map_coordinates(finalImage[i,:,], np.vstack([l_corr-min_l, c_corr-min_c])).reshape((1, y.shape[0], x.shape[0]))
             # On applique le masque
-            value_band = value_band*mask_value
+            if mask_path is not None:
+                value_band = value_band*mask_value
             list_bands.append(value_band)
         ortho = np.concatenate(list_bands, axis=0)
     else:
@@ -226,8 +232,8 @@ def poolProcess(work_data):
 
 def createShotOrtho(shot, resolution, nbCouleurs, EPSG):
     global array_ortho
-    path_ortho = os.path.join("ortho_mnt", "Ort_{}.tif".format(shot.nom))
-    path_mask = os.path.join("ortho_mnt", "Incid_{}.tif".format(shot.nom))
+    path_ortho = os.path.join(outdir, "Ort_{}.tif".format(shot.nom))
+    path_mask = os.path.join(outdir, "Incid_{}.tif".format(shot.nom))
     x_min, x_max, y_min, y_max = getEmpriseSol(shot, mnt)
     n, m, bigOrtho = initImage(x_min, x_max, y_min, y_max, shot.nom, nbCouleurs)
     if n is not None:
@@ -264,9 +270,10 @@ def createShotOrthos(shots, resolution, nbCouleurs, EPSG):
             
             
 
-os.makedirs("ortho_mnt", exist_ok=True)
+os.makedirs(outdir, exist_ok=True)
 
-mask = Mask("indicateur.tif")
+if mask_path is not None:
+    mask = Mask(mask_path)
 
 mnt = MNT(mnt_path)
 # On charge la boite englobante du chantier
