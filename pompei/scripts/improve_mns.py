@@ -49,7 +49,7 @@ def look_for_recompute(vectorisation, seuil=7000):
     seuil : seuil sur la surface en m2 des segments qu'il faudra recalculer 
     """
     if "recompute" not in vectorisation.columns:
-        vectorisation["recompute"] = False
+        vectorisation["recompute"] = 0
     sindex = vectorisation.sindex
     for index, segment in vectorisation.iterrows():
         object_geometry = segment.geometry
@@ -65,7 +65,7 @@ def look_for_recompute(vectorisation, seuil=7000):
                 if difference == 1:
                     recompute = False
             if recompute:
-                vectorisation.at[index, "recompute"] = True
+                vectorisation.at[index, "recompute"] = 1
     return vectorisation
 
 def rasterize(vectorisation, shape, transform):

@@ -20,7 +20,6 @@ ENV USER_ID=${USER_ID}
 ENV TZ='FR'
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN echo "a"
 RUN apt-get update
 RUN apt-get install -y python3-pip \
                                 git \
@@ -42,7 +41,8 @@ RUN apt-get install -y python3-pip \
                                 xorg \
                                 openbox \
                                 meshlab \
-                                vim
+                                vim \
+                                nano
 
 
 
