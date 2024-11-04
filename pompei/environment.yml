@@ -28,3 +28,4 @@ dependencies:
     - opencv-python>=4.6.0.66
     - ultralytics>=8.0.50
     - psycopg2-binary>=2.9.5
+    - python-dotenv>=1.0.1

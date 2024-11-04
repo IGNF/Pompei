@@ -17,6 +17,11 @@ La documentation détaillée de Pompei se trouve dans [pompei.pdf](documentation
 ## Installation
 
 
+### Télécharger le SRTM
+
+Il sera peut-être nécessaire de récupérer le SRTM, suivant les chantiers. Pour cela, il est indispensable de créer dans scripts un fichier api_key.env qui aura un champ OpenTopo_key avec une clef de l'API https://www.opentopography.org/
+
+
 ### Avec Docker sur Linux
 
 
