@@ -68,7 +68,7 @@ WORKDIR $HOME/micmac
 RUN mkdir build
 WORKDIR $HOME/micmac/build
 RUN  cmake ../
-RUN make install -j16
+RUN make install
 ENV PATH=$HOME/micmac/bin/:$PATH
 
 #Copie du code Pompei dans l'image
