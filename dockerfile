@@ -12,6 +12,9 @@ ARG NO_PROXY
 ENV no_proxy=${NO_PROXY}
 ENV NO_PROXY=${NO_PROXY}
 
+ARG CPU
+ENV cpu=${CPU}
+
 
 ARG USER_ID
 ENV USER_ID=${USER_ID}
@@ -68,7 +71,7 @@ WORKDIR $HOME/micmac
 RUN mkdir build
 WORKDIR $HOME/micmac/build
 RUN  cmake ../
-RUN make install
+RUN make install -j${cpu}
 ENV PATH=$HOME/micmac/bin/:$PATH
 
 #Copie du code Pompei dans l'image

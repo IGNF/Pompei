@@ -26,7 +26,7 @@ Prérequis : Docker est déjà installé
 Construction de l'image Docker :
 
 ```
-docker build -t pompei --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTPS_PROXY --build-arg USER_ID=$(id --user) .
+docker build -t pompei --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTPS_PROXY --build-arg USER_ID=$(id --user) --build-arg CPU=12 .
 ```
 
 
@@ -54,7 +54,7 @@ Prérequis : Docker est déjà installé
 Construction de l'image Docker :
 
 ```
-docker build -t pompei --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTPS_PROXY --build-arg USER_ID=$(id -u) .
+docker build -t pompei --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTPS_PROXY --build-arg USER_ID=$(id -u) --build-arg CPU=12 .
 ```
 
 Lancer le serveur X11 (installer XQuartz si nécessaire):
