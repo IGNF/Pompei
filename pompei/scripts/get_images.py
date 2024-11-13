@@ -142,8 +142,9 @@ def create_xml_file(images_metadata, outdir, epsg):
     root = etree.Element("TA")
     projection = etree.SubElement(root, "projection")
     projection.text = get_projection_name(epsg)
+    vol = etree.SubElement(root, "vol")
     for feature in images_metadata["features"]:
-        cliche = etree.SubElement(root, "cliche")
+        cliche = etree.SubElement(vol, "cliche")
         image = etree.SubElement(cliche, "image")
         image.text = feature["id"][6:]
         model = etree.SubElement(cliche, "model")
@@ -179,7 +180,7 @@ def create_xml_file(images_metadata, outdir, epsg):
 
 
 
-    sensor = etree.SubElement(root, "sensor")
+    sensor = etree.SubElement(vol, "sensor")
     
 
     images = [i for i in os.listdir(outdir) if i[-4:]==".tif"]

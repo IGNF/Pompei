@@ -192,7 +192,7 @@ def case_n_fiduciaux(cliches, remove_artefacts, sensor:Sensor, targets, nb_fiduc
             f.write("mm3d SaisieMasq {}.tif >> logfile \n\n".format(name_first_image))
 
             if apply_threshold:
-                f.write("sh ${scripts_dir}/filtre_FFTKugelhupf.sh ${scripts_dir} \n")
+                f.write("python ${scripts_dir}/filtre_FFTKugelhupf.py \n")
             
             f.write("#Recherche des repères de fond de chambre \n")
             f.write("echo \"FFTKugelhupf\" \n")

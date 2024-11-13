@@ -37,9 +37,12 @@ log_config = {
 # Récupère le chemin vers le fichier de logs du chantier
 pompei_root = os.path.dirname(os.path.dirname(__file__))
 workspace_path = os.path.join(pompei_root, "workspace.txt")
-with open (workspace_path, "r") as f:
-    path = f.readline().strip()
-    log_config["handlers"]["file"]["filename"] = os.path.join(pompei_root, path, "pompei.log")
-    log_config["handlers"]["file_debug"]["filename"] = os.path.join(pompei_root, path, "pompei_debug.log")
+if os.path.isfile(workspace_path):
+    with open (workspace_path, "r") as f:
+        path = f.readline().strip()
+else:
+    path = ""
+log_config["handlers"]["file"]["filename"] = os.path.join(pompei_root, path, "pompei.log")
+log_config["handlers"]["file_debug"]["filename"] = os.path.join(pompei_root, path, "pompei_debug.log")
 
 config.dictConfig(log_config)
