@@ -47,3 +47,9 @@ gdalbuildvrt ortho_mns/ortho.vrt ortho_mns/*_ortho.tif
 
 
 python ${scripts_dir}/compute_MNS_diff.py --mnsHistoPath MEC-Malt-Final/  --mnsPath  metadata/mns/ --masque MEC-Malt-Final/Masq_STD-MALT_DeZoom2.tif --metadata metadata
+
+mkdir ortho_mns/carte_correlation
+mv MEC-Malt-Final/carte_interpolation.tif ortho_mns/carte_correlation/
+mv MEC-Malt-Final/correlation.tif ortho_mns/carte_correlation/
+mv MEC-Malt-Final/indicateur.tif ortho_mns/carte_correlation/
+mv MEC-Malt-Final/MNS_Final*.tif ortho_mns/carte_correlation/
