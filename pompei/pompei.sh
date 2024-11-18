@@ -51,8 +51,6 @@ else
     rm workspace.txt
     echo $workspace >> workspace.txt
     scripts_dir=$(realpath "scripts")
-    cd ${workspace}
-    TA=$(basename ${TA})
 
     mkdir reports
     if test ${ortho} = "storeref"; then
@@ -67,6 +65,9 @@ else
         echo "Vous devez avoir un fichier api_key.env dans scripts. Voyez le readme.md"
         exit 1
     fi
+
+    cd ${workspace}
+    TA=$(basename ${TA})
 
     sh ${scripts_dir}/convert_jp2_to_tif.sh
     echo "A partir de maintenant, vous pouvez utiliser pompei_after_convert_jp2_to_tif.sh"
