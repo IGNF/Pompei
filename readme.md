@@ -93,7 +93,7 @@ mamba activate pompei
 
 Prérequis : WSL est déjà installé et Docker fonctionne sur WSL.
 
-Dans ce cas, l'installation fonctionne en suivant toutes les étapes de l'installation avec Docker sur Linux.
+Dans ce cas, l'installation fonctionne en suivant toutes les étapes de l'installation avec Docker sur Linux. Il faut que le projet soit cloné dans WSL.
 
 
 ### Sans Docker
@@ -139,6 +139,8 @@ Un fichier [outdir]/footprints.geojson est créé. Il contient :
 * le support. Nu : numérique, Ag : argentique
 * prise de vue oblique. Pompei ne fonctionne pas avec les acquisitions en prise de vue oblique car il n'y a pas assez de recouvrement entre les images et les algorithmes de recherche de points d'appuis ne sont pas faits pour comparer images obliques et orthophoto acquises à la verticale. 
 * la taille de la focale en mm. Il s'agit d'une approximation issue des métadonnées, mais qui sert de valeur initiale lorsque Pompei déterminera la vraie valeur de la focale.
+
+Note : seul le répertoire chantiers dispose d'un volume Docker. Donc si vous avez utilisé Docker pour l'installation, il faut que footprints soit de la forme chantiers/[...] pour que vous puissiez le visualiser ensuite dans Qgis.
 
 
 

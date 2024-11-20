@@ -52,7 +52,6 @@ else
     echo $workspace >> workspace.txt
     scripts_dir=$(realpath "scripts")
 
-    mkdir reports
     if test ${ortho} = "storeref"; then
         if [ ! -d "/media/store-ref/modeles-numeriques-3D" ]; then
             echo "Vous devez monter store-ref sur votre ordinateur dans /media/store-ref/"
@@ -68,6 +67,7 @@ else
 
     cd ${workspace}
     TA=$(basename ${TA})
+    mkdir reports
 
     sh ${scripts_dir}/convert_jp2_to_tif.sh
     echo "A partir de maintenant, vous pouvez utiliser pompei_after_convert_jp2_to_tif.sh"
