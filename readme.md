@@ -1,7 +1,7 @@
 # Pompei
 
 
-Pompei (Production d'Orthophotos et de Mns à partir de Photos anciennEs de l'IGN) est une chaîne de traitement presque entièrement automatisée pour reconstruire des orthophotos à partir des images argentiques acquises tout au long du XXème siècle et qui ont été scannées dernièrement. Jusqu’à présent, une première couverture de la France entière a été produite à partir d’images de 1950-1960, sous le nom de BD Ortho historique. Cependant, cette production a nécessité de nombreuses opérations manuelles, principalement pour saisir les points d’appuis. Pompei permet de produire ces orthophotos avec un nombre d’opérations manuelles particulièrement réduit et pour des résultats tout aussi bons. L’enjeu est de taille car l’IGN possède plus de 3,5 millions d’images argentiques scannées, acquises au cours de plus de 26000 chantiers, que ce soit en France métropolitaine, dans les DOM-TOM ou dans les anciennes colonies.
+Pompei (Production d'Orthophotos et de Mns à partir de Photos anciennEs de l'IGN) est une chaîne de traitement presque entièrement automatisée pour reconstruire des orthophotos à partir des images argentiques acquises tout au long du XXème siècle et qui ont été scannées dernièrement. Jusqu’à présent, une première couverture de la France entière a été produite à partir d’images de 1950-1960, sous le nom de BD Ortho historique. Cependant, cette production a nécessité de nombreuses opérations manuelles, principalement pour saisir les points d’appuis. Pompei permet de produire ces orthophotos avec un nombre d’opérations manuelles particulièrement réduit et pour des résultats tout aussi bons. L’enjeu est de taille car l’IGN possède plus de 3,5 millions d’images argentiques scannées, acquises au cours de plus de 26000 chantiers, que ce soit en France métropolitaine, dans les DOM-TOM ou dans les anciennes colonies. Les images sont disponibles sur [Remonter le temps](https://remonterletemps.ign.fr/). 
 
 Pompei permet notamment de répondre à plusieurs défis techniques : recherche de repères de fond de chambre, construction d’orthophotos, recherche de points d’appuis et égalisation radiométrique. Pompei traite indifféremment les images en couleur (RVB ou IRC) ou bien les images à un seul canal (panchromatique ou infrarouge).
 Pompei utilise le logiciel de photogrammétrie MicMac, ainsi que des scripts Python et bash.
@@ -18,7 +18,8 @@ La documentation détaillée de Pompei se trouve dans [pompei.pdf](documentation
 
 ### Télécharger le SRTM
 
-Il sera peut-être nécessaire de récupérer le SRTM, suivant les chantiers. Pour cela, il est indispensable de créer dans scripts un fichier api_key.env qui aura un champ OpenTopo_key avec une clef de l'API https://www.opentopography.org/
+
+Il sera peut-être nécessaire de récupérer le SRTM, suivant les chantiers. Pour cela, il est indispensable de créer dans pompei/scripts un fichier api_key.env qui aura un champ OpenTopo_key avec une clef de l'API https://www.opentopography.org/
 
 
 ### Avec Docker sur Linux
@@ -126,7 +127,7 @@ Attention, les chantiers Pompei sont très volumineux ! Voici quelques ordres de
 
 
 ### Récupération des chantiers disponibles 
-Pour récupérer les chantiers disponibles sur la Géoplateforme :
+Pour récupérer les chantiers disponibles sur [Remonter le temps](https://remonterletemps.ign.fr/) :
 ```
 python scripts/get_data.py --outdir footprints
 ```
@@ -180,7 +181,8 @@ sh visualize_flight_plan.sh TA
 
 sh pompei.sh TA nb_fiducial_marks targets Kugelhupf_image_filtree remove_artefacts force_vertical ortho algo filter_GCP create_ortho_mns create_ortho_mnt
 ```
-  
+
+La signification des paramètres est détaillée dans [la documentation](documentation/Pompei.pdf).
 
 
 ### Variante
