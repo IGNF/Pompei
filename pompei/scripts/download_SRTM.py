@@ -21,14 +21,14 @@ import requests
 from tools import getEPSG
 import log # Chargement des configurations des logs
 import logging
+import os
+from dotenv import load_dotenv
+from pathlib import Path
 
 logger = logging.getLogger()
 
-parser = argparse.ArgumentParser(description="Téléchargement des dalles du SRTM du chantier")
-parser.add_argument('--metadata', help='Dossier contenant EPSG.txt')
-parser.add_argument('--output', help='Chemin où enregistrer la dalle du SRTM')
-args = parser.parse_args()
-
+load_dotenv(os.path.join(Path(__file__).parent.absolute(), "api_key.env"))
+API_KEY = os.getenv("OpenTopo_key")
 
 
 def load_bbox(metadata):
@@ -62,7 +62,9 @@ def download(pointsWGS84, path):
         north = max(north, point[0])
         west = min(west, point[1])
         east = max(east, point[1])
-    url = "https://portal.opentopography.org/API/globaldem?demtype=SRTMGL1&south={}&north={}&west={}&east={}&outputFormat=GTiff&API_Key=demoapikeyot2022".format(south, north, west, east)
+    if API_KEY is None:
+        logger.warning("Renseigner API_KEY dans scripts/api_key.env : https://www.opentopography.org/")
+    url = "https://portal.opentopography.org/API/globaldem?demtype=SRTMGL1&south={}&north={}&west={}&east={}&outputFormat=GTiff&API_Key={}".format(south, north, west, east, API_KEY)
     logger.info(url)
     r = requests.get(url)
     with open(path, 'wb') as out:
@@ -70,7 +72,13 @@ def download(pointsWGS84, path):
     
 
 
-points = load_bbox(args.metadata)  
-EPSG = getEPSG(args.metadata)  
-pointsWGS84 = transform_Points_WGS84(EPSG, points)
-download(pointsWGS84, args.output)
+if __name__=="__main__":
+    parser = argparse.ArgumentParser(description="Téléchargement des dalles du SRTM du chantier")
+    parser.add_argument('--metadata', help='Dossier contenant EPSG.txt')
+    parser.add_argument('--output', help='Chemin où enregistrer la dalle du SRTM')
+    args = parser.parse_args()
+
+    points = load_bbox(args.metadata)  
+    EPSG = getEPSG(args.metadata)  
+    pointsWGS84 = transform_Points_WGS84(EPSG, points)
+    download(pointsWGS84, args.output)

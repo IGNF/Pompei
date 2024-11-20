@@ -23,6 +23,7 @@ from multiprocessing import Pool
 from tools import getEPSG, load_bbox, getNbCouleurs, getResolution
 import log # Chargement des configurations des logs
 import logging
+from tqdm import tqdm
 
 logger = logging.getLogger()
 
@@ -30,10 +31,18 @@ parser = argparse.ArgumentParser(description="Crée un nouveau fichier TA avec l
 
 parser.add_argument('--ta_xml', help="Fichier TA avec les positions mises à jour")
 parser.add_argument('--ori', help="Répertoire contenant les fichiers orientations")
+parser.add_argument('--cpu', help="Nombre de cpus à utiliser", type=int)
+parser.add_argument('--mnt', help="MNT sous format vrt")
+parser.add_argument('--radiom', help="Répertoire avec les images égalisées")
+parser.add_argument('--outdir', help="Répertoire contenant les fichiers orientations")
 args = parser.parse_args()
 
 ta_xml = args.ta_xml
 ori_path = args.ori
+nb_cpus = args.cpu
+mnt_path = args.mnt
+outdir = args.outdir
+radiom = args.radiom
 
 # Une dalle : 2000 pixels
 tileSize = 2000
@@ -183,7 +192,7 @@ def saveImage(image, path, x0, y0, EPSG):
 
 
 def getOrthoImage(shot, x0, y0, nbCouleurs, path_ortho):
-    path = os.path.join("ortho_mnt", "Ort_{}.tif".format(shot.nom))
+    path = os.path.join(outdir, "Ort_{}.tif".format(shot.nom))
     inputds = gdal.Open(path)
     geotransform = inputds.GetGeoTransform()
 
@@ -223,12 +232,12 @@ def get_path_ortho():
     En effet, elle se base sur des points qui se recouvrent entre les images
     Dans ce cas, on utilise les images sans correction radiométrique
     """
-    with open(os.path.join("radiom_ortho_mnt", "ini", "coef_reetal_walis.txt"), "r") as f:
+    with open(os.path.join(radiom, "ini", "coef_reetal_walis.txt"), "r") as f:
         for line in f:
             if "nan" in line:
                 logger.warning("Attention, la correction radiométrique a échoué ! L'ortho n'utilisera donc pas la correction radiométrique")
-                return "ortho_mnt"
-    return os.path.join("radiom_ortho_mnt", "ini", "corr")
+                return outdir
+    return os.path.join(radiom, "ini", "corr")
 
 
 def createOrthoTile(mosaic, shotsFiltered, x0, y0, nbCouleurs, path_ortho):
@@ -283,13 +292,13 @@ def createOrthoProcess(work_data):
     mosaic, indices = computeMosaic(x0, y0, shotsFiltered, indicesShotsFiltered)
     
     # On sauvegarde la mosaïque
-    saveImage(indices, os.path.join("ortho_mnt", "{}_{}_mosaic.tif".format(x0, y0)), x0, y0, EPSG)
+    saveImage(indices, os.path.join(outdir, "{}_{}_mosaic.tif".format(x0, y0)), x0, y0, EPSG)
     
     # On crée l'ortho pour la tuile
     ortho = createOrthoTile(mosaic, shotsFiltered, x0, y0, nbCouleurs, path_ortho)
     if ortho is not None:
         # On sauvegarde l'ortho
-        saveImage(ortho, os.path.join("ortho_mnt", "{}_{}_ortho.tif".format(x0, y0)), x0, y0, EPSG)
+        saveImage(ortho, os.path.join(outdir, "{}_{}_ortho.tif".format(x0, y0)), x0, y0, EPSG)
     
 
 
@@ -304,13 +313,14 @@ def createTiles(bbox, shots, nbCouleurs, EPSG, path_ortho):
             work_data.append([x0, y0, sommetsArray, nbCouleurs, EPSG, path_ortho])
     
     # On parallélise le traitement
-    p = Pool(10)
-    p.map(createOrthoProcess, work_data)
+    p = Pool(nb_cpus)
+    for i in tqdm(p.imap(createOrthoProcess, work_data), total=len(work_data)):
+        pass
             
 
-os.makedirs("ortho_mnt", exist_ok=True)
+os.makedirs(outdir, exist_ok=True)
 
-mnt = MNT(os.path.join("metadata", "mnt", "mnt.vrt"))
+mnt = MNT(mnt_path)
 
 # On charge la boite englobante du chantier
 bbox = load_bbox("metadata")

@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License along with Pom
 
 import os
 import argparse
-from equations import Shot, MNT, Calibration, DistorsionCorrection
+from equations import Shot, MNT, Calibration, DistorsionCorrection, Mask
 from lxml import etree
 import numpy as np
 from osgeo import gdal, osr
@@ -33,12 +33,17 @@ parser = argparse.ArgumentParser(description="Crée une ortho pour chaque image"
 parser.add_argument('--ta_xml', help="Fichier TA avec les positions mises à jour")
 parser.add_argument('--mnt', help="MNT sous format vrt")
 parser.add_argument('--ori', help="Répertoire contenant les fichiers orientations")
+parser.add_argument('--outdir', help="Répertoire contenant les fichiers orientations")
+parser.add_argument('--cpu', help="Nombre de cpus à utiliser", type=int)
+parser.add_argument('--mask', help="Nombre de cpus à utiliser", default=None)
 args = parser.parse_args()
 
 ta_xml = args.ta_xml
-mnt = args.mnt
+mnt_path = args.mnt
 ori_path = args.ori
-
+outdir = args.outdir
+nb_cpus = args.cpu
+mask_path = args.mask
 
 # Une dalle : 2000 pixels
 tileSize = 2000
@@ -112,6 +117,11 @@ def createOrthoImage(shot:Shot, x_min, x_max, y_min, y_max, mnt, resolution, nbC
     
     # On récupère l'altitude des pixels
     z = mnt.get(xx, yy)
+
+    # On récupère le masque des pixels qui ne sont pas dans la zone où le MNS a été calculé
+    if mask_path is not None:
+        mask_value = mask.get(xx, yy).reshape((1, y.shape[0], x.shape[0]))
+    
     if z is None:
         return None
 
@@ -122,7 +132,8 @@ def createOrthoImage(shot:Shot, x_min, x_max, y_min, y_max, mnt, resolution, nbC
     dc = DistorsionCorrection(calibration)
     c_corr, l_corr = dc.compute(c, l)
 
-    inputds = gdal.Open(shot.imagePath)
+    RasterXSize = array_ortho.shape[1]
+    RasterYSize = array_ortho.shape[0]
     min_c = int(np.floor(np.min(c_corr)))
     max_c = int(np.ceil(np.max(c_corr)))
     min_l = int(np.floor(np.min(l_corr)))
@@ -130,18 +141,22 @@ def createOrthoImage(shot:Shot, x_min, x_max, y_min, y_max, mnt, resolution, nbC
 
     # Coordonnées pour lire une partie de l'image même si dans l'idéal on a besoin d'une partie en-dehors de l'image
     min_c_read = max(0, min_c)
-    max_c_read = min(inputds.RasterXSize-1, max_c)
+    max_c_read = min(RasterXSize-1, max_c)
     min_l_read = max(0, min_l)
-    max_l_read = min(inputds.RasterYSize-1, max_l)
+    max_l_read = min(RasterYSize-1, max_l)
 
     # Si les coordonnées demandées sont en dehors de l'image, on renvoie None
-    if min_l > inputds.RasterYSize or min_c > inputds.RasterXSize or max_l < 0 or max_c < 0:
+    if min_l > RasterYSize or min_c > RasterXSize or max_l < 0 or max_c < 0:
         finalImage = None
     # Si on veut une image trop grande, on renvoie None par sécurité
     elif max_l-min_l+1 > 30000 or max_c-min_c+1 > 30000:
         finalImage = None
     else:
-        image = inputds.ReadAsArray(min_c_read, min_l_read, max_c_read-min_c_read+1, max_l_read-min_l_read+1)
+        #image = inputds.ReadAsArray(min_c_read, min_l_read, max_c_read-min_c_read+1, max_l_read-min_l_read+1)
+        if nbCouleurs==1:
+            image = array_ortho[min_l_read:max_l_read+1, min_c_read:max_c_read+1]
+        else:
+            image = array_ortho[:,min_l_read:max_l_read+1, min_c_read:max_c_read+1]
         image = image.reshape((nbCouleurs, max_l_read-min_l_read+1, max_c_read-min_c_read+1))
         
         finalImage = np.zeros((nbCouleurs, max_l-min_l+1, max_c-min_c+1), dtype=np.uint8)
@@ -153,6 +168,9 @@ def createOrthoImage(shot:Shot, x_min, x_max, y_min, y_max, mnt, resolution, nbC
         list_bands = []
         for i in range(nbCouleurs):
             value_band = ndimage.map_coordinates(finalImage[i,:,], np.vstack([l_corr-min_l, c_corr-min_c])).reshape((1, y.shape[0], x.shape[0]))
+            # On applique le masque
+            if mask_path is not None:
+                value_band = value_band*mask_value
             list_bands.append(value_band)
         ortho = np.concatenate(list_bands, axis=0)
     else:
@@ -213,11 +231,14 @@ def poolProcess(work_data):
 
 
 def createShotOrtho(shot, resolution, nbCouleurs, EPSG):
-    path_ortho = os.path.join("ortho_mnt", "Ort_{}.tif".format(shot.nom))
-    path_mask = os.path.join("ortho_mnt", "Incid_{}.tif".format(shot.nom))
+    global array_ortho
+    path_ortho = os.path.join(outdir, "Ort_{}.tif".format(shot.nom))
+    path_mask = os.path.join(outdir, "Incid_{}.tif".format(shot.nom))
     x_min, x_max, y_min, y_max = getEmpriseSol(shot, mnt)
     n, m, bigOrtho = initImage(x_min, x_max, y_min, y_max, shot.nom, nbCouleurs)
     if n is not None:
+        inputds = gdal.Open(shot.imagePath)
+        array_ortho = inputds.ReadAsArray()
         work_data = []
         for i in range(0, n, 1000):
             for j in range(0, m, 1000):
@@ -227,7 +248,7 @@ def createShotOrtho(shot, resolution, nbCouleurs, EPSG):
                 y1 = max(y_min, y0 - 1000*resolution)
                 work_data.append([x0, y0, x1, y1, shot, i, j, nbCouleurs])
 
-        with Pool(12) as pool:
+        with Pool(nb_cpus) as pool:
             for result in pool.map(poolProcess, work_data):
                 if result is not None:
                     orthoImage = result[0]
@@ -249,9 +270,12 @@ def createShotOrthos(shots, resolution, nbCouleurs, EPSG):
             
             
 
-os.makedirs("ortho_mnt", exist_ok=True)
+os.makedirs(outdir, exist_ok=True)
 
-mnt = MNT(os.path.join("metadata", "mnt", "mnt.vrt"))
+if mask_path is not None:
+    mask = Mask(mask_path)
+
+mnt = MNT(mnt_path)
 # On charge la boite englobante du chantier
 bbox = load_bbox("metadata")
 

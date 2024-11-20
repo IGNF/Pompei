@@ -19,6 +19,7 @@ from scipy.spatial.transform import Rotation as R
 from osgeo import gdal
 from scipy import ndimage
 from lxml import etree
+import rasterio
 
 
 
@@ -150,8 +151,7 @@ class Shot:
             :return: c, l Image coordinates
             """
             type_input = type(x_world)
-            x_eucli, y_eucli, z_eucli = self.world_to_euclidean(x_world, y_world, z_world)
-            x_bundle, y_bundle, z_bundle = self.local_to_bundle(x_eucli, y_eucli, z_eucli)
+            x_bundle, y_bundle, z_bundle = self.local_to_bundle(x_world, y_world, z_world)
             x_shot, y_shot, z_shot = self.bundle_to_shot(x_bundle, y_bundle, z_bundle)
             c, l = self.shot_to_image(x_shot, y_shot, z_shot)
             return self.convertback(type_input, c, l)
@@ -372,10 +372,10 @@ class Shot:
 class MNT:
 
     def __init__(self, path) -> None:
-        self.dem = gdal.Open(path)
-        self.gt = self.dem.GetGeoTransform()
-        self.rb = self.dem.GetRasterBand(1)
-
+        self.dem = rasterio.open(path)
+        self.gt = self.dem.transform
+        self.array = self.dem.read().squeeze()
+        self.array = np.where(self.array<=-1000.00, 0, self.array)
 
     def world_to_image(self, x, y):
         """
@@ -385,21 +385,9 @@ class MNT:
             :param y: y world coordinate
             :return: image coordinates
         """
-        c = (np.array(x) - self.gt[0])/self.gt[1]
-        l = (np.array(y) - self.gt[3])/self.gt[5]
+        c = (x - self.gt.c)/self.gt.a
+        l = (y - self.gt.f)/self.gt.e
         return c, l
-
-    def image_to_world(self, c, l):
-        """
-            Compute world coordinates from image coordinates
-
-            :param c: column coordinates
-            :param l: line coordinates
-            :return: x, y world coordinates
-        """
-        x = np.array(c) * self.gt[1] + self.gt[0]
-        y = np.array(l) * self.gt[5] + self.gt[3]
-        return x, y
 
 
     def get(self, x, y):
@@ -410,26 +398,69 @@ class MNT:
             :param y: y world coordinate
             :return: z value.
         """
+        c, l = self.world_to_image(x, y)
+        c_min = int(max(np.min(c), 0))
+        l_min = int(max(np.min(l), 0))
+        c_max = int(min(np.max(c), self.array.shape[1]))
+        l_max = int(min(np.max(l), self.array.shape[0]))
+        array_ex = self.array[l_min:l_max+10, c_min:c_max+10]
+        # Les points images sont en col lig mais les np.array sont en lig col
+        z = ndimage.map_coordinates(array_ex, np.vstack([l-l_min, c-c_min]), order=1, mode="constant")
+        return z
+        
 
+class Mask:
+    def __init__(self, path) -> None:
+        self.mask = rasterio.open(path)
+        self.gt = self.mask.transform
+        self.array = self.mask.read().squeeze()
+        self.array = np.where(self.array>=1, 1, 0)
+
+    def world_to_image(self, x, y):
+        """
+            Compute image coordinates from world coordinates
+
+            :param x: x world coordinate
+            :param y: y world coordinate
+            :return: image coordinates
+        """
+        c = (x - self.gt.c)/self.gt.a
+        l = (y - self.gt.f)/self.gt.e
+        return c, l
+
+    def get(self, x, y):
+        
         try:
-            xmin, ymin = np.min(x), np.min(y)
-            xmax, ymax = np.max(x), np.max(y)
-            imin, jmin = np.floor(self.world_to_image(xmin, ymax))
-            imax, jmax = np.ceil(self.world_to_image(xmax, ymin))
-            imin = int(min(max(imin, 0), self.dem.RasterXSize))
-            imax = int(min(max(imax, 0), self.dem.RasterXSize - 1))
-            jmin = int(min(max(jmin, 0), self.dem.RasterYSize))
-            jmax = int(min(max(jmax, 0), self.dem.RasterYSize - 1))
-            array = self.rb.ReadAsArray(imin, jmin, imax - imin + 1, jmax - jmin + 1)
-            array = np.where(array<=-1000.00, 0, array)
-            xmin, ymax = self.image_to_world(imin, jmin)
-            c = (x - xmin)/self.gt[1]
-            l = (y - ymax)/self.gt[5]
-            # Les points images sont en col lig mais les np.array sont en lig col
-            z = ndimage.map_coordinates(array, np.vstack([l, c]), order=1, mode="constant")
+            c, l = self.world_to_image(x, y)
+            c_min = int(max(np.min(c), 0))
+            l_min = int(max(np.min(l), 0))
+            c_max = int(min(np.max(c), self.array.shape[1]))
+            l_max = int(min(np.max(l), self.array.shape[0]))
+            array_ex = self.array[l_min:l_max+1, c_min:c_max+1]
+            l_request = l-l_min
+            l_request = l_request.astype(np.int16)
+            c_request = c-c_min
+            c_request = c_request.astype(np.int16)
+
+            l_out = np.full(l_request.shape, False)
+            l_out[l_request<0] = True
+            l_request[l_request<0] = 0
+            l_out[l_request>=array_ex.shape[0]] = True
+            l_request[l_request>=array_ex.shape[0]] = 0
+
+            c_out = np.full(c_request.shape, False)
+            c_out[c_request<0] = True
+            c_request[c_request<0] = 0
+            c_out[c_request>=array_ex.shape[1]] = True
+            c_request[c_request>=array_ex.shape[1]] = 0
+
+            z = array_ex[l_request, c_request]
+            z[l_out] = 0
+            z[c_out] = 0
             return z
         except:
-            return None
+            return np.zeros(x.shape)
+
         
 
 class Calibration:

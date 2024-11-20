@@ -51,13 +51,23 @@ else
     rm workspace.txt
     echo $workspace >> workspace.txt
     scripts_dir=$(realpath "scripts")
+
+    if test ${ortho} = "storeref"; then
+        if [ ! -d "/media/store-ref/modeles-numeriques-3D" ]; then
+            echo "Vous devez monter store-ref sur votre ordinateur dans /media/store-ref/"
+            exit 1
+        fi
+    fi
+
+
+    if [ ! -f "scripts/api_key.env" ]; then
+        echo "Vous devez avoir un fichier api_key.env dans scripts. Voyez le readme.md"
+        exit 1
+    fi
+
     cd ${workspace}
     TA=$(basename ${TA})
-
     mkdir reports
-    if test ${ortho} = "storeref"; then
-        echo "Ne pas oublier de monter store-ref sur votre ordinateur"
-    fi
 
     sh ${scripts_dir}/convert_jp2_to_tif.sh
     echo "A partir de maintenant, vous pouvez utiliser pompei_after_convert_jp2_to_tif.sh"
@@ -95,7 +105,7 @@ else
 
     if test ${create_ortho_mns} = "1"; then
 
-        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${CPU}
+        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${CPU} ${TA}
     
     fi
 

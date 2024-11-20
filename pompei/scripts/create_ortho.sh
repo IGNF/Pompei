@@ -26,13 +26,13 @@ python ${scripts_dir}/download_mnt.py --ortho ${ortho}
 
 
 echo "Création d'une ortho pour chaque image OIS-Reech"
-python ${scripts_dir}/create_orthos_OIS_Reech.py --ta_xml TA_xml_updated.xml --mnt metadata/mnt/mnt.vrt --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final
+python ${scripts_dir}/create_orthos_OIS_Reech.py --ta_xml TA_xml_updated.xml --mnt metadata/mnt/mnt.vrt --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --outdir ortho_mnt --cpu ${CPU}
 
 echo "Egalisation radiométrique"
-sh ${scripts_dir}/equalizate_radiometry_ortho_mnt.sh ${scripts_dir} ${CPU} >> logfile
+sh ${scripts_dir}/equalizate_radiometry_ortho_mnt.sh ${scripts_dir} ${CPU} radiom_ortho_mnt ortho_mnt >> logfile
 
 echo "Création de l'ortho sur mnt"
-python ${scripts_dir}/create_big_Ortho.py --ta_xml TA_xml_updated.xml --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final
+python ${scripts_dir}/create_big_Ortho.py --ta_xml TA_xml_updated.xml --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --cpu ${CPU} --mnt metadata/mnt/mnt.vrt --outdir ortho_mnt --cpu ${CPU} --radiom radiom_ortho_mnt
 
 echo "Création de fichiers vrt"
 # On crée un fichier vrt sur les orthos et le graphe de mosaïquage

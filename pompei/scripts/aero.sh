@@ -39,7 +39,7 @@ ls ../metadata/mns/*.tif > liste_mns_bdortho.txt
 
 
 #On applique un gdal translate sur le MNS calculé par MicMac car sinon cela coince dans AssocierZ_fichierpts2D
-ls ../MEC-Malt-Abs-Ratafia/MNS_Final*.tif > liste_mnsmicmac.txt
+ls ../MEC-Malt-Abs-Ratafia/MNS_pyramide*.tif > liste_mnsmicmac.txt
 for i in `cat liste_mnsmicmac.txt` ; do 
     mv ${i}  "${i}_copie.tif"; 
     gdal_translate "${i}_copie.tif" ${i};
@@ -47,9 +47,9 @@ for i in `cat liste_mnsmicmac.txt` ; do
 done
 
 #Creation de la liste des MNS MICMAC a utiliser
-ls ../MEC-Malt-Abs-Ratafia/MNS_Final*.tfw > liste_mnsmicmac.txt
+ls ../MEC-Malt-Abs-Ratafia/MNS_pyramide*.tfw > liste_mnsmicmac.txt
 for i in `cat liste_mnsmicmac.txt` ; do ${scripts_dir}/convert_ori.LINUX tfw2ori ${i} ; done
-ls ../MEC-Malt-Abs-Ratafia/MNS_Final*.tif > liste_mnsmicmac.txt
+ls ../MEC-Malt-Abs-Ratafia/MNS_pyramide*.tif > liste_mnsmicmac.txt
 ${scripts_dir}/POMPEI.LINUX AssocierZ_fichierpts2D:multiMNS pts_bdortho.txt liste_mns_bdortho.txt pts3D_bdortho.txt >> ../logfile
 ${scripts_dir}/POMPEI.LINUX AssocierZ_fichierpts2D:multiMNS pts_orthomicmac_abs.txt liste_mnsmicmac.txt pts3D_orthomicmac_abs.txt >> ../logfile
 
