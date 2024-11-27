@@ -132,8 +132,12 @@ def createOrthoImage(shot:Shot, x_min, x_max, y_min, y_max, mnt, resolution, nbC
     dc = DistorsionCorrection(calibration)
     c_corr, l_corr = dc.compute(c, l)
 
-    RasterXSize = array_ortho.shape[1]
-    RasterYSize = array_ortho.shape[0]
+    if nbCouleurs == 1:
+        RasterXSize = array_ortho.shape[1]
+        RasterYSize = array_ortho.shape[0]
+    else:
+        RasterXSize = array_ortho.shape[2]
+        RasterYSize = array_ortho.shape[1]
     min_c = int(np.floor(np.min(c_corr)))
     max_c = int(np.ceil(np.max(c_corr)))
     min_l = int(np.floor(np.min(l_corr)))

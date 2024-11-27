@@ -75,11 +75,12 @@ def checkSensor(root):
         if add:
             sensors += vol.findall(".//sensor")
 
-    if len(sensors) >= 2:
-        raise Exception("Attention, il y a {} caméras dans le chantier".format(len(sensors)))
-    elif len(sensors)==0:
+    #if len(sensors) >= 2:
+    #    raise Exception("Attention, il y a {} caméras dans le chantier".format(len(sensors)))
+    #elif len(sensors)==0:
+    #    raise Exception("Attention, il n'y a aucune caméra dans le chantier")
+    if len(sensors) ==0:
         raise Exception("Attention, il n'y a aucune caméra dans le chantier")
-
     else:
         sensor = Sensor()
         sensor_xml = sensors[0]
@@ -160,7 +161,8 @@ def case_0_fiduciaux(cliches, remove_artefacts, sensor:Sensor):
         f.write("python ${scripts_dir}/maj_calibNum.py --input_micmac_folder=./ >> logfile \n\n")
         f.write("#Saisie du masque pour supprimer les contours \n")
         f.write("echo \"Saisie du masque pour supprimer les contours\" \n")
-        f.write("mm3d SaisieMasq OIS-Reech_{}.tif Name=filtre.tif Gama=2 >> logfile\n".format(name_first_image))
+        #f.write("mm3d SaisieMasq OIS-Reech_{}.tif Name=filtre.tif Gama=2 >> logfile\n".format(name_first_image))
+        f.write("python ${scripts_dir}/create_mask.py \n")
         if remove_artefacts:
             f.write("echo \"Saisie du masque pour supprimer les contours et les artefacts\"\n ")
             f.write("mm3d SaisieMasq OIS-Reech_{}.tif Name=filtre_artefacts.tif Gama=2 >> logfile\n".format(name_first_image))
@@ -229,7 +231,8 @@ def case_n_fiduciaux(cliches, remove_artefacts, sensor:Sensor, targets, nb_fiduc
         f.write("python ${scripts_dir}/maj_calibNum.py --input_micmac_folder=./ >> logfile \n\n")
         f.write("#Saisie du masque pour supprimer les contours \n")
         f.write("echo \"Saisie du masque pour supprimer les contours\" \n ")
-        f.write("mm3d SaisieMasq OIS-Reech_{}.tif Name=filtre.tif Gama=2 >> logfile\n".format(name_first_image))
+        #f.write("mm3d SaisieMasq OIS-Reech_{}.tif Name=filtre.tif Gama=2 >> logfile\n".format(name_first_image))
+        f.write("python ${scripts_dir}/create_mask.py \n")
 
         if remove_artefacts:
             f.write("echo \"Saisie du masque pour supprimer les contours et les artefacts\" \n ")

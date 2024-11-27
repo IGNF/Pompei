@@ -190,7 +190,8 @@ def save_xml(liste_points):
         logger.debug(f"Image {nom_image} : {liste_points[nom_image]}")
 
         #Si le nombre de points trouvés ne correspond à celui qui aurait dû être trouvé, alors l'utilisateur est invité à saisir les points avec Micmac
-        if compte_point != int(args.nb_points)+1:
+        #if compte_point != int(args.nb_points)+1:
+        if compte_point != 9 and compte_point != 5:
             logger.warning("{} points ont été trouvés sur l'image {}.".format(str(compte_point-1), nom_image))
             liste_probleme.append(nom_image)
         
@@ -220,13 +221,15 @@ def chercher_image_maitresse(model):
         # Pour chaque repère de fond de chambre, on conserve le point qui a la probabilité la plus élevée
         points_image_maitresse = selectionner_points(points_tries)
         logger.debug(f"Détections sur l'image maîtresse après filtrage : {points_image_maitresse}")
-        if len(points_image_maitresse) == int(args.nb_points):
+        #if len(points_image_maitresse) == int(args.nb_points):
+        if len(points_image_maitresse) == 8 or len(points_image_maitresse) == 4:
             pas_trouve = False
-            logger.debug(f"{len(points_image_maitresse)} ont été trouvés au lieu de {int(args.nb_points)}. On essaye avec une nouvelle image maîtresse")
+            logger.debug(f"Le bon nombre de points ont été trouvés sur l'image maîtresse : {len(points_image_maitresse)}")
         else:
-            logger.debug(f"Le bon nombre de points ont été trouvés sur l'image maîtresse")
+            logger.debug(f"{len(points_image_maitresse)} ont été trouvés au lieu de {int(args.nb_points)}. On essaye avec une nouvelle image maîtresse")
 
-    if len(points_image_maitresse) != int(args.nb_points):
+    #if len(points_image_maitresse) != int(args.nb_points):
+    if len(points_image_maitresse) != 8 and len(points_image_maitresse) != 4:
         logger.error("Erreur : sur aucune image, le nombre exact de repères de fond de chambre n'a été trouvé. Essayez avec la méthode par corrélation de MicMac")
     
     liste_points[image_maitresse] = points_image_maitresse
@@ -348,6 +351,10 @@ def run(chemin_sauvegarde):
     liste_probleme = save_xml(liste_points)
     SaisieAppuisInit(liste_probleme)
     SaisieAppuisInit_to_InterneScan(liste_probleme)
+
+    with open("id_reperes.txt", "w") as f:
+        for i in range(1, len(points_image_maitresse)+1):
+            f.write("{}\n".format(i))
 
 
 chemin_sauvegarde = "Ori-InterneScan_geojson"

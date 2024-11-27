@@ -131,7 +131,7 @@ def one_image(path_appuis, image_name, factor_sous_ech, ta_xml, gt_ortho_array, 
 
     # Get image footprint from ta_xml (approximation of around 100 meters)
     gt_image = get_footprint(ta_xml, image_name, image)
-    _, l_image, c_image = image.shape
+    nb_couleurs, l_image, c_image = image.shape
 
     # Cut in tiles of 1000*factor_sous_ech pixels
     for l_count, l in enumerate(range(0, l_image, 1000*factor_sous_ech)):
@@ -170,7 +170,7 @@ def one_image(path_appuis, image_name, factor_sous_ech, ta_xml, gt_ortho_array, 
             coords_lc_ortho = coords_lc_ortho.astype(np.uint32)
 
             # save histo tile image
-            extract_image = image[:,ll_reshaped[0,:], cc_reshaped[0:]].reshape((1, size_c, size_l))
+            extract_image = image[:,ll_reshaped[0,:], cc_reshaped[0:]].reshape((nb_couleurs, size_c, size_l))
             extract_image = np.transpose(extract_image, axes=(0,2,1))
             geotransform_extract_image = rasterio.Affine(gt_image[0,0]*factor_sous_ech, gt_image[0,1]*factor_sous_ech, coords_xy[0,0], gt_image[1,0]*factor_sous_ech, gt_image[1,1]*factor_sous_ech, coords_xy[1,0])
             
