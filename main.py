@@ -6,7 +6,7 @@ from lxml import etree
 from shapely import Polygon, intersects
 
 
-logging.basicConfig(filename='main.log', level=logging.INFO, format='%(asctime)s : %(levelname)s : %(module)s : %(message)s')
+logging.basicConfig(filename='pompei/main.log', level=logging.INFO, format='%(asctime)s : %(levelname)s : %(module)s : %(message)s')
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 logging.getLogger('').addHandler(console)
@@ -67,14 +67,15 @@ def load_xml(selection_row, xml_path, path_chantier_misphot, path_chantier_pompe
 
 
 def run_chantier(chantier_name, path_chantier_pompei):
-    xml_file = [i for i in os.listdir(path_chantier_pompei) if i[-4:]==".xml"]
+    xml_file = [i for i in os.listdir(os.path.join("pompei", path_chantier_pompei)) if i[-4:]==".xml"]
     if len(xml_file)==1:
         path_xml_pompei = os.path.join(path_chantier_pompei, xml_file[0])
         logger.info(f"Début du calcul")
-        os.system(f"cd Pompei/pompei; sh visualize_flight_plan.sh {path_xml_pompei} ; sh pompei_rapide.sh {path_xml_pompei} 4 1 0 0 storeref 12")
+        os.system(f"cd pompei; sh visualize_flight_plan.sh {path_xml_pompei} ; sh pompei_rapide.sh {path_xml_pompei} 4 1 0 0 storeref 130")
         
         result_dir = os.path.join("pompei", "chantiers", "resultats", chantier_name)
         os.makedirs(result_dir, exists_ok=True)
+        shutil.copy(os.path.join(path_chantier_pompei, "pompei_debug.log"), result_dir)
         shutil.copytree(os.path.join(path_chantier_pompei, "ortho_mnt"), result_dir)
         shutil.copytree(os.path.join(path_chantier_pompei, "reports"), result_dir)
         shutil.rmtree(path_chantier_pompei)
@@ -92,8 +93,6 @@ def load_done():
 
 misphot_path = os.path.join("/media", "misphot", "Lambert93")
 misphot_path = "/run/user/23706/gvfs/smb-share:server=dgs1209n015,share=misphot_image_15/Lambert93"
-selection_path = "selection.gpkg"
-selection_gdf = gpd.read_file(selection_path)
 
 path_chantiers_done = os.path.join("pompei", "chantiers", "done.txt")
 chantiers_done = load_done()
@@ -101,13 +100,4 @@ chantiers_done = load_done()
 chantiers_list = os.listdir(os.path.join("pompei", "chantiers"))
 for chantier_name in chantiers_list:
     if chantier_name not in chantiers_done:
-        run_chantier(chantier_name, os.path.join("pompei", "chantiers", chantier_name))
-
-for selection_id in range(selection_gdf.shape[0]):
-    selection_row = selection_gdf.iloc[selection_id]
-    if selection_row.zone not in chantiers_done:
-        result = download_images(selection_row)
-        if result is not None:
-            path_chantier_pompei, path_xml_pompei, path_chantier_misphot = result
-            load_xml(selection_row, path_xml_pompei, path_chantier_misphot, path_chantier_pompei)
-            run_chantier(selection_row, path_chantier_pompei, path_xml_pompei)
+        run_chantier(chantier_name, os.path.join("chantiers", chantier_name))

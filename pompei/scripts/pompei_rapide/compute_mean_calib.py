@@ -118,6 +118,9 @@ for image in images:
         for value_name in dict_values.keys():
             value_splitted = value_name.split("_")
             value = get_values(value_splitted[0], root)
+
+            if len(value)==0:
+                continue
             
             if len(value_splitted)==1:
                 dict_values[value_name].append(float(value[0].text))
@@ -143,4 +146,8 @@ for value_name in dict_values.keys():
 # On écrit le nouveau fichier de calibration avec les valeurs moyennes
 if root_not_None is None:
     raise ValueError("Aucune image n'a réussi à passer l'étape du Campari individuel")
-write_calib_xml(root_not_None, resultats, filename_not_None)
+
+xml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "modele.xml")
+tree = etree.parse(xml_path)
+root = tree.getroot()
+write_calib_xml(root, resultats, filename_not_None)

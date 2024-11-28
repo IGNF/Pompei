@@ -35,9 +35,10 @@ ls OIS*.tif > images.txt
 for image in `cat images.txt` ; do
     echo ""
     echo ${image}
-    mm3d Campari ${image} Nav ${image}_0 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=${image}_0.txt | tee reports/${image}_0.txt >> logfile
+    timeout 15s mm3d Campari ${image} Nav ${image}_0 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=${image}_0.txt @ExitOnWarn | tee reports/${image}_0.txt >> logfile
     python ${scripts_dir}/pompei_rapide/analyse_campari.py --appuis GCP.xml --report_residuals ${image}_0.txt
-    mm3d Campari ${image} ${image}_0 ${image}_1 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 PoseFigee=true AllFree=true RapTxt=${image}_1.txt | tee reports/${image}_1.txt >> logfile
+    SECONDS=1
+    timeout 15s mm3d Campari ${image} ${image}_0 ${image}_1 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 PoseFigee=true AllFree=true RapTxt=${image}_1.txt @ExitOnWarn | tee reports/${image}_1.txt >> logfile
     python ${scripts_dir}/pompei_rapide/analyse_campari.py --appuis GCP.xml --report_residuals ${image}_1.txt
 done
 
@@ -45,11 +46,11 @@ done
 python ${scripts_dir}/pompei_rapide/compute_mean_calib.py
 
 # On fait deux aéros, d'abord sur les paramètres externes, puis sur les paramètres internes. On utilise la même caméra pour tous les clichés
-mm3d Campari OIS.*tif Aero_0 Aero_1 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_1.txt >> logfile
+timeout 15s mm3d Campari OIS.*tif Aero_0 Aero_1 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_1.txt >> logfile
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_1.txt
 
 if [ -d Ori-Aero_1 ];then
-    mm3d Campari OIS.*tif Aero_1 Aero_2 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt PoseFigee=true AllFree=true | tee reports/rapport_CampariAero_2.txt >> logfile
+    timeout 15s  mm3d Campari OIS.*tif Aero_1 Aero_2 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt PoseFigee=true AllFree=true | tee reports/rapport_CampariAero_2.txt >> logfile
     python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_2.txt
 fi
 
@@ -63,12 +64,12 @@ if [ -d Ori-Aero_2 ];then
     python ${scripts_dir}/delete_GCP.py --factor 3 --GCP iter0/GCP.xml --S2D iter0/GCP-S2D.xml --GCP_save GCP.xml --S2D_save GCP-S2D.xml --report_residuals iter0/ResidualsReport.txt
 
     # On fait deux aéros, d'abord sur les paramètres externes, puis sur les paramètres internes
-    mm3d Campari OIS.*tif Aero_2 Aero_3 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_3.txt >> logfile
+    timeout 15s  mm3d Campari OIS.*tif Aero_2 Aero_3 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_3.txt >> logfile
     python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_3.txt
 fi
 
 if [ -d Ori-Aero_3 ];then
-    mm3d Campari OIS.*tif Aero_3 Aero_4 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt PoseFigee=true AllFree=true | tee reports/rapport_CampariAero_4.txt >> logfile
+    timeout 15s mm3d Campari OIS.*tif Aero_3 Aero_4 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt PoseFigee=true AllFree=true | tee reports/rapport_CampariAero_4.txt >> logfile
     python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_4.txt
 fi
 
@@ -81,12 +82,12 @@ if [ -d Ori-Aero_4 ];then
     python ${scripts_dir}/delete_GCP.py --factor 3 --GCP iter1/GCP.xml --S2D iter1/GCP-S2D.xml --GCP_save GCP.xml --S2D_save GCP-S2D.xml --report_residuals iter1/ResidualsReport.txt
 
     # On fait deux aéros, d'abord sur les paramètres externes, puis sur les paramètres internes. On réduit cette fois l'écart-type sur les points de liaisons
-    mm3d Campari OIS.*tif Aero_4 Aero_5 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_5.txt >> logfile
+    timeout 15s mm3d Campari OIS.*tif Aero_4 Aero_5 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_5.txt >> logfile
     python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_5.txt
 fi
 
 if [ -d Ori-Aero_5 ];then
-    mm3d Campari OIS.*tif Aero_5 Aero_6 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 RapTxt=ResidualsReport.txt AllFree=true | tee reports/rapport_CampariAero_6.txt >> logfile
+    timeout 15s mm3d Campari OIS.*tif Aero_5 Aero_6 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 RapTxt=ResidualsReport.txt AllFree=true | tee reports/rapport_CampariAero_6.txt >> logfile
     python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_6.txt
 fi
 
@@ -99,7 +100,7 @@ if [ -d Ori-Aero_6 ];then
     python ${scripts_dir}/delete_GCP.py --factor 3 --GCP iter2/GCP.xml --S2D iter2/GCP-S2D.xml --GCP_save GCP.xml --S2D_save GCP-S2D.xml --report_residuals iter2/ResidualsReport.txt
 
     # On fait une aéro sur tous les paramètres
-    mm3d Campari OIS.*tif Aero_6 Aero_7 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 RapTxt=ResidualsReport.txt AllFree=true | tee reports/rapport_CampariAero_7.txt >> logfile
+    timeout 15s mm3d Campari OIS.*tif Aero_6 Aero_7 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 RapTxt=ResidualsReport.txt AllFree=true | tee reports/rapport_CampariAero_7.txt >> logfile
     python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_7.txt
 fi 
 
