@@ -76,12 +76,12 @@ def get_force_verticale(xml_path, path_chantier):
         image = cliche.find(".//image").text.strip()
         if image+".jp2" in images:
             model = cliche.find(".//model")
-            x = float(model.find(".//x"))
-            y = float(model.find(".//y"))
-            z = float(model.find(".//z"))
+            x = float(model.find(".//x").text)
+            y = float(model.find(".//y").text)
+            z = float(model.find(".//z").text)
             points.append(Point(x, y, z))
     if len(points)<=2:
-        return True
+        return 1
     p0 = points[0]
     p1 = points[1]
     u = np.array([p1.x-p0.x, p1.y-p0.y, p1.z-p0.z])
@@ -90,10 +90,9 @@ def get_force_verticale(xml_path, path_chantier):
         p2 = points[i]
         m = np.array([p2.x-p0.x, p2.y-p0.y, p2.z-p0.z])
         dist = np.linalg.norm(np.cross(u, m)) / norm_u
-        print(dist)
-        if dist > 100:
-            return True
-    return False
+        if dist > 200:
+            return 1
+    return 0
 
 
 def run_chantier(chantier_name, path_chantier_pompei):
@@ -137,4 +136,5 @@ chantiers_done = load_done()
 chantiers_list = os.listdir(os.path.join("pompei", "chantiers"))
 for chantier_name in chantiers_list:
     if chantier_name not in chantiers_done:
+        print(chantier_name)
         run_chantier(chantier_name, os.path.join("chantiers", chantier_name))
