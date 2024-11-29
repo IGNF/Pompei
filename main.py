@@ -3,7 +3,8 @@ import os
 import logging
 import shutil
 from lxml import etree
-from shapely import Polygon, intersects
+from shapely import Polygon, intersects, Point
+import numpy as np
 
 
 logging.basicConfig(filename='pompei/main.log', level=logging.INFO, format='%(asctime)s : %(levelname)s : %(module)s : %(message)s')
@@ -66,18 +67,54 @@ def load_xml(selection_row, xml_path, path_chantier_misphot, path_chantier_pompe
     logger.info(f"Chantier {selection_row.zone} : {compte} images")
 
 
+def get_force_verticale(xml_path, path_chantier):
+    images = [i for i in os.listdir(path_chantier) if i[-4:]==".jp2"]
+    root = etree.parse(xml_path)
+    cliches = root.findall(".//cliche")
+    points = []
+    for cliche in cliches:
+        image = cliche.find(".//image").text.strip()
+        if image+".jp2" in images:
+            model = cliche.find(".//model")
+            x = float(model.find(".//x"))
+            y = float(model.find(".//y"))
+            z = float(model.find(".//z"))
+            points.append(Point(x, y, z))
+    if len(points)<=2:
+        return True
+    p0 = points[0]
+    p1 = points[1]
+    u = np.array([p1.x-p0.x, p1.y-p0.y, p1.z-p0.z])
+    norm_u = np.linalg.norm(u)
+    for i in range(2, len(points)):
+        p2 = points[i]
+        m = np.array([p2.x-p0.x, p2.y-p0.y, p2.z-p0.z])
+        dist = np.linalg.norm(np.cross(u, m)) / norm_u
+        print(dist)
+        if dist > 100:
+            return True
+    return False
+
+
 def run_chantier(chantier_name, path_chantier_pompei):
     xml_file = [i for i in os.listdir(os.path.join("pompei", path_chantier_pompei)) if i[-4:]==".xml"]
     if len(xml_file)==1:
         path_xml_pompei = os.path.join(path_chantier_pompei, xml_file[0])
+        force_verticale = get_force_verticale(os.path.join("pompei", path_xml_pompei), os.path.join("pompei", path_chantier_pompei))
         logger.info(f"Début du calcul")
-        os.system(f"cd pompei; sh visualize_flight_plan.sh {path_xml_pompei} ; sh pompei_rapide.sh {path_xml_pompei} 4 1 0 0 storeref 130")
+        os.system(f"cd pompei; sh visualize_flight_plan.sh {path_xml_pompei} ; sh pompei.sh {path_xml_pompei} 4 1 0 0 {force_verticale} storeref a 0 1 1 130")
         
         result_dir = os.path.join("pompei", "chantiers", "resultats", chantier_name)
-        os.makedirs(result_dir, exists_ok=True)
-        shutil.copy(os.path.join(path_chantier_pompei, "pompei_debug.log"), result_dir)
-        shutil.copytree(os.path.join(path_chantier_pompei, "ortho_mnt"), result_dir)
-        shutil.copytree(os.path.join(path_chantier_pompei, "reports"), result_dir)
+        os.makedirs(result_dir, exist_ok=True)
+        path_chantier_pompei = os.path.join("pompei", path_chantier_pompei)
+        if os.path.isfile(os.path.join(path_chantier_pompei, "pompei_debug.log")):
+            shutil.copy(os.path.join(path_chantier_pompei, "pompei_debug.log"), result_dir)
+        if os.path.isdir(os.path.join(path_chantier_pompei, "ortho_mnt")):
+            shutil.copytree(os.path.join(path_chantier_pompei, "ortho_mnt"), result_dir, dirs_exist_ok=True)
+        if os.path.isdir(os.path.join(path_chantier_pompei, "ortho_mns")):
+            shutil.copytree(os.path.join(path_chantier_pompei, "ortho_mns"), result_dir, dirs_exist_ok=True)
+        if os.path.isdir(os.path.join(path_chantier_pompei, "reports")):
+            shutil.copytree(os.path.join(path_chantier_pompei, "reports"), result_dir, dirs_exist_ok=True)
         shutil.rmtree(path_chantier_pompei)
         with open(path_chantiers_done, "a") as f:
             f.write(f"{chantier_name}\n")
