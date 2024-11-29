@@ -222,9 +222,9 @@ def chercher_image_maitresse(model):
         logger.debug(f"Détections sur l'image maîtresse après filtrage : {points_image_maitresse}")
         if len(points_image_maitresse) == int(args.nb_points):
             pas_trouve = False
-            logger.debug(f"{len(points_image_maitresse)} ont été trouvés au lieu de {int(args.nb_points)}. On essaye avec une nouvelle image maîtresse")
+            logger.debug(f"Le bon nombre de points ont été trouvés sur l'image maîtresse : {len(points_image_maitresse)}")
         else:
-            logger.debug(f"Le bon nombre de points ont été trouvés sur l'image maîtresse")
+            logger.debug(f"{len(points_image_maitresse)} ont été trouvés au lieu de {int(args.nb_points)}. On essaye avec une nouvelle image maîtresse")
 
     if len(points_image_maitresse) != int(args.nb_points):
         logger.error("Erreur : sur aucune image, le nombre exact de repères de fond de chambre n'a été trouvé. Essayez avec la méthode par corrélation de MicMac")

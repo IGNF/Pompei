@@ -15,10 +15,12 @@ You should have received a copy of the GNU General Public License along with Pom
 
 import os
 import argparse
+
+import rasterio.crs
 from equations import Shot, MNT, Calibration, DistorsionCorrection, Mask
 from lxml import etree
 import numpy as np
-from osgeo import gdal, osr
+import rasterio
 from scipy import ndimage
 from multiprocessing import Pool
 from tqdm import tqdm
@@ -83,15 +85,17 @@ def createShots(ta_xml, EPSG):
     return shots    
 
 def saveImage(image, path, x0, y0, resolution, EPSG, create_ori=False):
-    driver = gdal.GetDriverByName('GTiff')
-    outRaster = driver.Create(path, image.shape[2], image.shape[1], image.shape[0], gdal.GDT_Byte)
-    outRaster.SetGeoTransform((x0, resolution, 0, y0, 0, -resolution))
-    for i in range(image.shape[0]):
-        outband = outRaster.GetRasterBand(i+1)
-        outband.WriteArray(image[i,:,:])
-    outSpatialRef = osr.SpatialReference()
-    outSpatialRef.ImportFromEPSG(EPSG)
-    outRaster.SetProjection(outSpatialRef.ExportToWkt())
+    with rasterio.open(
+        path, "w",
+        driver = "GTiff",
+        dtype = rasterio.uint8,
+        count = image.shape[0],
+        width = image.shape[2],
+        height = image.shape[1],
+        crs = EPSG,
+        transform = rasterio.Affine(resolution, 0.0, x0, 0.0, -resolution, y0)
+        ) as dst:
+        dst.write(image)
 
     if create_ori:
         path_ori = path.replace(".tif", ".tfw")
@@ -132,8 +136,8 @@ def createOrthoImage(shot:Shot, x_min, x_max, y_min, y_max, mnt, resolution, nbC
     dc = DistorsionCorrection(calibration)
     c_corr, l_corr = dc.compute(c, l)
 
-    RasterXSize = array_ortho.shape[1]
-    RasterYSize = array_ortho.shape[0]
+    RasterXSize = array_ortho.shape[2]
+    RasterYSize = array_ortho.shape[1]
     min_c = int(np.floor(np.min(c_corr)))
     max_c = int(np.ceil(np.max(c_corr)))
     min_l = int(np.floor(np.min(l_corr)))
@@ -152,11 +156,7 @@ def createOrthoImage(shot:Shot, x_min, x_max, y_min, y_max, mnt, resolution, nbC
     elif max_l-min_l+1 > 30000 or max_c-min_c+1 > 30000:
         finalImage = None
     else:
-        #image = inputds.ReadAsArray(min_c_read, min_l_read, max_c_read-min_c_read+1, max_l_read-min_l_read+1)
-        if nbCouleurs==1:
-            image = array_ortho[min_l_read:max_l_read+1, min_c_read:max_c_read+1]
-        else:
-            image = array_ortho[:,min_l_read:max_l_read+1, min_c_read:max_c_read+1]
+        image = array_ortho[:,min_l_read:max_l_read+1, min_c_read:max_c_read+1]
         image = image.reshape((nbCouleurs, max_l_read-min_l_read+1, max_c_read-min_c_read+1))
         
         finalImage = np.zeros((nbCouleurs, max_l-min_l+1, max_c-min_c+1), dtype=np.uint8)
@@ -237,8 +237,9 @@ def createShotOrtho(shot, resolution, nbCouleurs, EPSG):
     x_min, x_max, y_min, y_max = getEmpriseSol(shot, mnt)
     n, m, bigOrtho = initImage(x_min, x_max, y_min, y_max, shot.nom, nbCouleurs)
     if n is not None:
-        inputds = gdal.Open(shot.imagePath)
-        array_ortho = inputds.ReadAsArray()
+        #inputds = gdal.Open(shot.imagePath)
+        inputds = rasterio.open(shot.imagePath)
+        array_ortho = inputds.read()
         work_data = []
         for i in range(0, n, 1000):
             for j in range(0, m, 1000):
