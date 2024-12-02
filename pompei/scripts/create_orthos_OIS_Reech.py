@@ -24,7 +24,7 @@ import rasterio
 from scipy import ndimage
 from multiprocessing import Pool
 from tqdm import tqdm
-from tools import getEPSG, load_bbox, getNbCouleurs, getResolution
+from tools import getEPSG, load_bbox, getNbCouleurs, getResolution, get_resol_scan
 import log # Chargement des configurations des logs
 import logging
 
@@ -61,7 +61,7 @@ def get_image(image):
 
 def getFocale(root):
     focal = root.find(".//focal")
-    pixel_size = 0.021
+    pixel_size = get_resol_scan(os.path.join(os.path.dirname(ta_xml), "metadata"))
     focale_x = float(focal.find(".//x").text) / pixel_size
     focale_y = float(focal.find(".//y").text) / pixel_size
     focale_z = float(focal.find(".//z").text) / pixel_size

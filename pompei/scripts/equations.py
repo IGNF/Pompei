@@ -20,6 +20,8 @@ from osgeo import gdal
 from scipy import ndimage
 from lxml import etree
 import rasterio
+import os
+from tools import get_resol_scan
 
 
 
@@ -508,17 +510,6 @@ class Calibration:
     def setAffine(self, root):
         self.affine_b1 = float(root.find(".//b1").text)
         self.affine_b2 = float(root.find(".//b2").text)
-
-    def changeFocale(self, sensor):
-        pixel_size = 0.021
-        sensor.find(".//pixel_size").text = str(pixel_size)
-        pt3d = sensor.find((".//pt3d"))
-        x = pt3d.find(".//x")
-        y = pt3d.find(".//y")
-        z = pt3d.find(".//z")
-        x.text = str(self.PPX*pixel_size)
-        y.text = str(self.PPY*pixel_size)
-        z.text = str(self.focale*pixel_size)
 
 
 class DistorsionCorrection:
