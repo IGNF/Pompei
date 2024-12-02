@@ -49,3 +49,9 @@ def getResolution():
             resolution = float(line)
             logger.info("Résolution du chantier : {} mètres".format(resolution))
             return float(resolution)
+
+
+def get_resol_scan(metadata):
+    with open(os.path.join(metadata, "resol.txt"), "r") as f:
+        for line in f:
+            return float(line.strip())
