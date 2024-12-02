@@ -90,7 +90,7 @@ def get_force_verticale(xml_path, path_chantier):
         p2 = points[i]
         m = np.array([p2.x-p0.x, p2.y-p0.y, p2.z-p0.z])
         dist = np.linalg.norm(np.cross(u, m)) / norm_u
-        if dist > 200:
+        if dist > 500:
             return 1
     return 0
 
@@ -109,11 +109,11 @@ def run_chantier(chantier_name, path_chantier_pompei):
         if os.path.isfile(os.path.join(path_chantier_pompei, "pompei_debug.log")):
             shutil.copy(os.path.join(path_chantier_pompei, "pompei_debug.log"), result_dir)
         if os.path.isdir(os.path.join(path_chantier_pompei, "ortho_mnt")):
-            shutil.copytree(os.path.join(path_chantier_pompei, "ortho_mnt"), result_dir, dirs_exist_ok=True)
+            shutil.copytree(os.path.join(path_chantier_pompei, "ortho_mnt"), os.path.join(result_dir, "ortho_mnt"), dirs_exist_ok=True)
         if os.path.isdir(os.path.join(path_chantier_pompei, "ortho_mns")):
-            shutil.copytree(os.path.join(path_chantier_pompei, "ortho_mns"), result_dir, dirs_exist_ok=True)
+            shutil.copytree(os.path.join(path_chantier_pompei, "ortho_mns"), os.path.join(result_dir, "ortho_mns"), dirs_exist_ok=True)
         if os.path.isdir(os.path.join(path_chantier_pompei, "reports")):
-            shutil.copytree(os.path.join(path_chantier_pompei, "reports"), result_dir, dirs_exist_ok=True)
+            shutil.copytree(os.path.join(path_chantier_pompei, "reports"), os.path.join(result_dir, "reports"), dirs_exist_ok=True)
         shutil.rmtree(path_chantier_pompei)
         with open(path_chantiers_done, "a") as f:
             f.write(f"{chantier_name}\n")
