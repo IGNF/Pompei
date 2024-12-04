@@ -349,8 +349,8 @@ def run(chemin_sauvegarde):
     save_geojson(liste_points, chemin_sauvegarde)
     # On sauvegarde les points sous format xml
     liste_probleme = save_xml(liste_points)
-    SaisieAppuisInit(liste_probleme)
-    SaisieAppuisInit_to_InterneScan(liste_probleme)
+    #SaisieAppuisInit(liste_probleme)
+    #SaisieAppuisInit_to_InterneScan(liste_probleme)
 
     with open("id_reperes.txt", "w") as f:
         for i in range(1, len(points_image_maitresse)+1):

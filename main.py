@@ -91,8 +91,8 @@ def get_force_verticale(xml_path, path_chantier):
         m = np.array([p2.x-p0.x, p2.y-p0.y, p2.z-p0.z])
         dist = np.linalg.norm(np.cross(u, m)) / norm_u
         if dist > 500:
-            return 1
-    return 0
+            return 0
+    return 1
 
 
 def run_chantier(chantier_name, path_chantier_pompei):
