@@ -256,7 +256,7 @@ def case_n_fiduciaux(cliches, remove_artefacts, sensor:Sensor, targets, nb_fiduc
         f.write("scripts_dir=$1 \n\n")
         f.write("#Conversion des orientations et positions des sommets de prise de vue contenue dans le fichier csv dans le format MicMac \n")
         f.write("echo \"OriConvert\" \n")
-        f.write("mm3d OriConvert OriTxtInFile SommetsNav.csv Nav NameCple=CouplesTA.xml >> logfile \n\n")
+        f.write("mm3d OriConvert OriTxtInFile SommetsNav.csv Nav NameCple=CouplesTA.xml OkNoIm=true >> logfile \n\n")
         f.write("# Recherche des points homologues \n")
         f.write("echo \"Tapioca\" \n")
         f.write("mm3d Tapioca File CouplesTA.xml {} | tee reports/rapport_Tapioca.txt >> logfile \n\n".format(int(max(sensor.width, sensor.height)/2)))
