@@ -77,7 +77,7 @@ if __name__ == "__main__":
 					line = "mm3d Tapioca All OIS-Reech.*.tif " + str(max(half_w, half_h)) + " | tee reports/rapport_Tapioca.txt >> logfile \n"
 			if "mm3d OriConvert OriTxtInFile" in line:
 				if len(list_OIS) >= 4:
-					line = "mm3d OriConvert OriTxtInFile SommetsNav.csv Nav NameCple=CouplesTA.xml >> logfile \n"
+					line = "mm3d OriConvert OriTxtInFile SommetsNav.csv Nav NameCple=CouplesTA.xml OkNoIm=true >> logfile \n"
 				else:
-					line = "mm3d OriConvert OriTxtInFile SommetsNav.csv Nav >> logfile \n"
+					line = "mm3d OriConvert OriTxtInFile SommetsNav.csv Nav OkNoIm=true >> logfile \n"
 			f.write(line)
