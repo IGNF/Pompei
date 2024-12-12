@@ -23,7 +23,7 @@ mm3d Martini "OIS-Reech_.*tif" OriCalib=CalibNum >> logfile
 
 #Calcule de l'orientation relative
 echo "Tapas"
-mm3d Tapas FraserBasic "OIS-Reech_.*tif" InOri=MartiniCalibNum InCal=CalibNum Out=Rel @ExitOnWarn | tee reports/report_Tapas.txt >> logfile
+mm3d Tapas FraserBasic "OIS-Reech_.*tif" InOri=MartiniCalibNum FocFree=false InCal=CalibNum Out=Rel @ExitOnWarn | tee reports/report_Tapas.txt >> logfile
 
 #mm3d Tapas FraserBasic "OIS-Reech_.*tif" InCal=CalibNum Out=Rel | tee reports/report_Tapas.txt >> logfile
 

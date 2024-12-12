@@ -33,7 +33,7 @@ timeout 60s mm3d Campari OIS.*tif Abs Abs-Ratafia | tee reports/report_CampariRa
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/report_CampariRatafia.txt
 
 echo "Campari"
-timeout 60s mm3d Campari OIS.*tif Abs-Ratafia Abs-Ratafia-AllFree AllFree=true | tee reports/report_CampariRatafia_2.txt >> logfile
+timeout 60s mm3d Campari OIS.*tif Abs-Ratafia Abs-Ratafia-AllFree | tee reports/report_CampariRatafia_2.txt >> logfile
 
 #Analyse de report_CampariRatafia_2 
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/report_CampariRatafia_2.txt
