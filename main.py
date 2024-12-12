@@ -101,7 +101,7 @@ def run_chantier(chantier_name, path_chantier_pompei):
         path_xml_pompei = os.path.join(path_chantier_pompei, xml_file[0])
         force_verticale = get_force_verticale(os.path.join("pompei", path_xml_pompei), os.path.join("pompei", path_chantier_pompei))
         logger.info(f"Début du calcul")
-        os.system(f"cd pompei; sh visualize_flight_plan.sh {path_xml_pompei} ; sh pompei.sh {path_xml_pompei} 4 1 0 0 {force_verticale} storeref a 0 1 1 130")
+        os.system(f"cd pompei; sh visualize_flight_plan.sh {path_xml_pompei} ; sh pompei.sh {path_xml_pompei} 4 1 0 0 {force_verticale} storeref a 1 1 1 130")
         
         result_dir = os.path.join("pompei", "chantiers", "resultats", chantier_name)
         os.makedirs(result_dir, exist_ok=True)
