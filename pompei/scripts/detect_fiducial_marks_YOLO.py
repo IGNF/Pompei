@@ -23,6 +23,7 @@ from lxml import etree
 import argparse
 import log # Chargement des configurations des logs
 import logging
+import shutil
 
 logger = logging.getLogger()
 
@@ -193,6 +194,8 @@ def save_xml(liste_points):
         #if compte_point != int(args.nb_points)+1:
         if compte_point != 9 and compte_point != 5:
             logger.warning("{} points ont été trouvés sur l'image {}.".format(str(compte_point-1), nom_image))
+            os.makedirs("poubelle_yolo", exist_ok=True)
+            shutil.move(nom_image, "poubelle_yolo")
             liste_probleme.append(nom_image)
         
         else:
@@ -349,8 +352,8 @@ def run(chemin_sauvegarde):
     save_geojson(liste_points, chemin_sauvegarde)
     # On sauvegarde les points sous format xml
     liste_probleme = save_xml(liste_points)
-    SaisieAppuisInit(liste_probleme)
-    SaisieAppuisInit_to_InterneScan(liste_probleme)
+    #SaisieAppuisInit(liste_probleme)
+    #SaisieAppuisInit_to_InterneScan(liste_probleme)
 
     with open("id_reperes.txt", "w") as f:
         for i in range(1, len(points_image_maitresse)+1):
