@@ -19,7 +19,7 @@ TA=$3
 #Calcul de l'orthophoto
 # On passe à Malt un MNS sous-échantillonné pour qu'il sache à quelle altitude chercher. Cela permet d'améliorer un peu la reconstruction du MNS dans les zones de montagne
 echo "Malt"
-mm3d Malt Ortho OIS.*tif TerrainFinal_10_10_0.5_AllFree_Final MasqImGlob=filtre.tif NbVI=2 UseTA=0 NbProc=${CPU} EZA=1 DirMEC=MEC-Malt-Final DEMInitIMG=metadata/mns/MNS_ssech4.tif DEMInitXML=metadata/mns/MNS_ssech4.xml >> logfile
+timeout 3600s mm3d Malt Ortho OIS.*tif TerrainFinal_10_10_0.5_AllFree_Final MasqImGlob=filtre.tif NbVI=2 UseTA=0 NbProc=${CPU} EZA=1 DirMEC=MEC-Malt-Final DEMInitIMG=metadata/mns/MNS_ssech4.tif DEMInitXML=metadata/mns/MNS_ssech4.xml >> logfile
 
 
 python ${scripts_dir}/create_Z_Num_tfw.py --input_Malt MEC-Malt-Final

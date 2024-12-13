@@ -104,10 +104,9 @@ else
     factor=3
 fi
 
-
 #Mise en place avec les points d'appuis
 echo "Campari 10_10_10"
-mm3d Campari OIS.*tif Abs-Ratafia-AllFree TerrainFinal_10_10_10 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt| tee reports/rapport_CampariAero_10_10_10.txt >> logfile
+timeout 60s mm3d Campari OIS.*tif Abs-Ratafia-AllFree TerrainFinal_10_10_10 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt| tee reports/rapport_CampariAero_10_10_10.txt >> logfile
 #mm3d Campari OIS.*tif Abs TerrainFinal_10_10_10 GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport.txt| tee reports/rapport_CampariAero_10_10_10.txt >> logfile
 
 #Analyse de rapport_CampariAero_10_10_10 
@@ -122,7 +121,7 @@ python ${scripts_dir}/delete_GCP.py --factor ${factor} --GCP iter0/GCP.xml --S2D
 
 #On permet la modification sur les paramètres de la caméra
 echo "Campari 10_10_10_AllFree"
-mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree_temp GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport.txt| tee reports/rapport_CampariAero_10_10_10_AllFree_temp.txt >> logfile
+timeout 60s mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree_temp GCP=[GCP.xml,50,GCP-S2D.xml,50]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport.txt| tee reports/rapport_CampariAero_10_10_10_AllFree_temp.txt >> logfile
 
 #Analyse de rapport_CampariAero_10_10_10_AllFree_temp
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_10_AllFree_temp.txt
@@ -133,14 +132,14 @@ mv GCP.xml iter0/
 mv ResidualsReport.txt iter0/
 python ${scripts_dir}/delete_GCP.py --factor ${factor} --GCP iter0/GCP.xml --S2D iter0/GCP-S2D.xml --GCP_save GCP.xml --S2D_save GCP-S2D.xml --report_residuals iter0/ResidualsReport.txt
 
-mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport.txt| tee reports/rapport_CampariAero_10_10_10_AllFree.txt >> logfile
+timeout 60s mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport.txt| tee reports/rapport_CampariAero_10_10_10_AllFree.txt >> logfile
 
 #Analyse de rapport_CampariAero_10_10_10_AllFree 
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_10_AllFree.txt
 
 #On réduit l'écart-type
 echo "Campari 10_10_0.5_AllFree"
-mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFree GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 AllFree=true RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_10_10_0.5_AllFree.txt >> logfile
+timeout 60s mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFree GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 AllFree=true RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_10_10_0.5_AllFree.txt >> logfile
 
 #Analyse de rapport_CampariAero_10_10_0.5_AllFree 
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_0.5_AllFree.txt
@@ -154,7 +153,7 @@ python ${scripts_dir}/delete_GCP.py --factor ${factor} --GCP iter1/GCP.xml --S2D
 
 #On relance les calculs
 echo "Campari 10_10_0.5_AllFree_Final"
-mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFree_Final GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 AllFree=true RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_10_10_0.5_AllFree_Final.txt >> logfile
+timeout 60s mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFree_Final GCP=[GCP.xml,10,GCP-S2D.xml,10]  SigmaTieP=0.5 AllFree=true RapTxt=ResidualsReport.txt | tee reports/rapport_CampariAero_10_10_0.5_AllFree_Final.txt >> logfile
 ${scripts_dir}/AnalyseRapportMicMac.LINUX AnalyseRapportResidusMICMAC ResidualsReport.txt --export_ogr_appuis_mesure PtsAppuiMesure.geojson --export_ogr_appuis_calcul PtsAppuiCalcul.geojson --export_ogr_residus_appuis VecteursResidusAppui.geojson --epsg ${EPSG} >> logfile
 
 #Analyse de rapport_CampariAero_10_10_0.5_AllFree_Final
