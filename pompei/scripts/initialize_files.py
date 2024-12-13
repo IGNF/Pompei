@@ -89,10 +89,10 @@ def checkSensor(root):
         if add:
             sensors += vol.findall(".//sensor")
 
-    if len(sensors) == 0:
+    if len(sensors) >= 2:
         raise Exception("Attention, il y a {} caméras dans le chantier".format(len(sensors)))
-    #elif len(sensors)==0:
-    #    raise Exception("Attention, il n'y a aucune caméra dans le chantier")
+    elif len(sensors)==0:
+        raise Exception("Attention, il n'y a aucune caméra dans le chantier")
 
     else:
         sensor = Sensor()
