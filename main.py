@@ -91,8 +91,8 @@ def get_force_verticale(xml_path, path_chantier):
         m = np.array([p2.x-p0.x, p2.y-p0.y, p2.z-p0.z])
         dist = np.linalg.norm(np.cross(u, m)) / norm_u
         if dist > 500:
-            return 1
-    return 0
+            return 0
+    return 1
 
 
 def run_chantier(chantier_name, path_chantier_pompei):
@@ -101,7 +101,7 @@ def run_chantier(chantier_name, path_chantier_pompei):
         path_xml_pompei = os.path.join(path_chantier_pompei, xml_file[0])
         force_verticale = get_force_verticale(os.path.join("pompei", path_xml_pompei), os.path.join("pompei", path_chantier_pompei))
         logger.info(f"Début du calcul")
-        os.system(f"cd pompei; sh visualize_flight_plan.sh {path_xml_pompei} ; sh pompei.sh {path_xml_pompei} 4 1 0 0 {force_verticale} storeref a 0 1 1 130")
+        os.system(f"cd pompei; sh visualize_flight_plan.sh {path_xml_pompei} ; sh pompei.sh {path_xml_pompei} 4 1 0 0 {force_verticale} storeref a 1 1 1 130")
         
         result_dir = os.path.join("pompei", "chantiers", "resultats", chantier_name)
         os.makedirs(result_dir, exist_ok=True)
@@ -114,7 +114,7 @@ def run_chantier(chantier_name, path_chantier_pompei):
             shutil.copytree(os.path.join(path_chantier_pompei, "ortho_mns"), os.path.join(result_dir, "ortho_mns"), dirs_exist_ok=True)
         if os.path.isdir(os.path.join(path_chantier_pompei, "reports")):
             shutil.copytree(os.path.join(path_chantier_pompei, "reports"), os.path.join(result_dir, "reports"), dirs_exist_ok=True)
-        shutil.rmtree(path_chantier_pompei)
+        #shutil.rmtree(path_chantier_pompei)
         with open(path_chantiers_done, "a") as f:
             f.write(f"{chantier_name}\n")
 
@@ -135,6 +135,6 @@ chantiers_done = load_done()
 
 chantiers_list = os.listdir(os.path.join("pompei", "chantiers"))
 for chantier_name in chantiers_list:
-    if chantier_name not in chantiers_done:
+    if chantier_name not in chantiers_done and chantier_name!="resultats" and chantier_name!="logfile" and chantier_name!="done.txt":
         print(chantier_name)
         run_chantier(chantier_name, os.path.join("chantiers", chantier_name))
