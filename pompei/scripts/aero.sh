@@ -102,7 +102,7 @@ fi
 
 # Première itération : ne sert qu'à supprimer les points d'appuis les plus faux
 echo "Campari 10_10_10_tmp"
-mm3d Campari OIS.*tif Abs-Ratafia-AllFree TerrainFinal_10_10_10_tmp GCP=[GCP_0.xml,10,GCP-S2D_0.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport_0.txt| tee reports/rapport_CampariAero_10_10_10_tmp.txt >> logfile
+timeout 60s mm3d Campari OIS.*tif Abs-Ratafia-AllFree TerrainFinal_10_10_10_tmp GCP=[GCP_0.xml,10,GCP-S2D_0.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport_0.txt| tee reports/rapport_CampariAero_10_10_10_tmp.txt >> logfile
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_10_tmp.txt
 python ${scripts_dir}/delete_GCP.py --factor ${factor} --GCP GCP_0.xml --S2D GCP-S2D_0.xml --GCP_save GCP_1.xml --S2D_save GCP-S2D_1.xml --report_residuals ResidualsReport_0.txt
 
@@ -112,24 +112,24 @@ python ${scripts_dir}/aero_first_step.py --scripts ${scripts_dir} --facteur ${fa
 
 # Troisième itération : on permet la modification des paramètres internes. cette itération ne sert qu'à supprimer les points d'appuis les plus faux
 echo "Campari 10_10_10_AllFree"
-mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree_temp GCP=[GCP_AF_0.xml,10,GCP-S2D_AF_0.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport_AF_0.txt| tee reports/rapport_CampariAero_10_10_10_AllFree_temp.txt >> logfile
+timeout 60s mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree_temp GCP=[GCP_AF_0.xml,10,GCP-S2D_AF_0.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport_AF_0.txt| tee reports/rapport_CampariAero_10_10_10_AllFree_temp.txt >> logfile
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_10_AllFree_temp.txt
 python ${scripts_dir}/delete_GCP.py --factor ${factor} --GCP GCP_AF_0.xml --S2D GCP-S2D_AF_0.xml --GCP_save GCP_AF_1.xml --S2D_save GCP-S2D_AF_1.xml --report_residuals ResidualsReport_AF_0.txt
 
 
 # Quatrième itération : on permet la modification des paramètres internes. Pas de suppression de points d'appuis
-mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree GCP=[GCP_AF_1.xml,10,GCP-S2D_AF_1.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport_AF_1.txt| tee reports/rapport_CampariAero_10_10_10_AllFree.txt >> logfile
+timeout 60s mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree GCP=[GCP_AF_1.xml,10,GCP-S2D_AF_1.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport_AF_1.txt| tee reports/rapport_CampariAero_10_10_10_AllFree.txt >> logfile
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_10_AllFree.txt
 
 # Cinquième itération : on réduit l'écart-type sur les points de liaisons
 echo "Campari 10_10_0.5_AllFree"
-mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFree GCP=[GCP_AF_1.xml,10,GCP-S2D_AF_1.xml,10]  SigmaTieP=0.5 AllFree=true RapTxt=ResidualsReport_AF_2.txt | tee reports/rapport_CampariAero_10_10_0.5_AllFree.txt >> logfile
+timeout 60s mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFree GCP=[GCP_AF_1.xml,10,GCP-S2D_AF_1.xml,10]  SigmaTieP=0.5 AllFree=true RapTxt=ResidualsReport_AF_2.txt | tee reports/rapport_CampariAero_10_10_0.5_AllFree.txt >> logfile
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_0.5_AllFree.txt
 python ${scripts_dir}/delete_GCP.py --factor ${factor} --GCP GCP_AF_1.xml --S2D GCP-S2D_AF_1.xml --GCP_save GCP_AF_2.xml --S2D_save GCP-S2D_AF_2.xml --report_residuals ResidualsReport_AF_2.txt
 
 # Sixième itération : aéro finale
 echo "Campari 10_10_0.5_AllFree_Final"
-mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFree_Final GCP=[GCP_AF_2.xml,10,GCP-S2D_AF_2.xml,10]  SigmaTieP=0.5 AllFree=true RapTxt=ResidualsReport_AF_3.txt | tee reports/rapport_CampariAero_10_10_0.5_AllFree_Final.txt >> logfile
+timeout 60s mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFree_Final GCP=[GCP_AF_2.xml,10,GCP-S2D_AF_2.xml,10]  SigmaTieP=0.5 AllFree=true RapTxt=ResidualsReport_AF_3.txt | tee reports/rapport_CampariAero_10_10_0.5_AllFree_Final.txt >> logfile
 ${scripts_dir}/AnalyseRapportMicMac.LINUX AnalyseRapportResidusMICMAC ResidualsReport_AF_3.txt --export_ogr_appuis_mesure PtsAppuiMesure.geojson --export_ogr_appuis_calcul PtsAppuiCalcul.geojson --export_ogr_residus_appuis VecteursResidusAppui.geojson --epsg ${EPSG} >> logfile
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_0.5_AllFree_Final.txt
 
