@@ -234,7 +234,7 @@ def get_path_ortho():
     """
     with open(os.path.join(radiom, "ini", "coef_reetal_walis.txt"), "r") as f:
         for line in f:
-            if "nan" in line:
+            if "nan" in line or "Exception" in line:
                 logger.warning("Attention, la correction radiométrique a échoué ! L'ortho n'utilisera donc pas la correction radiométrique")
                 return outdir
     return os.path.join(radiom, "ini", "corr")
