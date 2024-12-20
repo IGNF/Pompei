@@ -331,6 +331,15 @@ def get_dalle_ortho(e_min, n_min, annee, departement, tile, EPSG):
     dossier_departement = "BDORTHO_RVB-0M50_JP2-E100_{}_{}_{}".format(EPSG_NOM[str(EPSG)], departement, annee)
     chemin_ortho = os.path.join("/media", 'store-ref', "ortho-images", "Ortho", departement, str(annee), dossier_departement)
 
+    # Parfois, l'année de l'ortho dans storeref ne correspond pas à l'année du MNS de corrélation
+    # C'est le cas notamment pour le 44 : MNS de 2017, ortho de 2016
+    if not os.path.exists(chemin_ortho):
+        dossier_departement = "BDORTHO_RVB-0M50_JP2-E100_{}_{}_{}".format(EPSG_NOM[str(EPSG)], departement, annee+1)
+        chemin_ortho = os.path.join("/media", 'store-ref', "ortho-images", "Ortho", departement, str(annee+1), dossier_departement)
+        if not os.path.exists(chemin_ortho):
+            dossier_departement = "BDORTHO_RVB-0M50_JP2-E100_{}_{}_{}".format(EPSG_NOM[str(EPSG)], departement, annee-1)
+            chemin_ortho = os.path.join("/media", 'store-ref', "ortho-images", "Ortho", departement, str(annee-1), dossier_departement)
+
     if os.path.exists(chemin_ortho):
         exemple_fichier = os.listdir(chemin_ortho)[0][:-4].split("-")
         exemple_fichier[2] = e_min
