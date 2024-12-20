@@ -67,41 +67,12 @@ def load_xml(selection_row, xml_path, path_chantier_misphot, path_chantier_pompe
     logger.info(f"Chantier {selection_row.zone} : {compte} images")
 
 
-def get_force_verticale(xml_path, path_chantier):
-    images = [i for i in os.listdir(path_chantier) if i[-4:]==".jp2"]
-    root = etree.parse(xml_path)
-    cliches = root.findall(".//cliche")
-    points = []
-    for cliche in cliches:
-        image = cliche.find(".//image").text.strip()
-        if image+".jp2" in images:
-            model = cliche.find(".//model")
-            x = float(model.find(".//x").text)
-            y = float(model.find(".//y").text)
-            z = float(model.find(".//z").text)
-            points.append(Point(x, y, z))
-    if len(points)<=2:
-        return 1
-    p0 = points[0]
-    p1 = points[1]
-    u = np.array([p1.x-p0.x, p1.y-p0.y, p1.z-p0.z])
-    norm_u = np.linalg.norm(u)
-    for i in range(2, len(points)):
-        p2 = points[i]
-        m = np.array([p2.x-p0.x, p2.y-p0.y, p2.z-p0.z])
-        dist = np.linalg.norm(np.cross(u, m)) / norm_u
-        if dist > 500:
-            return 0
-    return 1
-
-
 def run_chantier(chantier_name, path_chantier_pompei):
     xml_file = [i for i in os.listdir(os.path.join("pompei", path_chantier_pompei)) if i[-4:]==".xml"]
     if len(xml_file)==1:
         path_xml_pompei = os.path.join(path_chantier_pompei, xml_file[0])
-        force_verticale = get_force_verticale(os.path.join("pompei", path_xml_pompei), os.path.join("pompei", path_chantier_pompei))
         logger.info(f"Début du calcul")
-        os.system(f"cd pompei; sh visualize_flight_plan.sh {path_xml_pompei} ; sh pompei.sh {path_xml_pompei} 4 1 0 0 {force_verticale} storeref a 1 1 1 130")
+        os.system(f"cd pompei; sh visualize_flight_plan.sh {path_xml_pompei} ; sh pompei.sh {path_xml_pompei} 4 1 0 0 storeref a 1 1 1 130")
         
         result_dir = os.path.join("pompei", "chantiers", "resultats", chantier_name)
         os.makedirs(result_dir, exist_ok=True)
