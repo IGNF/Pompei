@@ -253,7 +253,6 @@ def filter_GCP(path_bati, path_vegetation, path_hydro):
     for i in range(len(liste_appuis)):
         appui = liste_appuis[i]
         
-        
         #Si le point d'appui est dans du bati, on le conserve
         if i in resultatBati:
             compte_bati += 1
@@ -275,8 +274,6 @@ def filter_GCP(path_bati, path_vegetation, path_hydro):
         else:
             compte_champs += 1
             liste_points_conserves.append(tmp_list[i]["name"])
-            appui.find("Incertitude").text = "{} {} {}".format(-1, -1, 1)
-        
 
     logger.info("Répartition des points d'appuis : ")
     logger.info("Bati : {}".format(compte_bati))
@@ -284,7 +281,15 @@ def filter_GCP(path_bati, path_vegetation, path_hydro):
     logger.info("Eau : {}".format(compte_eau))
     logger.info("Champs : {}".format(compte_champs))
 
-
+    if compte_bati / compte_champs > 0.2:
+        logger.info("Il y a assez de points d'appuis dans du bati : on dépondère en plani les points dans les champs")
+        for i in range(len(liste_appuis)):
+            appui = liste_appuis[i]
+            if i not in resultatBati and i not in resultatVegetation and i not in resultatHydro:
+                appui.find("Incertitude").text = "{} {} {}".format(-1, -1, 1)
+    else:
+        logger.info(f"Il n'y a pas assez de points d'appuis dans du bati : on conserve en plani les points dans les champs : {compte_bati / compte_champs}")
+        
     #On sauvegarde le fichier
     with open(args.GCP_save, "w") as f:
         f.write("<?xml version=\"1.0\" ?>\n")
