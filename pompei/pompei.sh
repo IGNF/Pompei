@@ -20,13 +20,12 @@ nb_fiducial_marks=$2 #int
 targets=$3 # [0, 1]
 Kugelhupf_apply_threshold=$4 #[0, 1]
 remove_artefacts=$5 #[0, 1]
-force_vertical=$6 #[0, 1]
-ortho=$7 # storeref, wms, histo, dalles
-algo=$8 # a pour Aubry, srtm pour SRTM
-filter_GCP=$9 #[0, 1]
-create_ortho_mns=${10} #[0, 1]
-create_ortho_mnt=${11} #[0, 1]
-CPU=${12}
+ortho=$6 # storeref, wms, histo, dalles
+algo=$7 # a pour Aubry, srtm pour SRTM
+filter_GCP=$8 #[0, 1]
+create_ortho_mns=$9 #[0, 1]
+create_ortho_mnt=${10} #[0, 1]
+CPU=${11}
 
 
 
@@ -38,7 +37,6 @@ if test "$#" = 0; then
     echo "targets : [0, 1]"
     echo "Kugelhupf_apply_threshold : [0, 1]"
     echo "remove_artefacts : [0, 1]"
-    echo "force_vertical : [0, 1]"
     echo "ortho : [storeref, wms, histo, dalles]"
     echo "algo : [a, s, srtm] : a pour Aubry, srtm pour SRTM"
     echo "filter_GCP : [0, 1]"
@@ -81,7 +79,7 @@ else
     sh ${scripts_dir}/filter_tie_points.sh ${remove_artefacts} ${scripts_dir} >> logfile
     echo "A partir de maintenant, vous pouvez utiliser pompei_after_homolFilterMasq.sh"
 
-    sh ${scripts_dir}/first_absolute_orientation.sh ${scripts_dir} ${force_vertical}
+    sh ${scripts_dir}/first_absolute_orientation.sh ${scripts_dir} ${TA}
 
     sh ${scripts_dir}/second_absolute_orientation.sh ${scripts_dir} ${CPU}
     echo "A partir de maintenant, vous pouvez utiliser pompei_after_Tawny.sh"

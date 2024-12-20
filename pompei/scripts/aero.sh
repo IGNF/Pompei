@@ -80,15 +80,11 @@ cd TraitementAPP
 
 
 #Maintenant, on peut relire tous les fichiers et ecrire ce qui est attendu par micmac..
-${scripts_dir}/POMPEI.LINUX BilanApp2MICMAC pts3D_bdortho_net.txt liste_cliches.txt ../GCP-S2D.xml ../GCP-S3D.xml ../GCP.xml ../id_GCP.txt >>../logfile
+${scripts_dir}/POMPEI.LINUX BilanApp2MICMAC pts3D_bdortho_net.txt liste_cliches.txt ../GCP_before_filtering-S2D.xml ../GCP-S3D.xml ../GCP_before_filtering.xml ../id_GCP.txt >>../logfile
 cd ..
 
-cp GCP-S2D.xml GCP_before_filtering-S2D.xml;
-cp GCP.xml GCP_before_filtering.xml;
-
-
-
-
+cp GCP_before_filtering-S2D.xml GCP-S2D_0.xml;
+cp GCP_before_filtering.xml GCP_0.xml;
 
 
 #Si on choisit de filtrer les points d'appuis pour ne conserver que ceux qui sont dans des villages
@@ -106,42 +102,37 @@ fi
 
 # Première itération : ne sert qu'à supprimer les points d'appuis les plus faux
 echo "Campari 10_10_10_tmp"
-timeout 60s mm3d Campari OIS.*tif Abs-Ratafia-AllFree TerrainFinal_10_10_10_tmp GCP=[GCP_0.xml,10,GCP-S2D_0.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport_0.txt| tee reports/rapport_CampariAero_10_10_10_tmp.txt >> logfile
+mm3d Campari OIS.*tif Abs-Ratafia-AllFree TerrainFinal_10_10_10_tmp GCP=[GCP_0.xml,10,GCP-S2D_0.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport_0.txt| tee reports/rapport_CampariAero_10_10_10_tmp.txt >> logfile
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_10_tmp.txt
 python ${scripts_dir}/delete_GCP.py --factor ${factor} --GCP GCP_0.xml --S2D GCP-S2D_0.xml --GCP_save GCP_1.xml --S2D_save GCP-S2D_1.xml --report_residuals ResidualsReport_0.txt
 
 
-# Deuxième itération itération : on ne touche pas à l'orientation interne. On déplace le bloc pour qu'il colle au mieux aux points d'appuis
-echo "Campari 10_10_10"
-timeout 60s mm3d Campari OIS.*tif Abs-Ratafia-AllFree TerrainFinal_10_10_10 GCP=[GCP_1.xml,10,GCP-S2D_1.xml,10]  SigmaTieP=10 RapTxt=ResidualsReport_1.txt| tee reports/rapport_CampariAero_10_10_10.txt >> logfile
-python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_10.txt
-python ${scripts_dir}/delete_GCP.py --factor ${factor} --GCP GCP_1.xml --S2D GCP-S2D_1.xml --GCP_save GCP_2.xml --S2D_save GCP-S2D_2.xml --report_residuals ResidualsReport_1.txt
-
+# Deuxième itérations : on supprime des points d'appuis jusqu'à ce que le campari AllFree=true fonctionne
+python ${scripts_dir}/aero_first_step.py --scripts ${scripts_dir} --facteur ${factor}
 
 # Troisième itération : on permet la modification des paramètres internes. cette itération ne sert qu'à supprimer les points d'appuis les plus faux
 echo "Campari 10_10_10_AllFree"
-timeout 60s mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree_temp GCP=[GCP_2.xml,10,GCP-S2D_2.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport_2.txt| tee reports/rapport_CampariAero_10_10_10_AllFree_temp.txt >> logfile
+mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree_temp GCP=[GCP_AF_0.xml,10,GCP-S2D_AF_0.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport_AF_0.txt| tee reports/rapport_CampariAero_10_10_10_AllFree_temp.txt >> logfile
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_10_AllFree_temp.txt
-python ${scripts_dir}/delete_GCP.py --factor ${factor} --GCP GCP_2.xml --S2D GCP-S2D_2.xml --GCP_save GCP_3.xml --S2D_save GCP-S2D_3.xml --report_residuals ResidualsReport_2.txt
+python ${scripts_dir}/delete_GCP.py --factor ${factor} --GCP GCP_AF_0.xml --S2D GCP-S2D_AF_0.xml --GCP_save GCP_AF_1.xml --S2D_save GCP-S2D_AF_1.xml --report_residuals ResidualsReport_AF_0.txt
 
 
 # Quatrième itération : on permet la modification des paramètres internes. Pas de suppression de points d'appuis
-timeout 60s mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree GCP=[GCP_3.xml,10,GCP-S2D_3.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport.txt| tee reports/rapport_CampariAero_10_10_10_AllFree.txt >> logfile
+mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree GCP=[GCP_AF_1.xml,10,GCP-S2D_AF_1.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport_AF_1.txt| tee reports/rapport_CampariAero_10_10_10_AllFree.txt >> logfile
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_10_AllFree.txt
 
 # Cinquième itération : on réduit l'écart-type sur les points de liaisons
 echo "Campari 10_10_0.5_AllFree"
-timeout 60s mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFree GCP=[GCP_3.xml,10,GCP-S2D_3.xml,10]  SigmaTieP=0.5 AllFree=true RapTxt=ResidualsReport_4.txt | tee reports/rapport_CampariAero_10_10_0.5_AllFree.txt >> logfile
+mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFree GCP=[GCP_AF_1.xml,10,GCP-S2D_AF_1.xml,10]  SigmaTieP=0.5 AllFree=true RapTxt=ResidualsReport_AF_2.txt | tee reports/rapport_CampariAero_10_10_0.5_AllFree.txt >> logfile
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_0.5_AllFree.txt
-python ${scripts_dir}/delete_GCP.py --factor ${factor} --GCP GCP_3.xml --S2D GCP-S2D_3.xml --GCP_save GCP_4.xml --S2D_save GCP-S2D_4.xml --report_residuals ResidualsReport_4.txt
+python ${scripts_dir}/delete_GCP.py --factor ${factor} --GCP GCP_AF_1.xml --S2D GCP-S2D_AF_1.xml --GCP_save GCP_AF_2.xml --S2D_save GCP-S2D_AF_2.xml --report_residuals ResidualsReport_AF_2.txt
 
 # Sixième itération : aéro finale
 echo "Campari 10_10_0.5_AllFree_Final"
-timeout 60s mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFree_Final GCP=[GCP_4.xml,10,GCP-S2D_4.xml,10]  SigmaTieP=0.5 AllFree=true RapTxt=ResidualsReport_5.txt | tee reports/rapport_CampariAero_10_10_0.5_AllFree_Final.txt >> logfile
-${scripts_dir}/AnalyseRapportMicMac.LINUX AnalyseRapportResidusMICMAC ResidualsReport_5.txt --export_ogr_appuis_mesure PtsAppuiMesure.geojson --export_ogr_appuis_calcul PtsAppuiCalcul.geojson --export_ogr_residus_appuis VecteursResidusAppui.geojson --epsg ${EPSG} >> logfile
+mm3d Campari OIS.*tif TerrainFinal_10_10_10_AllFree TerrainFinal_10_10_0.5_AllFree_Final GCP=[GCP_AF_2.xml,10,GCP-S2D_AF_2.xml,10]  SigmaTieP=0.5 AllFree=true RapTxt=ResidualsReport_AF_3.txt | tee reports/rapport_CampariAero_10_10_0.5_AllFree_Final.txt >> logfile
+${scripts_dir}/AnalyseRapportMicMac.LINUX AnalyseRapportResidusMICMAC ResidualsReport_AF_3.txt --export_ogr_appuis_mesure PtsAppuiMesure.geojson --export_ogr_appuis_calcul PtsAppuiCalcul.geojson --export_ogr_residus_appuis VecteursResidusAppui.geojson --epsg ${EPSG} >> logfile
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAero_10_10_0.5_AllFree_Final.txt
 
 #Analyse des résidus sur les points d'appuis
 #Dans le cas où l'erreur est trop grande, alors on utilise les points d'appuis trouvés dans le sous-échantillonnage 10. Cela peut arriver lorsque les dalles ne se superposent pas correctement
-python ${scripts_dir}/analyze_residual_vectors.py --input_geojson VecteursResidusAppui.geojson --input_appuis GCP_4.xml --scripts ${scripts_dir} --etape 1  --filter_GCP ${filter_GCP}
-
+python ${scripts_dir}/analyze_residual_vectors.py --input_geojson VecteursResidusAppui.geojson --input_appuis GCP_AF_2.xml --scripts ${scripts_dir} --etape 1  --filter_GCP ${filter_GCP}
