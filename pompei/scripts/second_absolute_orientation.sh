@@ -34,6 +34,10 @@ python ${scripts_dir}/analyze_Tapas.py --input_report reports/report_CampariRata
 
 echo "Campari"
 mm3d Campari OIS.*tif Abs-Ratafia Abs-Ratafia-AllFree AllFree=true | tee reports/report_CampariRatafia_2.txt >> logfile
+python ${scripts_dir}/analyze_campari_ratafia.py --input_ratafia_before Ori-Abs-Ratafia --input_ratafia_after Ori-Abs-Ratafia-AllFree
+if [ $? != 0 ]; then
+  exit 1
+fi
 
 #Analyse de report_CampariRatafia_2 
 python ${scripts_dir}/analyze_Tapas.py --input_report reports/report_CampariRatafia_2.txt
