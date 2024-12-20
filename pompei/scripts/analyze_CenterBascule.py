@@ -18,14 +18,18 @@ from math import sqrt
 import os
 import log # Chargement des configurations des logs
 import logging
+from lxml import etree
+import sys
 
 logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Analyse du rapport de CenterBascule pour vérifier qu'il n'y a pas de problèmes lors du passage en coordonnées absolues approximatives")
 
 parser.add_argument('--input_report', help='Rapport CenterBascule')
+parser.add_argument('--ori_abs', help='Orientation après la bascule en orientation absolue')
 args = parser.parse_args()
 
+ori_abs = args.ori_abs
 
 
 def find_problem(chemin_rapport):
@@ -49,10 +53,26 @@ def find_problem(chemin_rapport):
     logger.info("Le plus gros déplacement concerne l'image {} : {} mètres".format(image_distance_min, distance_max))
 
 
+def check_verticale(ori_abs):
+    """
+    Pour vérifier qu'un chantier est à peu près à la verticale, il faut regarder la dernière valeur de la ligne L3 
+    dans les orientations. Cette valeur doit être en valeur absolue proche de 1 
+    """
+    ori_xmls = [i for i in os.listdir(ori_abs) if i[:11]=="Orientation" and i[-4:]==".xml"]
+    for ori_xml in ori_xmls:
+        tree = etree.parse(os.path.join(ori_abs, ori_xml))
+        root = tree.getroot()
+        l3_balise = root.find(".//L3")
+        value = abs(float(l3_balise.text.split(" ")[2]))
+        if value < 0.95:
+            logger.warning(f"L'orientation dans le fichier {os.path.join(ori_abs, ori_xml)} n'est pas verticale : {value}")
+            sys.exit(1)
+
 
 if __name__ == "__main__":
 
     find_problem(args.input_report)
+    check_verticale(ori_abs)
 
 
     
