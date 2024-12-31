@@ -57,13 +57,14 @@ if foc_before < 0:
     sys.exit(1)
     
 error = False
-if foc_after < 0:
-    logger.warning(f"La focale dans {input_ratafia_after} est négative : {foc_after}")
-    error = True
         
 if foc_after is None:
     # cas probable d'un Distortion Inversion  by finite difference do not converge (probably ill-conditioned canvas) : aucun répertoire n'a été créé
     logger.warning(f"La focale n'a pas été trouvée dans {input_ratafia_after}")
+    error = True
+
+if foc_after is not None and foc_after < 0:
+    logger.warning(f"La focale dans {input_ratafia_after} est négative : {foc_after}")
     error = True
     
 # la focale n'est pas censée avoir trop bougé

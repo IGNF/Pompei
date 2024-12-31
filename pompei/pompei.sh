@@ -74,6 +74,12 @@ else
 
     sh correct_geometrically_images.sh ${scripts_dir}
 
+    # S'il n'y a qu'une seule image OIS-Reech, on s'arrête là. Généralement, c'est quand les repères n'ont pas été trouvés sur les images
+    count=$(ls -1q OIS-Reech*.tif | wc -l)
+    if test ${count} = 1; then
+        exit 1
+    fi
+
     sh find_tie_points.sh ${scripts_dir}
 
     sh ${scripts_dir}/filter_tie_points.sh ${remove_artefacts} ${scripts_dir} >> logfile
