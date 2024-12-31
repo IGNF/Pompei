@@ -74,7 +74,7 @@ def run_chantier(chantier_name, path_chantier_pompei):
         logger.info(f"Début du calcul")
         os.system(f"cd pompei; sh visualize_flight_plan.sh {path_xml_pompei} ; sh pompei.sh {path_xml_pompei} 4 1 0 0 storeref a 1 1 1 130")
         
-        result_dir = os.path.join("pompei", "chantiers", "resultats", chantier_name)
+        result_dir = os.path.join("pompei", "chantiers", "resultats_P", chantier_name)
         os.makedirs(result_dir, exist_ok=True)
         path_chantier_pompei = os.path.join("pompei", path_chantier_pompei)
         if os.path.isfile(os.path.join(path_chantier_pompei, "pompei_debug.log")):
@@ -106,6 +106,6 @@ chantiers_done = load_done()
 
 chantiers_list = os.listdir(os.path.join("pompei", "chantiers"))
 for chantier_name in chantiers_list:
-    if chantier_name not in chantiers_done and chantier_name!="resultats" and chantier_name!="logfile" and chantier_name!="done.txt":
+    if chantier_name not in chantiers_done and chantier_name!="resultats_P" and chantier_name!="logfile" and chantier_name!="done.txt":
         print(chantier_name)
         run_chantier(chantier_name, os.path.join("chantiers", chantier_name))
