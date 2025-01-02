@@ -68,12 +68,13 @@ if foc_after is not None and foc_after < 0:
     error = True
     
 # la focale n'est pas censée avoir trop bougé
-rapport = max(foc_before, foc_after)/min(foc_before, foc_after)
-if rapport > 1.3:
-    logger.debug(f"foc_before : {foc_before}")
-    logger.debug(f"foc_after : {foc_after}")
-    logger.warning(f"Le rapport entre les deux focales est supérieur à 1.3 : {rapport}")
-    error = True
+if foc_after is not None:
+    rapport = max(foc_before, foc_after)/min(foc_before, foc_after)
+    if rapport > 1.3:
+        logger.debug(f"foc_before : {foc_before}")
+        logger.debug(f"foc_after : {foc_after}")
+        logger.warning(f"Le rapport entre les deux focales est supérieur à 1.3 : {rapport}")
+        error = True
 
 # Si la focale a trop changé, alors on utilise l'orientation précédente
 # L'aéro devrait pouvoir se débrouiller ensuite
