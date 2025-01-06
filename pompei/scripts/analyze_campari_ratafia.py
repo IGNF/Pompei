@@ -80,6 +80,7 @@ if foc_after is not None:
 # L'aéro devrait pouvoir se débrouiller ensuite
 if error:
     logger.warning("mm3d Campari OIS.*tif Abs-Ratafia Abs-Ratafia-AllFree AllFree=true ne s'est pas bien passé : on supprime cette étape")
-    shutil.rmtree(input_ratafia_after)
+    if os.path.isdir(input_ratafia_after):
+        shutil.rmtree(input_ratafia_after)
     shutil.copytree(input_ratafia_before, input_ratafia_after)
 
