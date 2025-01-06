@@ -57,27 +57,30 @@ if foc_before < 0:
     sys.exit(1)
     
 error = False
-if foc_after < 0:
-    logger.warning(f"La focale dans {input_ratafia_after} est négative : {foc_after}")
-    error = True
         
 if foc_after is None:
     # cas probable d'un Distortion Inversion  by finite difference do not converge (probably ill-conditioned canvas) : aucun répertoire n'a été créé
     logger.warning(f"La focale n'a pas été trouvée dans {input_ratafia_after}")
     error = True
+
+if foc_after is not None and foc_after < 0:
+    logger.warning(f"La focale dans {input_ratafia_after} est négative : {foc_after}")
+    error = True
     
 # la focale n'est pas censée avoir trop bougé
-rapport = max(foc_before, foc_after)/min(foc_before, foc_after)
-if rapport > 1.3:
-    logger.debug(f"foc_before : {foc_before}")
-    logger.debug(f"foc_after : {foc_after}")
-    logger.warning(f"Le rapport entre les deux focales est supérieur à 1.3 : {rapport}")
-    error = True
+if foc_after is not None:
+    rapport = max(foc_before, foc_after)/min(foc_before, foc_after)
+    if rapport > 1.3:
+        logger.debug(f"foc_before : {foc_before}")
+        logger.debug(f"foc_after : {foc_after}")
+        logger.warning(f"Le rapport entre les deux focales est supérieur à 1.3 : {rapport}")
+        error = True
 
 # Si la focale a trop changé, alors on utilise l'orientation précédente
 # L'aéro devrait pouvoir se débrouiller ensuite
 if error:
     logger.warning("mm3d Campari OIS.*tif Abs-Ratafia Abs-Ratafia-AllFree AllFree=true ne s'est pas bien passé : on supprime cette étape")
-    shutil.rmtree(input_ratafia_after)
+    if os.path.isdir(input_ratafia_after):
+        shutil.rmtree(input_ratafia_after)
     shutil.copytree(input_ratafia_before, input_ratafia_after)
 
