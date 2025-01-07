@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License along with Pom
 import os
 import log # Chargement des configurations des logs
 import logging
+from equations import Shot
 
 logger = logging.getLogger()
 
@@ -47,7 +48,6 @@ def getResolution():
     with open(path, "r") as f:
         for line in f:
             resolution = float(line)
-            logger.info("Résolution du chantier : {} mètres".format(resolution))
             return float(resolution)
 
 
@@ -55,3 +55,13 @@ def get_resol_scan(metadata):
     with open(os.path.join(metadata, "resol.txt"), "r") as f:
         for line in f:
             return float(line.strip())
+        
+
+def loadShots(ori, EPSG, calibration):
+    shots = []
+    ori_files = [i for i in os.listdir(ori) if i[:11]=="Orientation" and i[-4:]==".xml"]
+    proj = Shot.getProj(EPSG)
+    for ori_file in ori_files:
+        shot = Shot.createShot(os.path.join(ori, ori_file), proj, calibration)
+        shots.append(shot)
+    return shots

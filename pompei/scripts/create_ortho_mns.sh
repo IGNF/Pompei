@@ -32,17 +32,19 @@ python ${scripts_dir}/convert_ori_ta.py --ta_xml ${TA} --ori Ori-TerrainFinal_10
 
 
 echo "Création d'une ortho pour chaque image OIS-Reech"
-python ${scripts_dir}/create_orthos_OIS_Reech.py --ta_xml TA_xml_updated.xml --mnt MEC-Malt-Final/MNS_Final.tif --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --outdir ortho_mns --cpu ${CPU} --mask MEC-Malt-Final/indicateur.tif
+python ${scripts_dir}/create_orthos_OIS_Reech.py --mnt MEC-Malt-Final/MNS_Final.tif --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --outdir ortho_mns --cpu ${CPU} --mask MEC-Malt-Final/indicateur.tif
 
 echo "Egalisation radiométrique"
 sh ${scripts_dir}/equalizate_radiometry_ortho_mnt.sh ${scripts_dir} ${CPU} radiom_ortho_mns ortho_mns >> logfile
 
+echo "Calcul de la mosaïque"
+python ${scripts_dir}/mosaiquage.py --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --cpu ${CPU} --metadata metadata --mosaic ortho_mns/mosaic.gpkg --ortho ortho_mns
+
 echo "Création de l'ortho vraie"
-python ${scripts_dir}/create_big_Ortho.py --ta_xml TA_xml_updated.xml --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --cpu ${CPU} --mnt MEC-Malt-Final/MNS_Final.tif --outdir ortho_mns --radiom radiom_ortho_mns
+python ${scripts_dir}/create_big_Ortho.py --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --cpu ${CPU} --mnt MEC-Malt-Final/MNS_Final.tif --outdir ortho_mns --radiom radiom_ortho_mns --mosaic ortho_mns/mosaic.gpkg
 
 echo "Création de fichiers vrt"
 # On crée un fichier vrt sur les orthos et le graphe de mosaïquage
-gdalbuildvrt ortho_mns/mosaic.vrt ortho_mns/*_mosaic.tif
 gdalbuildvrt ortho_mns/ortho.vrt ortho_mns/*_ortho.tif
 
 

@@ -21,7 +21,6 @@ from scipy import ndimage
 from lxml import etree
 import rasterio
 import os
-from tools import get_resol_scan
 
 
 
@@ -52,38 +51,63 @@ class Shot:
     def __str__(self) -> str:
         return "Shot_{}".format(self.imagePath)
 
-    def setProj(self, EPSG):
-
+    @staticmethod
+    def getProj(EPSG):
         if not EPSG in dict_EPSG.keys():
             raise ValueError("Impossible de créer une ortho sur MNT pour l'EPSG {} car ses coordonnées géocentriques et géographiques n'ont pas été renseignées".format(EPSG))
 
-        self.proj = dict_EPSG[EPSG]
+        proj = dict_EPSG[EPSG]
 
-        if isinstance(self.proj["auth"], int):
-            self.crs = pyproj.CRS.from_epsg(self.proj["auth"])
+        if isinstance(proj["auth"], int):
+            crs = pyproj.CRS.from_epsg(proj["auth"])
         else:
-            self.crs = pyproj.CRS.from_string(self.proj["auth"])
+            crs = pyproj.CRS.from_string(proj["auth"])
 
-        if isinstance(self.proj["epsg_geoc"], int):
-            self.crs_geoc = pyproj.CRS.from_epsg(self.proj["epsg_geoc"])
+        if isinstance(proj["epsg_geoc"], int):
+            crs_geoc = pyproj.CRS.from_epsg(proj["epsg_geoc"])
         else:
-            self.crs_geoc = pyproj.CRS.from_string(self.proj["epsg_geoc"])
+            crs_geoc = pyproj.CRS.from_string(proj["epsg_geoc"])
 
-        if isinstance(self.proj["epsg_geog"], int):
-            self.crs_geog = pyproj.CRS.from_epsg(self.proj["epsg_geog"])
+        if isinstance(proj["epsg_geog"], int):
+            crs_geog = pyproj.CRS.from_epsg(proj["epsg_geog"])
         else:
-            self.crs_geog = pyproj.CRS.from_string(self.proj["epsg_geog"])
+            crs_geog = pyproj.CRS.from_string(proj["epsg_geog"])
+
+        crs_to_crs_geoc = pyproj.Transformer.from_crs(crs, crs_geoc)
+        crs_geoc_to_crs = pyproj.Transformer.from_crs(crs_geoc, crs)
+        crs_to_crs_geog = pyproj.Transformer.from_crs(crs, crs_geog)
+        return {
+            "crs_to_crs_geoc":crs_to_crs_geoc,
+            "crs_geoc_to_crs":crs_geoc_to_crs,
+            "crs_to_crs_geog":crs_to_crs_geog,
+            "crs":crs,
+            "crs_geoc":crs_geoc,
+            "crs_geog":crs_geog
+        }
+
+
+    def setProj(self, proj):
+
+        self.crs_to_crs_geoc = proj["crs_to_crs_geoc"]
+        self.crs_geoc_to_crs = proj["crs_geoc_to_crs"]
+        self.crs_to_crs_geog = proj["crs_to_crs_geog"]
+        self.crs = proj["crs"]
+        self.crs_geoc = proj["crs_geoc"]
+        self.crs_geog = proj["crs_geog"]
 
 
     @staticmethod
-    def createShot(cliche, focale, imagePath, EPSG):
+    def createShot(path, proj, calibration):
         shot = Shot()
-        shot.setProj(EPSG)
-        model = cliche.find(".//model")
-        pt3d = model.find(".//pt3d")
-        x = float(pt3d.find(".//x").text)
-        y = float(pt3d.find(".//y").text)
-        z = float(pt3d.find(".//z").text)
+        shot.setProj(proj)
+        tree = etree.parse(path)
+        root = tree.getroot()
+
+        centre = root.find(".//Centre").text
+        x = float(centre.split()[0])
+        y = float(centre.split()[1])
+        z = float(centre.split()[2])
+
         shot.x_pos = x
         shot.y_pos = y
         shot.z_pos = z
@@ -92,25 +116,33 @@ class Shot:
         shot.z_central = 0
         shot.rot_to_euclidean_local = shot.topaero_matrix(shot.x_central, shot.y_central)
 
-        shot.nom = "OIS-Reech_{}".format(cliche.find(".//image").text.strip())
-        shot.imagePath = imagePath
-        inputds = gdal.Open(imagePath)
+        name = os.path.basename(path).replace(".tif.xml", "").replace("Orientation-", "")
+        shot.nom = name
+        shot.imagePath = f"{name}.tif"
+        inputds = gdal.Open(shot.imagePath)
         shot.X_size = inputds.RasterXSize
         shot.Y_size = inputds.RasterYSize
         
-        shot.x_ppa = focale[0]
-        shot.y_ppa = focale[1]
-        shot.focal = focale[2]
+        shot.x_ppa = calibration.PPX
+        shot.y_ppa = calibration.PPY
+        shot.focal = calibration.focale
 
         shot.x_pos_eucli, shot.y_pos_eucli, shot.z_pos_eucli = shot.world_to_euclidean(x, y, z)
 
-        quaternion = model.find(".//quaternion")
-        x_q = float(quaternion.find(".//x").text)
-        y_q = float(quaternion.find(".//y").text)
-        z_q = float(quaternion.find(".//z").text)
-        w_q = float(quaternion.find(".//w").text)
-        q = np.array([x_q, y_q, z_q, w_q])
-        shot.mat_eucli = shot.quaternion_to_mat_eucli(q)
+        rotMatrice = np.zeros((3,3))
+        L1 = root.find(".//L1").text
+        rotMatrice[0,0] = float(L1.split()[0])
+        rotMatrice[0,1] = float(L1.split()[1])
+        rotMatrice[0,2] = float(L1.split()[2])
+        L2 = root.find(".//L2").text
+        rotMatrice[1,0] = float(L2.split()[0])
+        rotMatrice[1,1] = float(L2.split()[1])
+        rotMatrice[1,2] = float(L2.split()[2])
+        L3 = root.find(".//L3").text
+        rotMatrice[2,0] = float(L3.split()[0])
+        rotMatrice[2,1] = float(L3.split()[1])
+        rotMatrice[2,2] = float(L3.split()[2])
+        shot.mat_eucli = rotMatrice
 
         return shot
 
@@ -279,25 +311,6 @@ class Shot:
             return *output,
         else:
             return output[0]
-
-    
-    def quaternion_to_mat_eucli(self, q) -> np.array:
-        """
-        Transform quaternions into a rotation matrix (TOPAERO convention)
-
-        :param q: quaternion
-        :type q: np.array, list
-
-        :return: rotation matrix
-        :rtype: np.array
-        """
-        mat = R.from_quat(q).as_matrix()
-        # passage en convention TOPAERO
-        # axe Z dans l'autre sens donc *-1 sur la dernière colonne
-        mat = mat*np.array([1, 1, -1])
-        # Inversion des deux premières colonnes + transposition
-        mat = mat[:, [1, 0, 2]].T
-        return mat
 
     
     def local_to_bundle(self, x_local, y_local, z_local):
