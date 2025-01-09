@@ -13,20 +13,18 @@
 
 TA=$1
 remove_artefacts=$2 #[0, 1]
-force_vertical=$3 #[0, 1]
-ortho=$4 # storeref, wms, histo, dalles
-algo=$5 # a pour Aubry, srtm pour SRTM
-filter_GCP=$6 #[0, 1]
-create_ortho_mns=$7 #[0, 1]
-create_ortho_mnt=$8 #[0, 1]
-CPU=$9
+ortho=$3 # storeref, wms, histo, dalles
+algo=$4 # a pour Aubry, srtm pour SRTM
+filter_GCP=$5 #[0, 1]
+create_ortho_mns=$6 #[0, 1]
+create_ortho_mnt=$7 #[0, 1]
+CPU=$8
 
 
 if test "$#" = 0; then
     echo "pompei_after_interface.sh : Partie de Pompei sans aucune interface. A lancer impérativement après pompei_interface.sh"
     echo "TA : path"
     echo "remove_artefacts : [0, 1]"
-    echo "force_vertical : [0, 1]"
     echo "ortho : [storeref, wms, histo, dalles]"
     echo "algo : [a, srtm] : a pour Aubry, srtm pour SRTM"
     echo "filter_GCP : [0, 1]"
@@ -46,12 +44,12 @@ else
     cd ${workspace}
     TA=$(basename ${TA})
 
-    sh find_tie_points.sh ${scripts_dir} >> logfile
+    sh find_tie_points.sh ${scripts_dir}
 
     sh ${scripts_dir}/filter_tie_points.sh ${remove_artefacts} ${scripts_dir} >> logfile
     echo "A partir de maintenant, vous pouvez utiliser pompei_after_homolFilterMasq.sh"
 
-    sh ${scripts_dir}/first_absolute_orientation.sh ${scripts_dir} ${force_vertical}
+    sh ${scripts_dir}/first_absolute_orientation.sh ${scripts_dir} ${TA}
 
     sh ${scripts_dir}/second_absolute_orientation.sh ${scripts_dir} ${CPU}
     echo "A partir de maintenant, vous pouvez utiliser pompei_after_Tawny.sh"
