@@ -43,16 +43,20 @@ elif test ${ortho} = "storeref"; then
 elif test ${ortho} = "wms"; then
     #On télécharge la BD Ortho et le MNS via un flux WMS. Les dalles sont rééchantillonnées à la résolution de l'ortho produite par le premier Malt/Tawny
     python ${scripts_dir}/download_ortho_MNS_wms.py --metadata "metadata"
+    
+    #On applique un gdal_translate sur les dalles de MNS et de BD Ortho afin que les dalles respectent bien les spécifications tif. 
+    #Sans cela, il arrive que les scripts de recherche de points d'appuis ne fonctionnent pas. cd metadata
+    cd metadata
+    find mns_temp -name "*.tif" -exec basename {} ';' | parallel -I% --max-args 1 "gdal_translate mns_temp/% mns/% && rm mns_temp/%"
+    rm -rf mns_temp
+    find ortho_temp -name "*.tif" -exec basename {} ';' | parallel -I% --max-args 1 "gdal_translate ortho_temp/% ortho/% && rm ortho_temp/%"
+    rm -rf ortho_temp
+    cd ..
 fi
 
-#On applique un gdal_translate sur les dalles de MNS et de BD Ortho afin que les dalles respectent bien les spécifications tif. 
-#Sans cela, il arrive que les scripts de recherche de points d'appuis ne fonctionnent pas. 
 
-cd metadata
-find mns_temp -name "*.tif" -exec basename {} ';' | parallel -I% --max-args 1 "gdal_translate mns_temp/% mns/% && rm mns_temp/%"
-rm -rf mns_temp
 #On construit un vrt qui sert uniquement à la visualisation afin de comparer plus facilement le résultat final à l'ortho de référence
-cd mns
+cd metadata/mns
 gdalbuildvrt MNS.vrt MNS*tif
 
 # On construit un MNS sous-échantillonné qui servira de valeurs initiales pour le deuxième Malt (construction de l'ortho)
@@ -76,18 +80,7 @@ gdalwarp -t_srs EPSG:${EPSG} -tr 4 4  -overwrite metadata/mns/MNS_SRTM.tif metad
 gdal_calc.py -a metadata/mns/MNS_SRTM_2154.tif -b metadata/mns/MNS_ssech4_temp.tif --overwrite --outfile metadata/mns/MNS_ssech4.tif --calc="b*(b>0)+a*(b==0)" --extent union
 # On crée le fichier xml contenant les informations du MNS nécessaires à Micmac
 python ${scripts_dir}/create_xml_micmac.py --tif_image metadata/mns/MNS_ssech4.tif --xml_file metadata/mns/MNS_ssech4.xml
-cd metadata
+cd metadata/ortho
 
-
-if test ${ortho} != "dalles"; then
-    find ortho_temp -name "*.jp2" -exec basename {} .jp2 ';' | parallel -I% --max-args 1 "gdal_translate ortho_temp/%.jp2 ortho/%.tif && rm ortho_temp/%.jp2"
-
-    find ortho_temp -name "*.tif" -exec basename {} ';' | parallel -I% --max-args 1 "gdal_translate ortho_temp/% ortho/% && rm ortho_temp/%"
-fi
-
-rm -rf ortho_temp
-
-
-cd ortho
 gdalbuildvrt ORTHO.vrt ORTHO*tif
 cd ../..
