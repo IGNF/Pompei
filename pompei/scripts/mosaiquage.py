@@ -17,7 +17,7 @@ from multiprocessing import Pool
 from tools import load_bbox, getResolution, getEPSG, loadShots
 import logging
 from tqdm import tqdm
-from shapely import Point, voronoi_polygons, MultiPoint, Polygon, LineString, intersection, MultiLineString, polygonize_full, make_valid, difference
+from shapely import Point, voronoi_polygons, MultiPoint, Polygon, LineString, intersection, MultiLineString, polygonize_full, make_valid, difference, within
 from shapely.geometry import box
 from shapely.ops import split
 import geopandas as gpd
@@ -342,21 +342,21 @@ def reduire_carte(carte:np.ndarray, facteur:int, transform_init)->Tuple[np.ndarr
     return carte_reduite, transform
 
 
-def arrivees_facteur4(pixel:PixelCarto):
+def arrivees_facteur4(pixel:PixelCarto, facteur:int):
     arrivees = []
-    for i in range(pixel.ligne*4, (pixel.ligne+1)*4):
-        for j in range(pixel.colonne*4, (pixel.colonne+1)*4):
+    for i in range(pixel.ligne*facteur, (pixel.ligne+1)*facteur):
+        for j in range(pixel.colonne*facteur, (pixel.colonne+1)*facteur):
             arrivees.append(PixelCarto(i, j))
     return arrivees
 
 
-def get_limites_recherche(depart:PixelCarto, arrivee:PixelCarto):
-    depart_colonne = depart.colonne//4
-    depart_ligne = depart.ligne//4
-    min_colonne = min(depart_colonne*4, arrivee.colonne*4)
-    max_colonne = max((depart_colonne+1)*4, (arrivee.colonne+1)*4)
-    min_ligne = min(depart_ligne*4, arrivee.ligne*4)
-    max_ligne = max((depart_ligne+1)*4, (arrivee.ligne+1)*4)
+def get_limites_recherche(depart:PixelCarto, arrivee:PixelCarto, facteur:int):
+    depart_colonne = depart.colonne//facteur
+    depart_ligne = depart.ligne//facteur
+    min_colonne = min(depart_colonne*facteur, arrivee.colonne*facteur)
+    max_colonne = max((depart_colonne+1)*facteur, (arrivee.colonne+1)*facteur)
+    min_ligne = min(depart_ligne*facteur, arrivee.ligne*facteur)
+    max_ligne = max((depart_ligne+1)*facteur, (arrivee.ligne+1)*facteur)
     return [min_colonne, max_colonne, min_ligne, max_ligne]
 
 
@@ -364,22 +364,33 @@ def trouverTrajet(depart:PixelCarto, arrivee:PixelCarto, carte_penalite:np.ndarr
 
     carte_penalite = np.squeeze(carte_penalite)
 
-    # On réduit la carte d'un facteur 16 en gardant à chaque endroit la moyenne des 16**2 cases
-    carte_reduite, transform_16 = reduire_carte(carte_penalite, 16, transform)
+    
+    # On réduit la carte d'un facteur 32 en gardant à chaque endroit la moyenne des 32**2 cases
+    carte_reduite, transform_32 = reduire_carte(carte_penalite, 32, transform)
 
-    depart_16 = PixelCarto(depart.ligne//16, depart.colonne//16)
-    arrivee_16 = PixelCarto(arrivee.ligne//16, arrivee.colonne//16)
-    # On cherche l'itinéraire sur la carte réduite d'un facteur 16
+    depart_32 = PixelCarto(depart.ligne//32, depart.colonne//32)
+    arrivee_32 = PixelCarto(arrivee.ligne//32, arrivee.colonne//32)
+    # On cherche l'itinéraire sur la carte réduite d'un facteur 32
     # Renvoie tous les pixels par lesquels il faut passer, sans compter le pixel où se trouve l'unité
-    trajet_16 = dikjstra(depart_16, [arrivee_16], carte_reduite)
+    trajet_32 = dikjstra(depart_32, [arrivee_32], carte_reduite)
+
+
+    carte_reduite, transform_16 = reduire_carte(carte_penalite, 16, transform)
+    depart_16 = PixelCarto(depart.ligne//16, depart.colonne//16)
+    trajet_16 = []
+    for arrivee_16 in trajet_32:
+        limite_recherche = get_limites_recherche(depart_16, arrivee_16, int(32/16))
+        arrivees_16 = arrivees_facteur4(arrivee_16, int(32/16))
+        trajet_16 += dikjstra(depart_16, arrivees_16, carte_reduite, limite_recherche)
+        depart_16 = trajet_16[-1]
 
     # Cette fois, on cherche l'itinéraire sur la carte réduite d'un facteur 4
     carte_reduite, transform_4 = reduire_carte(carte_penalite, 4, transform)
     depart_4 = PixelCarto(depart.ligne//4, depart.colonne//4)
     trajet_4 = []
     for arrivee_4 in trajet_16:
-        limite_recherche = get_limites_recherche(depart_4, arrivee_4)
-        arrivees_4 = arrivees_facteur4(arrivee_4)
+        limite_recherche = get_limites_recherche(depart_4, arrivee_4, int(16/4))
+        arrivees_4 = arrivees_facteur4(arrivee_4, int(16/4))
         trajet_4 += dikjstra(depart_4, arrivees_4, carte_reduite, limite_recherche)
         depart_4 = trajet_4[-1]
 
@@ -387,21 +398,28 @@ def trouverTrajet(depart:PixelCarto, arrivee:PixelCarto, carte_penalite:np.ndarr
     depart_1 = depart
     # Puis on cherche l'itinéraire sur la carte à pleine résolution
     for arrivee_1 in trajet_4:
-        limite_recherche = get_limites_recherche(depart_1, arrivee_1)
-        arrivees_1 = arrivees_facteur4(arrivee_1)
+        limite_recherche = get_limites_recherche(depart_1, arrivee_1, int(4/1))
+        arrivees_1 = arrivees_facteur4(arrivee_1, int(4/1))
         trajet_1 += dikjstra(depart_1, arrivees_1, carte_penalite, limite_recherche)
         depart_1 = trajet_1[-1]
-    limites = [arrivee_16.colonne*16, (arrivee_16.colonne+1)*16, arrivee_16.ligne*16, (arrivee_16.ligne+1)*16]
+    limites = [arrivee_16.colonne*32, (arrivee_16.colonne+1)*32, arrivee_16.ligne*32, (arrivee_16.ligne+1)*32]
     trajet_1 += dikjstra(depart_1, [arrivee], carte_penalite, limites)
     return trajet_1
 
 
-def convert_point_to_pixel_carto(point:Point, transform:Affine)->PixelCarto:
+def convert_point_to_pixel_carto(point:Point, transform:Affine, size:Tuple[int])->PixelCarto:
     """
     Convertit un objet de type Point en un objet PixelCarto
     """
     colonne = int((point.x - transform.c) / transform.a)
     ligne = int((point.y - transform.f) / transform.e)
+    
+    # On vérifie que l'arrivée ne se trouve pas en-dehors de la carte
+    if ligne >= size[1]:
+        ligne = size[1]-1
+    
+    if colonne >= size[2]:
+        colonne = size[2]-1
     return PixelCarto(ligne, colonne)
 
 
@@ -491,8 +509,8 @@ def optimize_line(args:Tuple[LineString, Shot, int, int, str])->Tuple[LineString
     # On convertit en objet PixelCarto les deux extrémités de la ligne
     p1 = Point(line.coords[0])
     p2 = Point(line.coords[1])
-    depart = convert_point_to_pixel_carto(p1, transform_1)
-    arrivee = convert_point_to_pixel_carto(p2, transform_1)
+    depart = convert_point_to_pixel_carto(p1, transform_1, image_1.shape)
+    arrivee = convert_point_to_pixel_carto(p2, transform_1, image_1.shape)
     
     # On cherche le trajet le plus court dans la carte de pénalité entre les deux extrémités de la droite
     trajet = trouverTrajet(depart, arrivee, carte_poids, transform_1, EPSG, i)
@@ -513,20 +531,6 @@ def polygon_to_linestring(emprise:Polygon)->LineString:
     else:
         lines.append(boundary)
     return lines
-
-
-def get_emprises_line(shot:Shot, emprise_lines:List[LineString])->List[LineString]:
-    """
-    Pour l'image, on recupère les trois lignes de bord de chantier les plus proches 
-    """
-    distances = {}
-    for i, line in enumerate(emprise_lines):
-        center = line.centroid
-        distance = np.sqrt((shot.x_pos-center.x)**2 + (shot.y_pos-center.y)**2)
-        distances[str(i)] = {"distance":distance, "ligne":line}
-
-    lignes = [v["ligne"] for k, v in sorted(distances.items(), key=lambda item: item[1]["distance"])][:3]
-    return lignes
     
 
 def getCalibrationFile(path):
@@ -584,12 +588,14 @@ emprise_lines = list(split(MultiLineString(emprise_lines), MultiLineString(ligne
 
 # On dispose de lignes de mosaïquages et des lignes délimitant le contour
 # Il faut à présent reconstruire des polygones et indiquer en tout point du chantier quelle image utiliser pour reconstruire l'ortho
+
 polygones = []
 shot_names = []
 # On parcourt toutes les images
 for shot in shots:
+    all_polygones = []
     # On récupère les trois lignes de bordure du chantier les plus proches du sommet de prise de vue de l'image
-    lignes = get_emprises_line(shot, emprise_lines)
+    lignes = [i for i in emprise_lines]
     
     # On récupère toutes les lignes de mosaïquages optimisées qui délimitent l'image
     for i in range(len(lignes_optimisees)):
@@ -598,10 +604,16 @@ for shot in shots:
     
     # On recherche les polygones parmi ces lignes
     valid, _, _, not_valid = polygonize_full(lignes)
-    if not valid.is_empty:
-        polygones.append(valid.geoms[0])
-    else:
-        polygones.append(Polygon(not_valid.geoms[0].coords))
-    shot_names.append(shot.imagePath)
+    for poly in valid.geoms:
+        all_polygones.append(poly)
+
+    for poly in not_valid.geoms:
+        all_polygones.append(Polygon(poly.coords))
+
+    centre = Point(shot.x_pos, shot.y_pos)
+    for poly in all_polygones:
+        if within(centre, poly):
+            polygones.append(poly)
+            shot_names.append(shot.imagePath)
 
 gpd.GeoDataFrame({"shot":shot_names, "geometry":polygones}).set_crs(epsg=EPSG).to_file(mosaic_path)
