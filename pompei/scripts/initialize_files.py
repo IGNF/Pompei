@@ -218,8 +218,7 @@ def case_0_fiduciaux(cliches, remove_artefacts, sensor:Sensor):
         f.write("python ${scripts_dir}/analyze_Tapioca.py --input_report=reports/rapport_Tapioca.txt --output_rapport=reports/resultat_analyse_Tapioca.txt \n\n")
 
 
-def case_n_fiduciaux(cliches, remove_artefacts, sensors, targets, nb_fiducial_marks, apply_threshold, TA_path):
-    base_name = name_first_image[:5]
+def case_n_fiduciaux(remove_artefacts, sensors, targets, nb_fiducial_marks, apply_threshold, TA_path):
     with open(os.path.join("correct_geometrically_images.sh"), "w") as f:
         f.write("scripts_dir=$1 \n\n")
         f.write("#Saisie des repères de fond de chambre sur une image \n")
@@ -231,6 +230,7 @@ def case_n_fiduciaux(cliches, remove_artefacts, sensors, targets, nb_fiducial_ma
                 identifiant = sensor_dict["identifiant"]
                 images = sensor_dict["images"]
                 name_first_image = images[0][:-4]
+                base_name = name_first_image[:5]
                 f.write("mm3d SaisieAppuisInit {}.tif NONE id_reperes.txt MeasuresIm-{}.tif.xml >> logfile\n\n".format(name_first_image, name_first_image))
                 f.write("#Saisie d'un masque indiquant où les repères de fond de chambre peuvent se trouver \n")
                 f.write("echo \"Saisie du masque où les repères du fond de chambre se trouvent\" \n")
@@ -310,5 +310,5 @@ if nb_fiducial_marks == 0:
     case_0_fiduciaux(cliches, remove_artefacts, sensor)
 
 else:
-    case_n_fiduciaux(cliches, remove_artefacts, sensors, targets, nb_fiducial_marks, apply_threshold, TA_path)
+    case_n_fiduciaux(remove_artefacts, sensors, targets, nb_fiducial_marks, apply_threshold, TA_path)
 
