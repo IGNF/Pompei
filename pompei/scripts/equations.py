@@ -123,6 +123,7 @@ class Shot:
         shot.X_size = inputds.RasterXSize
         shot.Y_size = inputds.RasterYSize
         
+        shot.calibration = calibration
         shot.x_ppa = calibration.PPX
         shot.y_ppa = calibration.PPY
         shot.focal = calibration.focale

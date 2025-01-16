@@ -20,11 +20,11 @@ echo "HomolFilterMasq"
 
 if test ${remove_artefacts} -eq 1;
 then
-    mm3d HomolFilterMasq "OIS-Reech_.*tif" GlobalMasq=filtre_artefacts.tif ExpTxtOut=true >> logfile
-    mm3d HomolFilterMasq "OIS-Reech_.*tif" GlobalMasq=filtre_artefacts.tif >> logfile
+    mm3d HomolFilterMasq "OIS-Reech_.*tif" KeyCalculMasq=filtre_artefacts.tif ExpTxtOut=true >> logfile
+    mm3d HomolFilterMasq "OIS-Reech_.*tif" KeyCalculMasq=filtre_artefacts.tif >> logfile
 else
-    mm3d HomolFilterMasq "OIS-Reech_.*tif" GlobalMasq=filtre.tif ExpTxtOut=true >> logfile
-    mm3d HomolFilterMasq "OIS-Reech_.*tif" GlobalMasq=filtre.tif >> logfile
+    mm3d HomolFilterMasq "OIS-Reech_.*tif" KeyCalculMasq=MyKeyCalculMasq ExpTxtOut=true >> logfile
+    mm3d HomolFilterMasq "OIS-Reech_.*tif" KeyCalculMasq=MyKeyCalculMasq >> logfile
 fi
 mv Homol HomolTA_safe >> logfile
 

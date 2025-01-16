@@ -11,36 +11,30 @@
 #You should have received a copy of the GNU General Public License along with Pompei. If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import rasterio
-import numpy as np
+import shutil
 import argparse
+from lxml import etree
 from tools import getSensors
 
 
-parser = argparse.ArgumentParser(description="Calcule la position moyenne des repères de fond de chambre")
-parser.add_argument('--identifiant', help="Identifiant du vol à pour lequel il faut calculer la position moyenne", type=int)
-parser.add_argument('--ta', help="Tableau d'assemblage")
+parser = argparse.ArgumentParser(description="Création d'un masque par image pour Malt")
+parser.add_argument('--TA', help='Fichier TA du chantier')
 args = parser.parse_args()
 
-files = [i for i in os.listdir() if i[-4:]==".tif"]
 
-for filename in files:
-    image_src = rasterio.open(filename)
-    array = image_src.read()
-    array = array[0,:,:]
-    array = np.where(array < 20, 0, 255)
-    array = np.expand_dims(array, axis=0)
+TA_path = args.TA
 
-    with rasterio.open(
-            "filtre_FFTKugelHupf_"+filename, "w",
-            driver = "GTiff",
-            dtype = rasterio.uint8,
-            count = array.shape[0],
-            width = array.shape[2],
-            height = array.shape[1]) as dst:
-        dst.write(array)
+tree = etree.parse(TA_path)
+root = tree.getroot()
+sensors = getSensors(root)
 
 
-
-
-
+for sensor_dict in sensors:
+    identifiant = sensor_dict["identifiant"]
+    images = sensor_dict["images"]
+    filtre_name = f"filtre{identifiant}.tif"
+    if os.path.isfile(filtre_name):
+        for image in images:
+            filtre_image_name = image[:-4]
+            filtre_image_name = f"OIS-Reech_{filtre_image_name}_Masq.tif"
+            shutil.copy(filtre_name, filtre_image_name)

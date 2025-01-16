@@ -17,23 +17,54 @@ You should have received a copy of the GNU General Public License along with Pom
 import os
 from PIL import Image
 from lxml import etree
-
+import argparse
+from tools import getSensors
 
 #à partir d'une liste d'éléments, renvoie une sous-liste de tous les éléments qui contiennent une liste de pattern  
 def filter_list_pattern_in(list_to_filter, list_pattern_in): 
     return [str for str in list_to_filter if
              all(subin in str for subin in list_pattern_in)] 
 
+
+def get_images(sensors, identifiant):
+	for sensor_dict in sensors:
+		if sensor_dict["identifiant"]==identifiant:
+			return sensor_dict["images"]
+
 if __name__ == "__main__":
+
+	parser = argparse.ArgumentParser(description="Met à jour le fichier Ori-CalibNum")
+	parser.add_argument('--identifiant', help="Identifiant du vol à pour lequel il faut calculer la position moyenne", type=int)
+	parser.add_argument('--ta', help="Tableau d'assemblage")
+	args = parser.parse_args()
+
+	TA_path = args.ta
+	identifiant = args.identifiant
 
 	input_calib_folder = "Ori-CalibNum"
 
+	tree = etree.parse(TA_path)
+	root = tree.getroot()
+
+	# On récupère les capteurs et leurs images associées
+	sensors = getSensors(root)
+
+	# On récupère la liste des images associées au vol identifiant
+	images = get_images(sensors, identifiant)
+
 	list_xml = []
 	list_OIS = []	
-	#On récupère les fichiers xml dans Ori-CalibNum
-	list_xml = filter_list_pattern_in(os.listdir(input_calib_folder), ['.xml'])
+	
+	
+	suffixe = f"Argentique{identifiant}.xml"
+	list_xml = [i for i in os.listdir(input_calib_folder) if i[-len(suffixe):]==suffixe]
 
 	#On récupère les clichés argentiques rééchantillonnés
+	list_OIS = []
+	list_OIS_tmp = [i.replace("OIS-Reech_", "") for i in os.listdir() if i[:10]=="OIS-Reech_" and i[-4:]==".tif"]
+	for im in list_OIS_tmp:
+		if im in images:
+			list_OIS.append(im)
 	list_OIS = filter_list_pattern_in(os.listdir(),['OIS-Reech_', '.tif'])
 	
 	#On augmente la taille maximale des images acceptées par PIL

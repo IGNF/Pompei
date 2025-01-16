@@ -73,7 +73,7 @@ else
 
     sh ${scripts_dir}/first_absolute_orientation.sh ${scripts_dir} ${force_vertical}
 
-    sh ${scripts_dir}/second_absolute_orientation.sh ${scripts_dir} ${CPU}
+    sh ${scripts_dir}/second_absolute_orientation.sh ${scripts_dir} ${CPU} ${TA}
 
 
     if test ${algo} = "srtm"; then

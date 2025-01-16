@@ -17,13 +17,13 @@ import os
 import argparse
 
 import rasterio.crs
-from equations import Shot, MNT, Calibration, DistorsionCorrection, Mask
+from equations import Shot, MNT, DistorsionCorrection, Mask
 import numpy as np
 import rasterio
 from scipy import ndimage
 from multiprocessing import Pool
 from tqdm import tqdm
-from tools import getEPSG, load_bbox, getNbCouleurs, getResolution, loadShots
+from tools import getEPSG, load_bbox, getNbCouleurs, getResolution, read_ori
 import log # Chargement des configurations des logs
 import logging
 
@@ -36,6 +36,7 @@ parser.add_argument('--ori', help="Répertoire contenant les fichiers orientatio
 parser.add_argument('--outdir', help="Répertoire où sauvegarder les orthos")
 parser.add_argument('--cpu', help="Nombre de cpus à utiliser", type=int)
 parser.add_argument('--mask', help="Masque où calculer les orthos", default=None)
+parser.add_argument('--ta', help="Fichier TA")
 args = parser.parse_args()
 
 mnt_path = args.mnt
@@ -43,6 +44,7 @@ ori_path = args.ori
 outdir = args.outdir
 nb_cpus = args.cpu
 mask_path = args.mask
+ta_path = args.ta
 
 # Une dalle : 2000 pixels
 tileSize = 2000
@@ -97,7 +99,7 @@ def createOrthoImage(shot:Shot, x_min, x_max, y_min, y_max, mnt:MNT, resolution,
     c, l = shot.world_to_image(xx, yy, z)
 
     # On applique la correction de la distorsion
-    dc = DistorsionCorrection(calibration)
+    dc = DistorsionCorrection(shot.calibration)
     c_corr, l_corr = dc.compute(c, l)
 
     RasterXSize = array_ortho.shape[2]
@@ -139,15 +141,6 @@ def createOrthoImage(shot:Shot, x_min, x_max, y_min, y_max, mnt:MNT, resolution,
     else:
         ortho = None
     return ortho
-            
-
-
-def getCalibrationFile(path):
-    files = os.listdir(path)
-    for file in files:
-        if file[:11] == "AutoCal_Foc":
-            return os.path.join(path, file)
-    raise Exception("No calibration file in {}".format(path))
 
 
 def getEmpriseSol(shot:Shot, mnt:MNT):
@@ -252,12 +245,9 @@ EPSG = getEPSG("metadata")
 resolution = getResolution()
 nbCouleurs = getNbCouleurs("metadata")
 
-# On récupère les paramètres de calibration de la caméra
-calibrationFile = getCalibrationFile(ori_path)
-calibration = Calibration.createCalibration(calibrationFile)
 
 # On crée un objet shot par image
-shots = loadShots(ori_path, EPSG, calibration)
+shots = read_ori(ori_path, ta_path, EPSG)
 
 # Crée les tuiles d'ortho
 createShotOrthos(shots, resolution, nbCouleurs, EPSG)

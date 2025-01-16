@@ -11,10 +11,10 @@
 #You should have received a copy of the GNU General Public License along with Pompei. If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from equations import Shot, Calibration
+from equations import Shot
 import numpy as np
 from multiprocessing import Pool
-from tools import load_bbox, getResolution, getEPSG, loadShots
+from tools import load_bbox, getResolution, getEPSG, read_ori
 import logging
 from tqdm import tqdm
 from shapely import Point, voronoi_polygons, MultiPoint, Polygon, LineString, intersection, MultiLineString, polygonize_full, make_valid, difference, within
@@ -36,6 +36,7 @@ parser.add_argument('--cpu', help="Nombre de cpus à utiliser", type=int)
 parser.add_argument('--metadata', help="Répertoire contenant les métadonnées")
 parser.add_argument('--mosaic', help="Fichier où sauvegarder la mosaïque")
 parser.add_argument('--ortho', help="Répertoire où sauvegarder les orthos")
+parser.add_argument('--ta', help="Fichier TA")
 args = parser.parse_args()
 
 ori_path = args.ori
@@ -43,6 +44,7 @@ nb_cpus = args.cpu
 metadata = args.metadata
 mosaic_path = args.mosaic
 ortho_path = args.ortho
+ta_path = args.ta
 
 
 def voronoi(shots:List[Shot], emprise:Polygon)->List[LineString]:
@@ -531,14 +533,6 @@ def polygon_to_linestring(emprise:Polygon)->LineString:
     else:
         lines.append(boundary)
     return lines
-    
-
-def getCalibrationFile(path):
-    files = os.listdir(path)
-    for file in files:
-        if file[:11] == "AutoCal_Foc":
-            return os.path.join(path, file)
-    raise Exception("No calibration file in {}".format(path))
 
 
 
@@ -549,12 +543,8 @@ bbox:List[float] = load_bbox(metadata)
 # On crée un polygone qui contient la boîte englobante du projet
 emprise = Polygon([[bbox[0], bbox[1]], [bbox[2], bbox[1]], [bbox[2], bbox[3]], [bbox[0], bbox[3]]])
 
-# On récupère les paramètres de calibration de la caméra
-calibrationFile = getCalibrationFile(ori_path)
-calibration = Calibration.createCalibration(calibrationFile)
-
 # On récupère les images et leurs orientations
-shots:List[Shot] = loadShots(ori_path, EPSG, calibration)
+shots:List[Shot] = read_ori(ori_path, ta_path, EPSG)
 
 # On crée une première approximation des lignes de mosaïquage en utilisant le diagramme de Voronoï
 lines = voronoi(shots, emprise)
