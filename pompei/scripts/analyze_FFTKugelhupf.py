@@ -24,6 +24,8 @@ logger = logging.getLogger()
 parser = argparse.ArgumentParser(description='Analyse du rapport de FFTKugelhupf pour vérifier que tous les repères de fond de chambre ont été trouvés')
 
 parser.add_argument('--input_report', help='Rapport FFTKugelhupf')
+parser.add_argument('--out_xml', help='fichier de points image1')
+parser.add_argument('--dir', help='chemin vers répertoire script')
 args = parser.parse_args()
 
 
@@ -42,11 +44,48 @@ def find_problem(chemin_rapport):
                         logger.warning("Attention : le résidu de l'image {} est trop élevé : {}".format(line_splitted[4], value))
                         liste_probleme.append(line_splitted[4])
     return liste_probleme
-
+'''
 def SaisieAppuisInit(liste_probleme):
     for image in liste_probleme:
         commande = "mm3d SaisieAppuisInit {} NONE id_reperes.txt MeasuresIm-{}.xml Gama=2".format(image, image)
         os.system(commande)
+'''
+import subprocess
+
+def SaisieAppuisInit(liste_probleme, xml, dir):
+    for image in liste_probleme:
+        script_python = dir+"/fichier3.py"
+      
+        '''
+        # Arguments pour le script Python
+        args = [
+            script_python,
+            image, 
+            "NONE", 
+            #"id_reperes.txt", 
+            f"MeasuresIm-{image}.tif-S2D.xml",
+            #"Gama=2"
+        ]
+        '''
+        # Appel du script Python avec subprocess
+        try:
+            #subprocess.run(["python"] + args, check=True)
+            print("salut ca va???")
+            subprocess.run(
+                [
+                    "python", script_python,
+                    "--image_name", image,
+                    "--output_file", f"MeasuresIm-{image}.tif-S2D.xml",
+                    "--flag", "True",
+                    "--input_file", xml
+                    #"--id_reperes", "id_reperes.txt",
+                    #"--gama", "2"
+                ],
+            check=True
+            )
+        except subprocess.CalledProcessError as e:
+            print(f"Erreur lors de l'exécution du script Python pour l'image {image}: {e}")
+
 
 def SaisieAppuisInit_to_InterneScan(liste_probleme):
     for image in liste_probleme:
@@ -91,7 +130,9 @@ def SaisieAppuisInit_to_InterneScan(liste_probleme):
 if __name__ == "__main__":
 
     liste_probleme = find_problem(args.input_report)
-    SaisieAppuisInit(liste_probleme)
+    #SaisieAppuisInit(liste_probleme)
+    SaisieAppuisInit(liste_probleme, args.out_xml, args.dir) #v2
+
     SaisieAppuisInit_to_InterneScan(liste_probleme)
 
     

@@ -18,7 +18,6 @@ from lxml import etree
 import os
 import log # Chargement des configurations des logs
 import logging
-import json
 
 logger = logging.getLogger()
 
@@ -26,6 +25,7 @@ parser = argparse.ArgumentParser(description="Préparation des différents fichi
 parser.add_argument('--scripts', help='Répertoire du chantier')
 parser.add_argument('--TA', help='Fichier TA du chantier')
 parser.add_argument('--nb_fiducial_marks', help='Nombre de repères de fond de chambre')
+parser.add_argument('--scan_resolution', help='résolution du scannage de la photo argentique')
 parser.add_argument('--remove_artefacts', help="Présence d'artefacts")
 parser.add_argument('--targets', help='Utiliser Yolo pour détecter les cibles')
 parser.add_argument('--apply_threshold', help='faire la recherche de repères de fons de chambre sur les images seuillées')
@@ -33,6 +33,7 @@ args = parser.parse_args()
 
 scripts_path = args.scripts
 TA_path = args.TA
+scan_resolution = float(args.scan_resolution)
 nb_fiducial_marks = int(args.nb_fiducial_marks)
 remove_artefacts = int(args.remove_artefacts)
 targets = int(args.targets)
@@ -54,21 +55,6 @@ class Sensor:
     def setFocale(self, focale):
         self.focale = focale
 
-
-def get_resolution_scan():
-    ta_basename = os.path.basename(TA_path)
-    resol_scan = 0.021
-    with open(os.path.join(scripts_path, "export_focales.json"), "r") as f:
-        data = json.load(f)
-        for chantier_dict in data:
-            if chantier_dict["chantier"].replace(" ", "_") + ".xml" == ta_basename:
-                resol_scan = float(chantier_dict["resol_scan"])
-                break
-    os.makedirs("metadata", exist_ok=True)
-    with open(os.path.join("metadata", "resol.txt"), "w") as f:
-        f.write(str(resol_scan))
-    return resol_scan
-    
 
 
 def openXml(TA_path):
@@ -120,7 +106,7 @@ def createOriCalibNum(scripts_path, sensor:Sensor):
     root = tree.getroot()
 
     root.find(".//PP").text = "{} {}".format(sensor.width/2, sensor.height/2)
-    root.find(".//F").text = "{}".format(sensor.focale / get_resolution_scan())
+    root.find(".//F").text = "{}".format(sensor.focale / scan_resolution)
     root.find(".//SzIm").text = "{} {}".format(sensor.width, sensor.height)
     root.find(".//CDist").text = "{} {}".format(sensor.width/2, sensor.height/2)
 
@@ -200,7 +186,12 @@ def case_n_fiduciaux(cliches, remove_artefacts, sensor:Sensor, targets, nb_fiduc
         if targets == 1:
             f.write("python ${scripts_dir}/detect_fiducial_marks_YOLO.py --nb_points " + str(nb_fiducial_marks) + " --scripts ${scripts_dir} \n\n")
         else:
-            f.write("mm3d SaisieAppuisInit {}.tif NONE id_reperes.txt MeasuresIm-{}.tif.xml >> logfile\n\n".format(name_first_image, name_first_image))
+            #f.write("mm3d SaisieAppuisInit {}.tif NONE id_reperes.txt MeasuresIm-{}.tif.xml >> logfile\n\n".format(name_first_image, name_first_image))
+            
+            #f.write("python fichier3.py --image_name {}.tif --output_file MeasuresIm-{}.tif.xml \n\n".format(name_first_image, name_first_image))
+            f.write("python ${scripts_dir}/fichier3.py --image_name " + name_first_image +".tif --output_file MeasuresIm-" + name_first_image + ".tif-S2D.xml --flag " + str(False) + " \n\n")
+
+            
             f.write("#Saisie d'un masque indiquant où les repères de fond de chambre peuvent se trouver \n")
             f.write("echo \"Saisie du masque où les repères du fond de chambre se trouvent\" \n")
             f.write("mm3d SaisieMasq {}.tif >> logfile \n\n".format(name_first_image))
@@ -217,7 +208,10 @@ def case_n_fiduciaux(cliches, remove_artefacts, sensor:Sensor, targets, nb_fiduc
                 f.write("mm3d FFTKugelhupf {}.*tif MeasuresIm-{}.tif-S2D.xml Masq=Masq | tee reports/rapport_FFTKugelhupf.txt >> logfile \n\n".format(base_name, name_first_image))
 
             f.write("echo \"Analyse du rapport FFTKugelhupf\" \n")
-            f.write("python ${scripts_dir}/analyze_FFTKugelhupf.py --input_report reports/rapport_FFTKugelhupf.txt \n\n")
+            
+            #f.write("python ${scripts_dir}/analyze_FFTKugelhupf.py --input_report reports/rapport_FFTKugelhupf.txt \n\n")
+            f.write("python ${scripts_dir}/analyze_FFTKugelhupf.py --input_report reports/rapport_FFTKugelhupf.txt --out_xml MeasuresIm-"+ name_first_image +".tif-S2D.xml --dir ${scripts_dir} \n\n")
+
             f.write("#Suppression de fichiers de masques sinon ils sont traités comme faisant partie des images \n")
             f.write("rm {}_Masq.tif \n".format(name_first_image))
             f.write("rm {}_Masq.xml \n".format(name_first_image))
