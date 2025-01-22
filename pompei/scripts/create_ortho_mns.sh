@@ -29,7 +29,11 @@ rm OIS*Masq.tif
 
 python ${scripts_dir}/create_Z_Num_tfw.py --input_Malt MEC-Malt-Final
 python ${scripts_dir}/build_mns_micmac.py --input_Malt MEC-Malt-Final
-python ${scripts_dir}/improve_mns.py --mns_input MEC-Malt-Final/MNS_pyramide.tif --indicateur MEC-Malt-Final/indicateur.tif --cpu ${CPU}
+gdalbuildvrt MEC-Malt-Final/MNS_pyramide.vrt  MEC-Malt-Final/MNS_pyramide*tif
+gdalbuildvrt MEC-Malt-Final/indicateur.vrt  MEC-Malt-Final/indicateur*tif
+python ${scripts_dir}/improve_mns.py --mns_input MEC-Malt-Final/MNS_pyramide.vrt --indicateur MEC-Malt-Final/indicateur.vrt --cpu ${CPU}
+gdalbuildvrt MEC-Malt-Final/MNS_Final.vrt  MEC-Malt-Final/MNS_Final*tif
+gdalbuildvrt MEC-Malt-Final/carte_interpolation.vrt  MEC-Malt-Final/carte_interpolation*tif
 
 # Création d'un nouveau fichier TA avec les orientations et focales mises à jour.
 echo "Création du fichier TA_xml_updated.xml"
@@ -37,7 +41,7 @@ python ${scripts_dir}/convert_ori_ta.py --ta_xml ${TA} --ori Ori-TerrainFinal_10
 
 
 echo "Création d'une ortho pour chaque image OIS-Reech"
-python ${scripts_dir}/create_orthos_OIS_Reech.py --mnt MEC-Malt-Final/MNS_Final.tif --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --outdir ortho_mns --cpu ${CPU} --mask MEC-Malt-Final/indicateur.tif --ta ${TA}
+python ${scripts_dir}/create_orthos_OIS_Reech.py --mnt MEC-Malt-Final/MNS_Final.vrt --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --outdir ortho_mns --cpu ${CPU} --mask MEC-Malt-Final/indicateur.vrt --ta ${TA}
 
 echo "Egalisation radiométrique"
 sh ${scripts_dir}/equalizate_radiometry_ortho_mnt.sh ${scripts_dir} ${CPU} radiom_ortho_mns ortho_mns >> logfile
@@ -46,7 +50,7 @@ echo "Calcul de la mosaïque"
 python ${scripts_dir}/mosaiquage.py --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --cpu ${CPU} --metadata metadata --mosaic ortho_mns/mosaic.gpkg --ortho ortho_mns --ta ${TA}
 
 echo "Création de l'ortho vraie"
-python ${scripts_dir}/create_big_Ortho.py --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --cpu ${CPU} --mnt MEC-Malt-Final/MNS_Final.tif --outdir ortho_mns --radiom radiom_ortho_mns --mosaic ortho_mns/mosaic.gpkg --ta ${TA}
+python ${scripts_dir}/create_big_Ortho.py --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --cpu ${CPU} --mnt MEC-Malt-Final/MNS_Final.vrt --outdir ortho_mns --radiom radiom_ortho_mns --mosaic ortho_mns/mosaic.gpkg --ta ${TA}
 
 echo "Création de fichiers vrt"
 # On crée un fichier vrt sur les orthos et le graphe de mosaïquage
@@ -56,7 +60,7 @@ gdalbuildvrt ortho_mns/ortho.vrt ortho_mns/*_ortho.tif
 python ${scripts_dir}/compute_MNS_diff.py --mnsHistoPath MEC-Malt-Final/  --mnsPath  metadata/mns/ --masque MEC-Malt-Final/Masq_STD-MALT_DeZoom2.tif --metadata metadata
 
 mkdir ortho_mns/carte_correlation
-mv MEC-Malt-Final/carte_interpolation.tif ortho_mns/carte_correlation/
-mv MEC-Malt-Final/correlation.tif ortho_mns/carte_correlation/
-mv MEC-Malt-Final/indicateur.tif ortho_mns/carte_correlation/
-mv MEC-Malt-Final/MNS_Final*.tif ortho_mns/carte_correlation/
+mv MEC-Malt-Final/carte_interpolation* ortho_mns/carte_correlation/
+mv MEC-Malt-Final/correlation* ortho_mns/carte_correlation/
+mv MEC-Malt-Final/indicateur* ortho_mns/carte_correlation/
+mv MEC-Malt-Final/MNS_Final* ortho_mns/carte_correlation/
