@@ -135,6 +135,17 @@ def get_projection_name(epsg):
     raise ValueError("L'EPSG du chantier n'est pas reconnu. Il doit être parmi : {}".format(dictionnaire.values()))
 
 
+
+def get_dates(images_metadata):
+    dates = []
+    for feature in images_metadata["features"]:
+        date_cliche = feature["properties"]["date_cliche"]
+        if date_cliche not in dates:
+            dates.append(date_cliche)
+    return dates
+
+
+
 def create_xml_file(images_metadata, outdir, epsg):
     crsWMS = CRS.from_epsg(3857)
     crsChantier = CRS.from_epsg(epsg)
@@ -142,73 +153,77 @@ def create_xml_file(images_metadata, outdir, epsg):
     root = etree.Element("TA")
     projection = etree.SubElement(root, "projection")
     projection.text = get_projection_name(epsg)
-    vol = etree.SubElement(root, "vol")
-    for feature in images_metadata["features"]:
-        cliche = etree.SubElement(vol, "cliche")
-        image = etree.SubElement(cliche, "image")
-        image.text = feature["id"][6:]
-        model = etree.SubElement(cliche, "model")
-        pt3d = etree.SubElement(model, "pt3d")
-        x_L93, y_L93 = transformer.transform(feature["properties"]["x"], feature["properties"]["y"])
-        x = etree.SubElement(pt3d, "x")
-        x.text = str(x_L93)
-        y = etree.SubElement(pt3d, "y")
-        y.text = str(y_L93)
-        z = etree.SubElement(pt3d, "z")
-        z.text = "5200"
+    dates = get_dates(images_metadata)
 
-
-        quaternion = etree.SubElement(model, "quaternion")
-        x = etree.SubElement(quaternion, "x")
-        x.text = "0"
-        y = etree.SubElement(quaternion, "y")
-        y.text = "0"
-        z = etree.SubElement(quaternion, "z")
-        z.text = "0"
-        w = etree.SubElement(quaternion, "w")
-        w.text = "0"
-
-
-        polygon2d = etree.SubElement(cliche, "polygon2d")
-
-        for point in feature["geometry"]["coordinates"][0]:
-            x_L93, y_L93 = transformer.transform(point[0], point[1])
-            x = etree.SubElement(polygon2d, "x")
+    for date in dates:
+        vol = etree.SubElement(root, "vol")
+        date_balise = etree.SubElement(vol, "date")
+        date_balise.text = date.replace("-", "").replace("z", "")
+        for feature in images_metadata["features"]:
+            if feature["properties"]["date_cliche"]!=date:
+                continue
+            cliche = etree.SubElement(vol, "cliche")
+            image = etree.SubElement(cliche, "image")
+            image_name = feature["id"][6:]
+            image.text = image_name
+            model = etree.SubElement(cliche, "model")
+            pt3d = etree.SubElement(model, "pt3d")
+            x_L93, y_L93 = transformer.transform(feature["properties"]["x"], feature["properties"]["y"])
+            x = etree.SubElement(pt3d, "x")
             x.text = str(x_L93)
-            y = etree.SubElement(polygon2d, "y")
+            y = etree.SubElement(pt3d, "y")
             y.text = str(y_L93)
+            z = etree.SubElement(pt3d, "z")
+            z.text = "5200"
+
+
+            quaternion = etree.SubElement(model, "quaternion")
+            x = etree.SubElement(quaternion, "x")
+            x.text = "0"
+            y = etree.SubElement(quaternion, "y")
+            y.text = "0"
+            z = etree.SubElement(quaternion, "z")
+            z.text = "0"
+            w = etree.SubElement(quaternion, "w")
+            w.text = "0"
+
+
+            polygon2d = etree.SubElement(cliche, "polygon2d")
+
+            for point in feature["geometry"]["coordinates"][0]:
+                x_L93, y_L93 = transformer.transform(point[0], point[1])
+                x = etree.SubElement(polygon2d, "x")
+                x.text = str(x_L93)
+                y = etree.SubElement(polygon2d, "y")
+                y.text = str(y_L93)
 
 
 
-    sensor = etree.SubElement(vol, "sensor")
-    
+        sensor = etree.SubElement(vol, "sensor")
+        
+        inputds = gdal.Open(os.path.join(outdir, image_name+".tif"))
 
-    images = [i for i in os.listdir(outdir) if i[-4:]==".tif"]
-    inputds = gdal.Open(os.path.join(outdir, images[0]))
+        rect = etree.SubElement(sensor, "rect")
+        x = etree.SubElement(rect, "x")
+        x.text = "0"
+        y = etree.SubElement(rect, "y")
+        y.text = "0"
+        h = etree.SubElement(rect, "h")
+        h.text = str(int(inputds.RasterYSize * 0.021))
+        w = etree.SubElement(rect, "w")
+        w.text = str(int(inputds.RasterXSize * 0.021))
+        
+        focal = etree.SubElement(sensor, "focal")
+        pt3d = etree.SubElement(focal, "pt3d")
+        x = etree.SubElement(pt3d, "x")
+        x.text = str(int(inputds.RasterXSize * 0.021 / 2))
+        y = etree.SubElement(pt3d, "y")
+        y.text = str(int(inputds.RasterYSize * 0.021 / 2))
+        z = etree.SubElement(pt3d, "z")
+        z.text = "152"
 
-    rect = etree.SubElement(sensor, "rect")
-    x = etree.SubElement(rect, "x")
-    x.text = "0"
-    y = etree.SubElement(rect, "y")
-    y.text = "0"
-    h = etree.SubElement(rect, "h")
-    h.text = str(int(inputds.RasterYSize * 0.021))
-    w = etree.SubElement(rect, "w")
-    w.text = str(int(inputds.RasterXSize * 0.021))
-    
-    
-    
-    focal = etree.SubElement(sensor, "focal")
-    pt3d = etree.SubElement(focal, "pt3d")
-    x = etree.SubElement(pt3d, "x")
-    x.text = str(int(inputds.RasterXSize * 0.021 / 2))
-    y = etree.SubElement(pt3d, "y")
-    y.text = str(int(inputds.RasterYSize * 0.021 / 2))
-    z = etree.SubElement(pt3d, "z")
-    z.text = "152"
-
-    pixel_size = etree.SubElement(sensor, "pixel_size")
-    pixel_size.text = "0.0010000"
+        pixel_size = etree.SubElement(sensor, "pixel_size")
+        pixel_size.text = "0.0010000"
 
     with open(os.path.join(outdir, "ta.xml"), "w") as f:
         f.write(str(etree.tostring(root, encoding='unicode')))
