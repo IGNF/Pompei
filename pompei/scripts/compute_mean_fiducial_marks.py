@@ -57,7 +57,7 @@ if __name__ == "__main__":
 	listXml = []
 	#on ne garde que les fichiers Measures-Im  Xml
 	for file in listFile :
-		image_name = file.split('-')[1].replace(".xml", "")
+		image_name = file[11:].replace(".xml", "")
 		if file.split('-')[0] == 'MeasuresIm' and image_name in images:
 			listXml.append(file)
 

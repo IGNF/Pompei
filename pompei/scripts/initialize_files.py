@@ -191,7 +191,7 @@ def createSommetsNav(root):
     return cliches
 
 
-def case_0_fiduciaux(cliches, remove_artefacts, sensor:Sensor):
+def case_0_fiduciaux(cliches, remove_artefacts):
     name_first_image = cliches[0].find("image").text.strip()
     base_name = name_first_image[:5]
     with open(os.path.join("correct_geometrically_images.sh"), "w") as f:
@@ -214,7 +214,7 @@ def case_0_fiduciaux(cliches, remove_artefacts, sensor:Sensor):
         f.write("mm3d OriConvert OriTxtInFile SommetsNav.csv Nav NameCple=CouplesTA.xml >> logfile \n\n")
         f.write("# Recherche des points homologues \n")
         f.write("echo \"Tapioca\" \n")
-        f.write("mm3d Tapioca File CouplesTA.xml {} | tee reports/rapport_Tapioca.txt >> logfile \n\n".format(int(max(sensor.width, sensor.height)/2)))
+        f.write("mm3d Tapioca File CouplesTA.xml 5000 | tee reports/rapport_Tapioca.txt >> logfile \n\n")
         f.write("python ${scripts_dir}/analyze_Tapioca.py --input_report=reports/rapport_Tapioca.txt --output_rapport=reports/resultat_analyse_Tapioca.txt \n\n")
 
 
@@ -307,7 +307,7 @@ createLocalChantierDescripteur(scripts_path, sensors)
 cliches = createSommetsNav(root)
 
 if nb_fiducial_marks == 0:
-    case_0_fiduciaux(cliches, remove_artefacts, sensor)
+    case_0_fiduciaux(cliches, remove_artefacts)
 
 else:
     case_n_fiduciaux(remove_artefacts, sensors, targets, nb_fiducial_marks, apply_threshold, TA_path)

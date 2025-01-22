@@ -61,12 +61,10 @@ if __name__ == "__main__":
 
 	#On récupère les clichés argentiques rééchantillonnés
 	list_OIS = []
-	list_OIS_tmp = [i.replace("OIS-Reech_", "") for i in os.listdir() if i[:10]=="OIS-Reech_" and i[-4:]==".tif"]
+	list_OIS_tmp = [i for i in os.listdir() if i[:10]=="OIS-Reech_" and i[-4:]==".tif"]
 	for im in list_OIS_tmp:
-		if im in images:
+		if im.replace("OIS-Reech_", "") in images:
 			list_OIS.append(im)
-	list_OIS = filter_list_pattern_in(os.listdir(),['OIS-Reech_', '.tif'])
-	
 	#On augmente la taille maximale des images acceptées par PIL
 	Image.MAX_IMAGE_PIXELS = 1e15
 
@@ -78,7 +76,6 @@ if __name__ == "__main__":
 	
 	str_width=str(w)
 	str_height=str(h)
-
 	
 	#lecture fichier Ori-CalibNum
 	for xml in list_xml:

@@ -15,14 +15,34 @@ import rasterio
 import numpy as np
 import argparse
 from tools import getSensors
-
+from lxml import etree
 
 parser = argparse.ArgumentParser(description="Calcule la position moyenne des repères de fond de chambre")
 parser.add_argument('--identifiant', help="Identifiant du vol à pour lequel il faut calculer la position moyenne", type=int)
 parser.add_argument('--ta', help="Tableau d'assemblage")
 args = parser.parse_args()
 
-files = [i for i in os.listdir() if i[-4:]==".tif"]
+
+def get_images(sensors, identifiant):
+	for sensor_dict in sensors:
+		if sensor_dict["identifiant"]==identifiant:
+			return sensor_dict["images"]
+
+TA_path = args.ta
+identifiant = args.identifiant
+
+input_calib_folder = "Ori-CalibNum"
+
+tree = etree.parse(TA_path)
+root = tree.getroot()
+
+# On récupère les capteurs et leurs images associées
+sensors = getSensors(root)
+
+# On récupère la liste des images associées au vol identifiant
+images = get_images(sensors, identifiant)
+
+files = [i for i in os.listdir() if i in images]
 
 for filename in files:
     image_src = rasterio.open(filename)
