@@ -42,6 +42,15 @@ def write_tfw(path, x, y, dX, dY):
         f.write("{}\n0\n0\n{}\n{}\n{}\n".format(dX, dY, x, y))
 
 
+def get_znum_tfw(folder, level):
+    prefixe = f"Z_Num{level}_DeZoom"
+    suffixe = ".tfw"
+    files = [i for i in os.listdir(folder) if i[:len(prefixe)]==prefixe and i[-len(suffixe):]==suffixe and not "Tile" in i]
+    if len(files)==0:
+        return None
+    return os.path.join(folder, files[0])
+
+
 def create_tfw(folder, radical):
     Z_Nums = [i for i in os.listdir(folder) if radical in i and i[-4:]==".tif"]
 
@@ -50,7 +59,15 @@ def create_tfw(folder, radical):
 
 
     if len(Z_Nums_not_Tile)>=1:
-        X0, Y0, res_X, res_Y = read_tfw(os.path.join(folder, Z_Nums_not_Tile[0].replace(".tif", ".tfw")))
+        if "Correl_STD-MALT" in radical:
+            level = radical.split("_")[-1]
+            filename = get_znum_tfw(folder, level)
+            X0, Y0, res_X, res_Y = read_tfw(filename)
+            for f in Z_Nums_not_Tile:
+                write_tfw(os.path.join(folder, f.replace(".tif", ".tfw")), X0, Y0, res_X, res_Y)
+        else:
+            X0, Y0, res_X, res_Y = read_tfw(os.path.join(folder, Z_Nums_not_Tile[0].replace(".tif", ".tfw")))
+
 
         for compte, tile in enumerate(Z_Nums_Tile):
             if radical == "Orthophotomosaic":
@@ -79,6 +96,7 @@ def create_tfw(folder, radical):
 
 for indice in range(1, 10):
     create_tfw(args.input_Malt, "Z_Num{}".format(indice))
+    create_tfw(args.input_Malt, f"Correl_STD-MALT_Num_{indice}")
 
 create_tfw("Ortho-"+args.input_Malt, "Orthophotomosaic")
 

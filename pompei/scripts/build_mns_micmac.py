@@ -40,22 +40,15 @@ On produit également une carte indicateur.tif qui contient l'identifiant de la 
 
 class LevelMNS:
 
-    def __init__(self, image_path, bounds_required=None) -> None:
+    def __init__(self, image_path, first_level, bounds_required=None, dezoom=2) -> None:
         self.image_path = image_path
         self.bounds_required = bounds_required
+        self.first_level = first_level
         self.level = int(os.path.basename(image_path)[5])
-        self.dezoom = self.getDezoom()
+        self.dezoom = int(dezoom/2)
         self.origineAlti, self.resolutionAlti = self.read_xml()
         self.mns, self.transform, self.bounds = self.compute_mns()
         self.correlation = self.open_correlation()
-
-    def getDezoom(self):
-        """
-        Renvoie le niveau de dezoom de la couche
-        """
-        filename = os.path.basename(self.image_path)
-        dezoom = int(int(filename.split("_")[2].replace("DeZoom", ""))/2)
-        return dezoom
         
     def open_mns(self):
         """
@@ -84,12 +77,7 @@ class LevelMNS:
         return mns, transform, bounds
 
     def read_xml(self):
-        if "Tile" in self.image_path:
-            dirname, basename = os.path.split(self.image_path)
-            xml_filename = "_".join(basename.split("_")[:4])+".xml"
-            xml_path = os.path.join(dirname, xml_filename)
-        else:
-            xml_path = f"{self.image_path[:-4]}.xml"
+        xml_path = os.path.join(input_Malt, f"Z_Num{self.level}_DeZoom{self.dezoom*2}_STD-MALT.xml")
         tree = etree.parse(xml_path)
         root = tree.getroot()
         origineAlti = float(root.find("OrigineAlti").text)
@@ -118,14 +106,18 @@ class LevelMNS:
     
 
     def open_correlation8(self):
-        filename = "Correl_STD-MALT_Num_7.tif"
-        input_dst = rasterio.open(os.path.join(input_Malt, "Z_Num8.vrt"))
-        transform = input_dst.transform
+        correlation_files = get_correlation(self.level-1)
+        if len(correlation_files) > 1:
+            os.system(f"gdalbuildvrt {input_Malt}/correlation_{self.level-1}.vrt {input_Malt}/Correl_STD-MALT_Num_{self.level-1}_Tile*tif")
+        else:
+            os.system(f"gdalbuildvrt {input_Malt}/correlation_{self.level-1}.vrt {input_Malt}/Correl_STD-MALT_Num_{self.level-1}.tif")
+        filename = f"correlation_{self.level-1}.vrt"
+
+        input_dst_correl = rasterio.open(os.path.join(input_Malt, filename))
+        transform = input_dst_correl.transform
         transformer = rasterio.transform.AffineTransformer(transform)
         l_max, c_min = transformer.rowcol(self.bounds[0], self.bounds[1])
         l_min, c_max = transformer.rowcol(self.bounds[2], self.bounds[3])
-
-        input_dst_correl = rasterio.open(os.path.join(input_Malt, filename))
         correlation = input_dst_correl.read(window=rasterio.windows.Window(c_min, l_min, c_max-c_min+1, l_max-l_min+1))
         return correlation
     
@@ -133,13 +125,24 @@ class LevelMNS:
         """
         Ouvre la carte de corrélation
         """
-        if self.level != 8:
-            filename = f"Correl_STD-MALT_Num_{self.level}.tif"
+        if self.level != self.first_level:
+            correlation_files = get_correlation(self.level)
+            if len(correlation_files) > 1:
+                os.system(f"gdalbuildvrt {input_Malt}/correlation_{self.level}.vrt {input_Malt}/Correl_STD-MALT_Num_{self.level}_Tile*tif")
+            else:
+                os.system(f"gdalbuildvrt {input_Malt}/correlation_{self.level}.vrt {input_Malt}/Correl_STD-MALT_Num_{self.level}.tif")
+            
+            filename = f"correlation_{self.level}.vrt"
             input_dst = rasterio.open(os.path.join(input_Malt, filename))
-            correlation = input_dst.read()
+            transform = input_dst.transform
+            transformer = rasterio.transform.AffineTransformer(transform)
+            l_max, c_min = transformer.rowcol(self.bounds_required[0], self.bounds_required[1])
+            l_min, c_max = transformer.rowcol(self.bounds_required[2], self.bounds_required[3])
+            correlation = input_dst.read(window=rasterio.windows.Window(c_min, l_min, c_max-c_min+1, l_max-l_min+1))
         else:
             correlation = self.open_correlation8()
         
+        correlation = correlation.astype(np.uint8)
         correlation = self.resample_image(correlation)
         return correlation
         
@@ -148,7 +151,7 @@ class LevelMNS:
         Redécoupe le mns et la carte de corrélation pour qu'elle ait la taille définie par c et l
         """
         mns = np.ones((1, l, c))
-        correlation = np.ones((1, l, c))
+        correlation = np.ones((1, l, c), dtype=np.uint8)
         l_current, c_current = self.get_size()
         l_min = min(l, l_current)
         c_min = min(c, c_current)
@@ -164,6 +167,10 @@ class LevelMNS:
 
 
 def save_image(image, path, transform, encoding):
+    dictionnaire = {
+            'interleave': 'Band',
+            'tiled': True
+        }
     with rasterio.open(
         path, "w",
         driver = "GTiff",
@@ -171,7 +178,8 @@ def save_image(image, path, transform, encoding):
         dtype = encoding,
         count = image.shape[0],
         width = image.shape[2],
-        height = image.shape[1]) as dst:
+        height = image.shape[1],
+        **dictionnaire) as dst:
         dst.write(image)
 
 def get_level(path, level):
@@ -187,30 +195,52 @@ def get_level(path, level):
         raise ValueError(f"Il n'y a pas de fichier Z_Num{level}_DeZoomX_STD-MALT.tif")
     return level_tiles
 
+
+def get_correlation(level):
+    prefixe = f"Correl_STD-MALT_Num_{level}"
+    suffixe = ".tif"
+    level_tiles = [os.path.join(input_Malt, i) for i in os.listdir(input_Malt) if i[:len(prefixe)]==prefixe and i[-len(suffixe):]==suffixe]
+    if len(level_tiles)==0:
+        prefixe = f"Correl_STD-MALT_Num_{level}_Tile"
+        level_tiles = [os.path.join(input_Malt, i) for i in os.listdir(input_Malt) if i[:len(prefixe)]==prefixe and i[-len(suffixe):]==suffixe]
+    if len(level_tiles)==0:
+        raise ValueError(f"Il n'y a pas de fichier Correl_STD-MALT_Num_{level}.tif dans {input_Malt}")
+    return level_tiles
+
         
 def compute_mns(input_Malt):
 
-    # On récupère toutes les tuiles du niveau 8
-    level8_tiles = get_level(input_Malt, 8)
-    # On construit un vrt sur les tuiles de niveau 8
-    if len(level8_tiles) > 1:
-        os.system(f"gdalbuildvrt {input_Malt}/Z_Num8.vrt {input_Malt}/Z_Num8*Tile*tif")
+    # On récupère le niveau le plus élevé : 8 en général, 9 sur les très gros chantiers
+    if os.path.isfile(os.path.join(input_Malt, "Z_Num9_DeZoom2_STD-MALT.tif")):
+        first_level = 9
     else:
-        os.system(f"gdalbuildvrt {input_Malt}/Z_Num8.vrt {input_Malt}/Z_Num8_DeZoom*_STD-MALT.tif")
-    # On parcourt chaque tuile de niveau 8
-    for level8_filename in level8_tiles:
-        level8 = LevelMNS(level8_filename)
-        l, c = level8.get_size()
-        level8.resize(l, c)
+        first_level = 8
 
-        mns = level8.mns
-        correlation = level8.correlation
-        indicateur = np.ones(mns.shape)*8
-        transform = level8.transform
-        bounds = level8.bounds
-        # On parcourt tous les niveaux de MNS (sauf le 7 car il a la même carte de corrélation que le 8)
-        for level in range(6, 0, -1):
+    # On récupère toutes les tuiles du niveau le plus précis
+    higher_level_tiles = get_level(input_Malt, first_level)
+    # On construit un vrt sur les tuiles de niveau le plus précis
+    if len(higher_level_tiles) > 1:
+        os.system(f"gdalbuildvrt {input_Malt}/Z_Num{first_level}.vrt {input_Malt}/Z_Num{first_level}*Tile*tif")
+    else:
+        os.system(f"gdalbuildvrt {input_Malt}/Z_Num{first_level}.vrt {input_Malt}/Z_Num{first_level}_DeZoom*_STD-MALT.tif")
+    # On parcourt chaque tuile de niveau le plus précis
+    for higher_level_filename in higher_level_tiles:
+        higher_level = LevelMNS(higher_level_filename, first_level)
+        l, c = higher_level.get_size()
+        higher_level.resize(l, c)
+
+        mns = higher_level.mns
+        correlation = higher_level.correlation
+        correlation = correlation.astype(np.uint8)
+        indicateur = np.ones(mns.shape)*first_level
+        indicateur = indicateur.astype(np.uint8)
+        transform = higher_level.transform
+        bounds = higher_level.bounds
+        # On parcourt tous les niveaux de MNS (sauf celui juste en dessous car il a la même carte de corrélation que le niveau le plus élevé)
+        for level in range(first_level-2, 0, -1):
             levels_filename = get_level(input_Malt, level)
+
+            dezoom = int(levels_filename[0].split("_")[2].replace("DeZoom", ""))
             
             # S'il y a plusieurs tuiles, on construit un vrt
             # Ainsi, quelque soit le niveau de la pyramide, on n'a plus qu'un seul fichier à traiter
@@ -219,19 +249,20 @@ def compute_mns(input_Malt):
                 levels_filename = [f"{input_Malt}/Z_Num{level}.vrt"]
 
             level_filename = levels_filename[0]
-            level = LevelMNS(level_filename, bounds_required=bounds)
+            level = LevelMNS(level_filename, first_level, bounds_required=bounds, dezoom=dezoom)
             # On redécoupe le mns et la carte de corrélation pour qu'elle ait la même taille que celui de la couche 8
             level.resize(l, c)
             # On conserve les informations précédentes que pour les endroits où la corrélation 
             # est différente de 1 (1 faible corrélation, 255 très forte corrélation)
+
             mns = np.where(correlation>1, mns, level.mns)
             indicateur = np.where(correlation>1, indicateur, level.level)
             correlation = np.where(correlation>1, correlation, level.correlation)
 
         indicateur = np.where(correlation>1, indicateur, 0)
 
-        if len(level8_tiles) > 1:
-            mns_name = "MNS_pyramide_"+("_".join(level8_filename.split("_")[4:]))
+        if len(higher_level_tiles) > 1:
+            mns_name = "MNS_pyramide_"+("_".join(higher_level_filename.split("_")[4:]))
         else:
             mns_name = "MNS_pyramide.tif"
         save_image(mns, os.path.join(input_Malt, mns_name), transform, rasterio.float32)
