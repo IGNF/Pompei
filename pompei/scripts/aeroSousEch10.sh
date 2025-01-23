@@ -49,7 +49,7 @@ ls ../metadata/mns/*.tif > liste_mns_bdortho.txt
 python ${scripts_dir}/add_GCP.py --appuis_BDOrtho_existants pts_bdortho.txt --appuis_histo_existants pts_orthomicmac_abs.txt --appuis_BDOrtho_ajout ajout_appuis_BDortho.shp --appuis_histo_ajout ajout_appuis_histo.shp
 
 
-ls ../MEC-Malt-Abs-Ratafia/MNS_Final*.tif > liste_mnsmicmac.txt
+ls ../MEC-Malt-Abs-Ratafia/MNS_pyramide*.tif > liste_mnsmicmac.txt
 ${scripts_dir}/POMPEI.LINUX AssocierZ_fichierpts2D:multiMNS pts_bdortho.txt liste_mns_bdortho.txt pts3D_bdortho.txt ; 
 ${scripts_dir}/POMPEI.LINUX AssocierZ_fichierpts2D:multiMNS pts_orthomicmac_abs.txt liste_mnsmicmac.txt pts3D_orthomicmac_abs.txt
 

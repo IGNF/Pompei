@@ -15,155 +15,68 @@ You should have received a copy of the GNU General Public License along with Pom
 
 import os
 import argparse
-from equations import Shot, MNT 
-from lxml import etree
+from equations import MNT, Calibration
 import numpy as np
 from osgeo import gdal, osr
 from multiprocessing import Pool
-from tools import getEPSG, load_bbox, getNbCouleurs, getResolution
+from tools import getEPSG, load_bbox, getNbCouleurs, getResolution, loadShots
 import log # Chargement des configurations des logs
 import logging
+from tqdm import tqdm
+import geopandas as gpd
+import rasterio
+from rasterio import Affine
+import rasterio.features
+from shapely import Polygon, intersects, intersection, make_valid
 
 logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Crée un nouveau fichier TA avec les valeurs déterminées pendant le chantier (orientation, position...")
 
-parser.add_argument('--ta_xml', help="Fichier TA avec les positions mises à jour")
 parser.add_argument('--ori', help="Répertoire contenant les fichiers orientations")
+parser.add_argument('--cpu', help="Nombre de cpus à utiliser", type=int)
+parser.add_argument('--mnt', help="MNT sous format vrt")
+parser.add_argument('--radiom', help="Répertoire avec les images égalisées")
+parser.add_argument('--mosaic', help="Fichier avec la mosaïque")
+parser.add_argument('--outdir', help="Répertoire contenant les fichiers orientations")
 args = parser.parse_args()
 
-ta_xml = args.ta_xml
 ori_path = args.ori
+nb_cpus = args.cpu
+mnt_path = args.mnt
+outdir = args.outdir
+radiom = args.radiom
+mosaic_file = args.mosaic
 
 # Une dalle : 2000 pixels
 tileSize = 2000
 
 
-def get_image(image):
-    images = [i for i in os.listdir() if i[-4:]==".tif" and i[:9]=="OIS-Reech"]
-    for imageName in images:
-        if imageName == "OIS-Reech_{}.tif".format(image):
-            return imageName
-    return None
-
-
-def getFocale(root):
-    focal = root.find(".//focal")
-    pixel_size = 0.021
-    focale_x = float(focal.find(".//x").text) / pixel_size
-    focale_y = float(focal.find(".//y").text) / pixel_size
-    focale_z = float(focal.find(".//z").text) / pixel_size
-    return [focale_x, focale_y, focale_z]
-
-
-
-def createShots(ta_xml, EPSG):
-    """
-    Crée un objet Shot par image
-    """
-    tree = etree.parse(ta_xml)
-    root = tree.getroot()
-    focale = getFocale(root)
-    shots = []
-    for cliche in root.getiterator("cliche"):
-        image = cliche.find("image").text.strip()
-        imagePath = get_image(image)
-        if imagePath is not None:
-            shot = Shot.createShot(cliche, focale, imagePath, EPSG)
-            shots.append(shot)
-    return shots
-
-
-def createSommetsArray(shots, nb_points):
-    m = len(shots)
-    array = np.zeros((m, 2))
-    for i, shot in enumerate(shots):
-        x_nadir, y_nadir, z_nadir = shot.image_to_world(shot.x_ppa, shot.y_ppa, mnt)
-        array[i,0] = x_nadir
-        array[i,1] = y_nadir
-    finalArray = np.tile(array, (nb_points, 1))
-    return finalArray
-
-def createCornerArray(m, x0, y0):
-    """
-    Crée un tableau numpy qui contient un sous-échantillonnage de points de la tuile
-    """
-    size = int(resolution*tileSize)
-    pas = int(size / 10)
-    
-    points = []
-    for x in range(0, size+pas, pas):
-        for y in range(0, size+pas, pas):
-            points.append([x0+x, y0-y])
-    n = len(points)
-    array = np.zeros((n*m, 2))
-    for i, point in enumerate(points):
-        for k in range(m):
-            array[i*m+k, 0] = point[0]
-            array[i*m+k, 1] = point[1]
-    return array
-
-
-def createPixelsArray(m, xx, yy):
-    array = np.zeros((xx.shape[0], 2))
-    for i in range(xx.shape[0]):
-        array[i, 0] = xx[i, 0]
-        array[i, 1] = yy[i, 0]
-    finalArray = np.repeat(array, m, axis=0)
-    return finalArray
-
-
-def determineShots(sommetsArray, x0, y0, shots):
-    # On crée un tableau numpy qui contient un sous-échantillonnage de points de la tuile
-    cornerArray = createCornerArray(len(shots), x0, y0)
-    
-    # On calcule la distance entre les points de la tuile et les sommets de prises de vue
-    distances = (cornerArray[:,0]-sommetsArray[:,0])**2 + (cornerArray[:,1]-sommetsArray[:,1])**2
-    distances_reshaped = distances.reshape((121, -1))
-    
-    # On récupère les images pour lesquelles les distances sont minimales
-    argmin = np.argmin(distances_reshaped, axis=1)
-    uniques = np.unique(argmin)
-    shotsFiltered = []
-    indicesShotsFiltered = []
-    for i in range(uniques.shape[0]):
-        shotsFiltered.append(shots[uniques[i]])
-        indicesShotsFiltered.append(uniques[i])
-    return shotsFiltered, indicesShotsFiltered
-
-
-def computeMosaic(x0, y0, shots, indicesShotsFiltered):
+def computeMosaic(x0, y0, shots):
     """
     Pour chaque pixel de la tuile, on cherche le sommet de prise de vue qui lui est le plus proche
     """
-    # S'il n'y a qu'une seule image, alors inutile de faire des calculs
-    if len(shots)==1:
-        return np.zeros((2000, 2000)), np.ones((2000, 2000))*indicesShotsFiltered[0]
-    
-    
-    x = np.linspace(x0, x0+(tileSize-1)*resolution, tileSize)
-    y = np.flip(np.linspace(y0-(tileSize-1)*resolution, y0, tileSize))
-    xx, yy = np.meshgrid(x, y)
-    xx = xx.reshape((-1, 1))
-    yy = yy.reshape((-1, 1))
-    pixelsArray = createPixelsArray(len(shots), xx, yy)
-    sommetsArray = createSommetsArray(shots, xx.shape[0])
+    shots_filtered = []
+    transform = Affine(resolution, 0, x0, 0, -resolution, y0)
+    x_max = x0+2000*resolution
+    y_min = y0-2000*resolution
+    polygone = Polygon([[x0, y0], [x_max, y0], [x_max, y_min], [x0, y_min]])
+    mosaique_extraction = []
+    compte = 0
+    for element in mosaique:
+        if intersects(element[0], polygone):
+            try:
+                geom_valid = make_valid(element[0])
+                geom = intersection(geom_valid, polygone)
+            except:
+                geom = element[0]
+            
+            mosaique_extraction.append([geom, compte])
+            shots_filtered.append(shots[element[1]])
+            compte += 1
 
-    # On calcule les distances
-    distances = (pixelsArray[:,0]-sommetsArray[:,0])**2 + (pixelsArray[:,1]-sommetsArray[:,1])**2
-    distances_reshaped = distances.reshape((xx.shape[0], -1))
-    
-    # On récupère les sommets de prises de vue les plus proches
-    argmin = np.argmin(distances_reshaped, axis=1)
-    mosaic = argmin.reshape((y.shape[0], x.shape[0]))
-
-
-    indices = np.zeros((tileSize, tileSize))
-    for i in range(len(indicesShotsFiltered)):
-        indices = np.where(mosaic==i, np.ones(indices.shape)*indicesShotsFiltered[i], indices)
-    # mosaic contient l'indice du sommet de prise de vue dans shots (uniquement les images pour lesquelles au moins un pixel de la tuile est le plus proche)
-    # indices contient l'indice pour toutes les images. Sert à la visualisation du graphe de mosaïquage
-    return mosaic, indices
+    mosaic = rasterio.features.rasterize(mosaique_extraction, out_shape=(2000,2000), transform=transform)
+    return mosaic, shots_filtered
 
     
 
@@ -183,7 +96,7 @@ def saveImage(image, path, x0, y0, EPSG):
 
 
 def getOrthoImage(shot, x0, y0, nbCouleurs, path_ortho):
-    path = os.path.join("ortho_mnt", "Ort_{}.tif".format(shot.nom))
+    path = os.path.join(outdir, "Ort_{}.tif".format(shot.nom))
     inputds = gdal.Open(path)
     geotransform = inputds.GetGeoTransform()
 
@@ -223,12 +136,12 @@ def get_path_ortho():
     En effet, elle se base sur des points qui se recouvrent entre les images
     Dans ce cas, on utilise les images sans correction radiométrique
     """
-    with open(os.path.join("radiom_ortho_mnt", "ini", "coef_reetal_walis.txt"), "r") as f:
+    with open(os.path.join(radiom, "ini", "coef_reetal_walis.txt"), "r") as f:
         for line in f:
-            if "nan" in line:
+            if "nan" in line or "Exception" in line:
                 logger.warning("Attention, la correction radiométrique a échoué ! L'ortho n'utilisera donc pas la correction radiométrique")
-                return "ortho_mnt"
-    return os.path.join("radiom_ortho_mnt", "ini", "corr")
+                return outdir
+    return os.path.join(radiom, "ini", "corr")
 
 
 def createOrthoTile(mosaic, shotsFiltered, x0, y0, nbCouleurs, path_ortho):
@@ -271,46 +184,59 @@ def createOrthoTile(mosaic, shotsFiltered, x0, y0, nbCouleurs, path_ortho):
 def createOrthoProcess(work_data):
     x0 = work_data[0]
     y0 = work_data[1]
-    sommetsArray = work_data[2]
-    nbCouleurs = work_data[3]
-    EPSG = work_data[4]
-    path_ortho = work_data[5]
-    
-    # On cherche les images à utiliser pour crée l'ortho sur la tuile
-    shotsFiltered, indicesShotsFiltered = determineShots(sommetsArray, x0, y0, shots)
+    nbCouleurs = work_data[2]
+    EPSG = work_data[3]
+    path_ortho = work_data[4]
+    shots = work_data[5]
 
     # On calcule la mosaïque
-    mosaic, indices = computeMosaic(x0, y0, shotsFiltered, indicesShotsFiltered)
-    
-    # On sauvegarde la mosaïque
-    saveImage(indices, os.path.join("ortho_mnt", "{}_{}_mosaic.tif".format(x0, y0)), x0, y0, EPSG)
+    mosaic, shots_filtered = computeMosaic(x0, y0, shots)
     
     # On crée l'ortho pour la tuile
-    ortho = createOrthoTile(mosaic, shotsFiltered, x0, y0, nbCouleurs, path_ortho)
+    ortho = createOrthoTile(mosaic, shots_filtered, x0, y0, nbCouleurs, path_ortho)
     if ortho is not None:
         # On sauvegarde l'ortho
-        saveImage(ortho, os.path.join("ortho_mnt", "{}_{}_ortho.tif".format(x0, y0)), x0, y0, EPSG)
+        saveImage(ortho, os.path.join(outdir, "{}_{}_ortho.tif".format(x0, y0)), x0, y0, EPSG)
     
 
 
 def createTiles(bbox, shots, nbCouleurs, EPSG, path_ortho):
     work_data = []
     # On crée un tableau numpy qui contient les positions des sommets de prise de vue pour tous les clichés
-    sommetsArray = createSommetsArray(shots, 121)
     pas = int(tileSize*resolution)
     # Pour chaque tuile, on remplit work_data avec les paramètres pour le traitement
     for x0 in range(int(bbox[0]), int(bbox[2]), pas):
         for y0 in range(int(bbox[3]), int(bbox[1]), -pas):
-            work_data.append([x0, y0, sommetsArray, nbCouleurs, EPSG, path_ortho])
+            work_data.append([x0, y0, nbCouleurs, EPSG, path_ortho, shots])
     
     # On parallélise le traitement
-    p = Pool(10)
-    p.map(createOrthoProcess, work_data)
-            
+    with Pool(processes=nb_cpus) as pool:
+        with tqdm(total=len(work_data), desc="Calcul de l'ortho") as pbar:
+            for i in pool.map(createOrthoProcess, work_data):
+                pbar.update()
 
-os.makedirs("ortho_mnt", exist_ok=True)
+def getCalibrationFile(path):
+    files = os.listdir(path)
+    for file in files:
+        if file[:11] == "AutoCal_Foc":
+            return os.path.join(path, file)
+    raise Exception("No calibration file in {}".format(path))
 
-mnt = MNT(os.path.join("metadata", "mnt", "mnt.vrt"))
+def read_mosaique(shots, mosaic_file):
+    mosaique = []
+    emprises_mosaique = gpd.read_file(mosaic_file)
+    for i in range(emprises_mosaique.shape[0]):
+        raw = emprises_mosaique.iloc[i]
+        geometry = raw.geometry
+        for j in range(len(shots)):
+            if shots[j].imagePath==raw["shot"]:
+                mosaique.append((geometry, j))
+    return mosaique
+
+
+os.makedirs(outdir, exist_ok=True)
+
+mnt = MNT(mnt_path)
 
 # On charge la boite englobante du chantier
 bbox = load_bbox("metadata")
@@ -319,8 +245,14 @@ resolution = getResolution()
 nbCouleurs = getNbCouleurs("metadata")
 EPSG = getEPSG("metadata")
 
+
+# On récupère les paramètres de calibration de la caméra
+calibrationFile = getCalibrationFile(ori_path)
+calibration = Calibration.createCalibration(calibrationFile)
+
 # On crée un objet shot par image
-shots = createShots(ta_xml, EPSG)
+shots = loadShots(ori_path, EPSG, calibration)
+mosaique = read_mosaique(shots, mosaic_file)
 
 # On récupère le réeprtoire où se trouvent les orthos pour chaque image
 # Si la correction radiométrique n'a pas fonctionné, alors on prend celles sans correction radiométrique

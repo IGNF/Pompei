@@ -21,6 +21,7 @@ import numpy as np
 from osgeo import gdal
 from scipy import ndimage
 from scipy.spatial.transform import Rotation as R
+from tools import get_resol_scan
 
 parser = argparse.ArgumentParser(description="Crée un nouveau fichier TA avec les valeurs déterminées pendant le chantier (orientation, position...)")
 
@@ -84,7 +85,7 @@ class Calibration:
         self.affine_b2 = float(root.find(".//b2").text)
 
     def changeFocale(self, sensor):
-        pixel_size = 0.021
+        pixel_size = get_resol_scan(os.path.join(os.path.dirname(ta_xml_path), "metadata"))
         sensor.find(".//pixel_size").text = str(pixel_size)
         pt3d = sensor.find((".//pt3d"))
         x = pt3d.find(".//x")
@@ -301,7 +302,7 @@ calibration = Calibration.createCalibration(calibrationFile)
 orientations = createOrientation(ori_path)
 
 # Facultatif : corrige les images de la distorsion. Pas suffisamment testé
-#transformImages(images_path, imagesSave_path, calibration)
+#transformImages("./", imagesSave_path, calibration)
 
 # On complète le nouveau fichier TA
 complete_TA(ta_xml, calibration, orientations)

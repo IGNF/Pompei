@@ -32,16 +32,30 @@ else
     rm workspace.txt
     echo $workspace >> workspace.txt
     scripts_dir=$(realpath "scripts")
+
+    if test ${ortho} = "storeref"; then
+        if [ ! -d "/media/store-ref/modeles-numeriques-3D" ]; then
+            echo "Vous devez monter store-ref sur votre ordinateur dans /media/store-ref/"
+            exit 1
+        fi
+    fi
+
+
+    if [ ! -f "scripts/api_key.env" ]; then
+        echo "Vous devez avoir un fichier api_key.env dans scripts. Voyez le readme.md"
+        exit 1
+    fi
+
     cd ${workspace}
     TA=$(basename ${TA})
-
     mkdir reports
 
-    sh ${scripts_dir}/convert_jp2_to_tif.sh ${scripts_dir}
+    sh ${scripts_dir}/convert_jp2_to_tif.sh
+    echo "A partir de maintenant, vous pouvez utiliser pompei_after_convert_jp2_to_tif.sh"
 
-    python ${scripts_dir}/initialize_files.py --scripts ${scripts_dir} --TA ${TA} --nb_fiducial_marks ${nb_fiducial_marks} --scan_resolution 0.021 --remove_artefacts ${remove_artefacts} --targets ${targets} --apply_threshold ${Kugelhupf_apply_threshold} 
+    python ${scripts_dir}/initialize_files.py --scripts ${scripts_dir} --TA ${TA} --nb_fiducial_marks ${nb_fiducial_marks} --remove_artefacts ${remove_artefacts} --targets ${targets} --apply_threshold ${Kugelhupf_apply_threshold} 
 
-    sh ${workspace}/correct_geometrically_images.sh ${scripts_dir}
+    sh correct_geometrically_images.sh ${scripts_dir}
 
     echo "Prochain script à lancer : pompei_after_interface.sh"
 fi

@@ -50,7 +50,11 @@ def get_profondeur(input_ori):
     tree = etree.parse(os.path.join(input_ori, xml_files[0]))
     root = tree.getroot()
     profondeur = root.find(".//Profondeur")
-    return float(profondeur.text)
+    if profondeur is None:
+        centre = root.find(".//Centre")
+        return float(centre.text.split(" ")[2])
+    else:
+        return float(profondeur.text)
 
 def save_resolution(resolution, metadata):
     with open(os.path.join(metadata, "resolution.txt"), "w") as f:

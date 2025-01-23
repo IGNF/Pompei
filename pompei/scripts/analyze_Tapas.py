@@ -41,6 +41,8 @@ def remove_images_without_homol(dictionnaire):
 def find_problem(chemin_rapport, chemin_scripts):
     dictionnaire = {}
 
+    line_worst = None
+
     with open(chemin_rapport, "r") as f:
         fatal_error = False
         for line in f:

@@ -12,14 +12,16 @@
 
 
 TA=$1
+all=$2
 
 
 if test "$#" = 0; then
     echo "visualize_flight_plan.sh :"
     echo "TA : path"
+    echo "all : bool"
 else
     workspace=$(dirname ${TA})
     rm workspace.txt
     echo $workspace >> workspace.txt
-    python scripts/visualize_flight_plan.py --TA ${TA} --chantier ${workspace}
+    python scripts/visualize_flight_plan.py --TA ${TA} --chantier ${workspace} --all ${all}
 fi

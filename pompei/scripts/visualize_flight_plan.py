@@ -32,11 +32,13 @@ logger = logging.getLogger()
 parser = argparse.ArgumentParser(description="Visualisation de la position approximative des chantiers")
 parser.add_argument('--chantier', help='Répertoire du chantier')
 parser.add_argument('--TA', help='Fichier xml du chantier')
+parser.add_argument('--all', help='Prendre en compte toutes les images du chantier', type=int)
 args = parser.parse_args()
 
 
 chemin_chantier = args.chantier
 path_xml = args.TA
+all = args.all
 chemin_metadata = os.path.join(chemin_chantier, "metadata")
 
 
@@ -146,7 +148,7 @@ def remove_images_without_metadata(liste_images, images):
             shutil.move(os.path.join(chemin_chantier, image+".jp2"), os.path.join(path_without_metadata, image+".jp2"))
             logger.warning("L'image {} n'a pas de métadonnées. Elle est retirée des données.".format(image))
 
-def save_shapefile(liste_images, images, path_footprint_chantier, EPSG):
+def save_shapefile(liste_images, images, path_footprint_chantier, EPSG, all):
     #Sauvegarde les footprints dans un fichier shapefile
 
     driver = ogr.GetDriverByName("ESRI Shapefile")
@@ -166,7 +168,7 @@ def save_shapefile(liste_images, images, path_footprint_chantier, EPSG):
 
 
     for image in images:
-        if image["nom"] in liste_images:
+        if all or image["nom"] in liste_images:
             ring = ogr.Geometry(ogr.wkbLinearRing)
             for i in range(len(image["x"])):
                 ring.AddPoint(image["x"][i], image["y"][i])
@@ -292,7 +294,7 @@ images, distance_buffer, EPSG = lecture_xml(path_xml)
 remove_images_without_metadata(liste_images, images)
 
 #Sauvegarde dans un fichier shapefile les footprints seulement pour les images présentes dans le dossier
-save_shapefile(liste_images, images, path_footprint_chantier, EPSG)
+save_shapefile(liste_images, images, path_footprint_chantier, EPSG, all)
 
 #Crée un buffer sur le fichier shapefile pour tenir compte des possibles erreurs de positionnement et que les points homologues ne seront pas cherchés sur les bords des images
 createBuffer(path_footprint_chantier, path_buffer, distance_buffer)

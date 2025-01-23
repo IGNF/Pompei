@@ -18,6 +18,7 @@ import os
 import shutil
 import argparse
 from download_ortho_MNS_wms import download_data
+from download_SRTM import transform_Points_WGS84, download
 from osgeo import gdal
 import gzip
 from tools import getEPSG, load_bbox
@@ -60,7 +61,18 @@ def get_dalle_MNT(bbox):
                 if not os.path.exists(nom_fichier):
                     shutil.copy(chemin_fichier, os.path.join("metadata", "mnt", nom_fichier))
             else:
-                logger.warning("Impossible de trouver : {}".format(chemin_fichier))
+                logger.warning("Impossible de trouver : {}. On utilise le SRTM".format(chemin_fichier))
+
+                #On utilise le SRTM si la dalle n'existe pas (souvent le cas sur les zones frontalières) 
+                points = [(e, n), (e+10000, n), (e+10000, n-10000), (e, n-10000)]
+                points_WGS84 = transform_Points_WGS84(EPSG, points)
+                temp_filename = os.path.join("metadata", "mnt", nom_fichier.replace(".asc.gz", "_temp.tif"))
+                print("temp_filename : ", temp_filename)
+                download(points_WGS84, temp_filename)
+                filename = os.path.join("metadata", "mnt", nom_fichier.replace(".gz", ""))
+                print(f"gdalwarp {temp_filename} {filename} -s_srs EPSG:4326 -t_srs EPSG:{EPSG}")
+                os.system(f"gdalwarp {temp_filename} {filename} -s_srs EPSG:4326 -t_srs EPSG:{EPSG}")
+                os.remove(temp_filename)
 
 
 #On récupère l'EPSG du chantier
@@ -70,11 +82,13 @@ bbox = load_bbox("metadata")
 if args.ortho == "storeref" and EPSG==2154:
     get_dalle_MNT(bbox)
     tiles = [i for i in os.listdir(os.path.join("metadata", "mnt")) if i[-3:]==".gz"]
-    for tile in tiles:
+    for tile in tiles:   
+        tile_asc = tile[:-3]
+        path_out = os.path.join("metadata", "mnt", tile_asc)
         with gzip.open(os.path.join("metadata", "mnt", tile), 'rb') as f_in:
-            tile_asc = tile[:-3]
-            with open(os.path.join("metadata", "mnt", tile_asc), 'wb') as f_out:
+            with open(path_out, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
+        os.system(f"gdal_edit.py -a_srs EPSG:{EPSG} {path_out}")
         os.remove(os.path.join("metadata", "mnt", tile))
     commande = "gdalbuildvrt {} {}".format(os.path.join("metadata", "mnt", "mnt.vrt"), os.path.join("metadata", "mnt", "*.asc"))
     os.system(commande)

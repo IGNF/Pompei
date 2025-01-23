@@ -17,7 +17,7 @@ CPU=$3
 pasdallage="1000"
 
 
- On génère un fichier ori pour chaque tuile
+# On génère un fichier ori pour chaque tuile
 python ${scripts_dir}/pompei_rapide/generate_ori.py --metadata metadata --ta_xml ${TA}
 
 cd appuis

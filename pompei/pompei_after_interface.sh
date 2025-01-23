@@ -46,12 +46,12 @@ else
     cd ${workspace}
     TA=$(basename ${TA})
 
-    sh find_tie_points.sh ${scripts_dir} >> logfile
+    sh find_tie_points.sh ${scripts_dir}
 
     sh ${scripts_dir}/filter_tie_points.sh ${remove_artefacts} ${scripts_dir} >> logfile
     echo "A partir de maintenant, vous pouvez utiliser pompei_after_homolFilterMasq.sh"
 
-    sh ${scripts_dir}/first_absolute_orientation.sh ${scripts_dir} ${force_vertical}
+    sh ${scripts_dir}/first_absolute_orientation.sh ${scripts_dir} ${TA}
 
     sh ${scripts_dir}/second_absolute_orientation.sh ${scripts_dir} ${CPU}
     echo "A partir de maintenant, vous pouvez utiliser pompei_after_Tawny.sh"
@@ -75,7 +75,7 @@ else
 
     if test ${create_ortho_mns} = "1"; then
 
-        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${CPU}
+        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${CPU} ${TA}
     
     fi
 

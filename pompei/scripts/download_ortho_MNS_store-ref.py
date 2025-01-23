@@ -18,11 +18,14 @@ import math
 from shapely.geometry import Polygon, box
 import os
 import argparse
-import shutil
-from osgeo import gdal, osr
 from tools import getEPSG
 import log # Chargement des configurations des logs
 import logging
+import rasterio
+import numpy as np
+from rasterio import Affine
+from tqdm import tqdm
+from multiprocessing import Pool
 
 logger = logging.getLogger()
 
@@ -175,7 +178,7 @@ def get_millesimes(footprint_tiles):
 
 
 def save_hdr(name, e_min_dalle, n_max_dalle, height, width, resolution):
-    with open(os.path.join(args.metadata, "mns", name), 'w') as out:
+    with open(name, 'w') as out:
         out.write(" // Convention de georeferencement : angle noeud (Geoview)\n")
         out.write("!+\n!+--------------------------\n!+ HDR/A : Image Information\n!+--------------------------\n!+\n")
         out.write("ULXMAP  {}\n".format(e_min_dalle))
@@ -196,119 +199,109 @@ def save_hdr(name, e_min_dalle, n_max_dalle, height, width, resolution):
 
 
 
+def load_mns(path_in, path_out, EPSG):
+    inputds_mns = rasterio.open(path_in)
+    mns = inputds_mns.read()
+    if mns.shape[1]==mns.shape[2]:
+        transform = inputds_mns.transform
+        mns = mns[:,::4,::4]
+        new_transform = Affine(transform.a*4, transform.b*4, transform.c, transform.d*4, transform.e*4, transform.f)
+
+        with rasterio.open(
+            path_out, "w",
+            driver = "GTiff",
+            dtype = rasterio.float32,
+            count = mns.shape[0],
+            width = mns.shape[2],
+            height = mns.shape[1],
+            crs = EPSG,
+            transform = new_transform,
+            ) as dst:
+            dst.write(mns)
+
+        e_min_mns = new_transform.c
+        n_max_mns = new_transform.f
+        resolution = new_transform.a
+        
+        save_hdr(path_out.replace(".tif", ".hdr"), e_min_mns, n_max_mns, mns.shape[2], mns.shape[1], resolution)
+        return True
+    return False
+
+
+def get_dalles_multiprocessing(args):
+    tile, MNS_disponibles_chantiers, EPSG, metadata = args
+    departement_tile = tile["properties"]["INSEE_DEP"]
+
+    #On récupère les coordonnées de la tuile
+    e_min = int(tile["geometry"]["coordinates"][0][0][0] / 1000)
+    n_min = int(tile["geometry"]["coordinates"][0][0][1] / 1000)
+
+    if e_min < 1000:
+        e_min = "0" + str(e_min)
+    else:
+        e_min = str(e_min)
+
+    if n_min < 1000:
+        n_min = "0" + str(n_min)
+    else:
+        n_min = str(n_min)
+
+    trouve = False
+
+    geom = Polygon(tile["geometry"]["coordinates"][0])
+
+    #On parcourt tous les chantiers du répertoire
+    for chantier in MNS_disponibles_chantiers[departement_tile]:
+
+        if not trouve:
+            if chantier["resolution"] == "15":
+                chemin_MNS = os.path.join("/media", 'store-ref', "modeles-numeriques-3D", "MNS", chantier["repertoire"], "data", "MNS_CORREL_1-0", "dataset")
+                name = os.listdir(chemin_MNS)[0][:-4].split("_")
+
+
+                for x_end in range(0, 10):
+                    for y_end in range(0, 10):
+                            
+                        name[-2] = e_min[1:] + str(x_end)
+                        name[-1] = n_min + str(y_end)
+                        filename = "_".join(name) + ".tif"
+                            
+                        x_bl = int(e_min)*1000.0+x_end*100
+                        y_bl = int(n_min)*1000.0+y_end*100
+                        file_box = box(x_bl, y_bl, x_bl+600, y_bl+600)
+
+                        if os.path.exists(os.path.join(chemin_MNS, filename)) and file_box.intersects(geom) and not file_box.touches(geom):
+                            trouve = load_mns(os.path.join(chemin_MNS, filename), os.path.join(metadata, "mns", filename), EPSG)                                    
+                            get_dalle_ortho(e_min, n_min, 2000 + int(chantier["annee"]), departement_tile, tile, EPSG)
+
+            else:    
+                
+                #On construit le nom du fichier que devrait avoir la tuile
+                chemin_MNS = os.path.join("/media", 'store-ref', "modeles-numeriques-3D", "MNS", chantier["repertoire"], "data", "MNS_CORREL_1-0", "dataset")
+                name = os.listdir(chemin_MNS)[0][:-4].split("_")
+                name[-2] = e_min
+                name[-1] = n_min
+                fichier = "_".join(name) + ".tif"
+                    
+                #On regarde si la tuile existe bien
+                if os.path.exists(os.path.join(chemin_MNS, fichier)):
+                    trouve = load_mns(os.path.join(chemin_MNS, fichier), os.path.join(metadata, "mns", fichier), EPSG)
+                    get_dalle_ortho(e_min, n_min, 2000 + int(chantier["annee"]), departement_tile, tile, EPSG)
+            
+    if not trouve:
+        logger.warning("La dalle {} {} n'a pas été trouvée".format(e_min, n_min))
 
 
 def get_dalles(footprint_tiles, MNS_disponibles_chantiers, EPSG):
-    
-    #On parcourt toutes les tuiles de l'footprint
+
+    arguments = []
     for tile in footprint_tiles.iterfeatures():
-        departement_tile = tile["properties"]["INSEE_DEP"]
+        arguments.append([tile, MNS_disponibles_chantiers, EPSG, args.metadata])
 
-        #On récupère les coordonnées de la tuile
-        e_min = int(tile["geometry"]["coordinates"][0][0][0] / 1000)
-        n_min = int(tile["geometry"]["coordinates"][0][0][1] / 1000)
-
-        if e_min < 1000:
-            e_min = "0" + str(e_min)
-        else:
-            e_min = str(e_min)
-
-        if n_min < 1000:
-            n_min = "0" + str(n_min)
-        else:
-            n_min = str(n_min)
-
-        trouve = False
-
-        geom = Polygon(tile["geometry"]["coordinates"][0])
-
-        #On parcourt tous les chantiers du répertoire
-        for chantier in MNS_disponibles_chantiers[departement_tile]:
-
-            if not trouve:
-                if chantier["resolution"] == "15":
-                    chemin_MNS = os.path.join("/media", 'store-ref', "modeles-numeriques-3D", "MNS", chantier["repertoire"], "data", "MNS_CORREL_1-0", "dataset")
-                    name = os.listdir(chemin_MNS)[0][:-4].split("_")
-
-
-                    for x_end in range(0, 10):
-                        for y_end in range(0, 10):
-                            
-                            name[-2] = e_min[1:] + str(x_end)
-                            name[-1] = n_min + str(y_end)
-                            filename = "_".join(name) + ".tif"
-                            
-                            x_bl = int(e_min)*1000.0+x_end*100
-                            y_bl = int(n_min)*1000.0+y_end*100
-                            file_box = box(x_bl, y_bl, x_bl+600, y_bl+600)
-
-                            if os.path.exists(os.path.join(chemin_MNS, filename)) and file_box.intersects(geom) and not file_box.touches(geom):
-                                
-                                chemin_image_local = os.path.join(args.metadata, "mns_temp2", filename)
-                                shutil.copy(os.path.join(chemin_MNS, filename), chemin_image_local)
-
-                                inputds = gdal.Open(chemin_image_local)
-
-                                srs = osr.SpatialReference()
-                                srs.ImportFromEPSG(EPSG)
-                                inputds.SetProjection(srs.ExportToWkt())
-                                
-
-                                #Il faut que la dalle soit carré, sinon c'est qu'elle est incomplète
-                                if inputds.RasterXSize == inputds.RasterYSize:
-                                    trouve = True
-
-                                    input_ds2 = gdal.Warp(os.path.join(args.metadata, "mns_temp", filename), inputds, dstSRS='EPSG:'+str(EPSG))
-
-                                    #Les dalles de MNS sont un peu plus grande qu'un kilomètre de côté
-                                    geotransform = inputds.GetGeoTransform()
-                                    e_min_mns = geotransform[0]
-                                    n_max_mns = geotransform[3]
-                                    resolution = geotransform[1]
-                                    save_hdr(filename.replace(".tif", ".hdr"), e_min_mns, n_max_mns, input_ds2.RasterXSize, input_ds2.RasterYSize, resolution)
-                                    get_dalle_ortho(e_min, n_min, 2000 + int(chantier["annee"]), departement_tile, tile, EPSG)
-                                os.remove(chemin_image_local)
-
-                else:    
-                
-                    #On construit le nom du fichier que devrait avoir la tuile
-                    chemin_MNS = os.path.join("/media", 'store-ref', "modeles-numeriques-3D", "MNS", chantier["repertoire"], "data", "MNS_CORREL_1-0", "dataset")
-                    name = os.listdir(chemin_MNS)[0][:-4].split("_")
-                    name[-2] = e_min
-                    name[-1] = n_min
-                    fichier = "_".join(name) + ".tif"
-                    
-                    #On regarde si la tuile existe bien
-                    if os.path.exists(os.path.join(chemin_MNS, fichier)):
-                        
-                        chemin_image_local = os.path.join(args.metadata, "mns_temp2", fichier)
-                        shutil.copy(os.path.join(chemin_MNS, fichier), chemin_image_local)
-
-                        inputds = gdal.Open(chemin_image_local)
-                        srs = osr.SpatialReference()
-                        srs.ImportFromEPSG(EPSG)
-                        inputds.SetProjection(srs.ExportToWkt())
-
-                    
-                        #Il faut que la dalle soit carré, sinon c'est qu'elle est incomplète
-                        #Il est arrivé une fois que le geotransform de la dalle de MNS était faux
-                        if inputds.RasterXSize == inputds.RasterYSize and inputds.GetGeoTransform()[0] != 0.0:
-                            trouve = True   
-
-                            # On reprojette les dalles dans le même EPSG que le chantier (en WGS84)
-                            input_ds2 = gdal.Warp(os.path.join(args.metadata, "mns_temp", fichier), inputds, dstSRS='EPSG:'+str(EPSG))
-
-                            #Les dalles de MNS sont un peu plus grande qu'un kilomètre de côté donc il faut recalculer les métadonnées à partir des informations du raster
-                            geotransform = input_ds2.GetGeoTransform()
-                            e_min_mns = geotransform[0]
-                            n_max_mns = geotransform[3]
-                            resolution = geotransform[1]
-                            save_hdr(fichier.replace(".tif", ".hdr"), e_min_mns, n_max_mns, input_ds2.RasterXSize, input_ds2.RasterYSize, resolution)
-                            get_dalle_ortho(e_min, n_min, 2000 + int(chantier["annee"]), departement_tile, tile, EPSG)
-                        os.remove(chemin_image_local)
-            
-        if not trouve:
-            logger.warning("La dalle {} {} n'a pas été trouvée".format(e_min, n_min))
+    with Pool(processes=12) as pool:
+        with tqdm(total=len(arguments), desc=f"Download ortho and mns : ") as pbar:
+            for _ in pool.imap_unordered(get_dalles_multiprocessing, arguments):
+                pbar.update()
 
 
 def save_tfw(name, e_min, n_max):
@@ -331,6 +324,15 @@ def get_dalle_ortho(e_min, n_min, annee, departement, tile, EPSG):
     dossier_departement = "BDORTHO_RVB-0M50_JP2-E100_{}_{}_{}".format(EPSG_NOM[str(EPSG)], departement, annee)
     chemin_ortho = os.path.join("/media", 'store-ref', "ortho-images", "Ortho", departement, str(annee), dossier_departement)
 
+    # Parfois, l'année de l'ortho dans storeref ne correspond pas à l'année du MNS de corrélation
+    # C'est le cas notamment pour le 44 : MNS de 2017, ortho de 2016
+    if not os.path.exists(chemin_ortho):
+        dossier_departement = "BDORTHO_RVB-0M50_JP2-E100_{}_{}_{}".format(EPSG_NOM[str(EPSG)], departement, annee+1)
+        chemin_ortho = os.path.join("/media", 'store-ref', "ortho-images", "Ortho", departement, str(annee+1), dossier_departement)
+        if not os.path.exists(chemin_ortho):
+            dossier_departement = "BDORTHO_RVB-0M50_JP2-E100_{}_{}_{}".format(EPSG_NOM[str(EPSG)], departement, annee-1)
+            chemin_ortho = os.path.join("/media", 'store-ref', "ortho-images", "Ortho", departement, str(annee-1), dossier_departement)
+
     if os.path.exists(chemin_ortho):
         exemple_fichier = os.listdir(chemin_ortho)[0][:-4].split("-")
         exemple_fichier[2] = e_min
@@ -338,38 +340,36 @@ def get_dalle_ortho(e_min, n_min, annee, departement, tile, EPSG):
         fichier = "-".join(exemple_fichier) + ".jp2"
         if os.path.exists(os.path.join(chemin_ortho, fichier)):
 
-            chemin_image_local = os.path.join(args.metadata, "ortho_temp2", "ORTHO_{}.jp2".format(tile["properties"]["name"]))
-            shutil.copy(os.path.join(chemin_ortho, fichier), chemin_image_local)
-            inputds = gdal.Open(chemin_image_local)
+            inputds_ortho = rasterio.open(os.path.join(chemin_ortho, fichier))
+            ortho = inputds_ortho.read()
+            if ortho.shape[1]==ortho.shape[2]:
 
-            #Il faut que la dalle soit carré, sinon c'est qu'elle est incomplète
-            if inputds.RasterXSize == inputds.RasterYSize:
-                input_ds2 = gdal.Warp(os.path.join(args.metadata, "ortho_temp", "ORTHO_{}.jp2".format(tile["properties"]["name"])), inputds, dstSRS='EPSG:'+str(EPSG))
-                geotransform = input_ds2.GetGeoTransform()
-                e_min = geotransform[0]
-                n_max = geotransform[3]
+                transform = inputds_ortho.transform
+
+                with rasterio.open(
+                    os.path.join(args.metadata, "ortho", "ORTHO_{}.tif".format(tile["properties"]["name"])), "w",
+                    driver = "GTiff",
+                    dtype = rasterio.uint8,
+                    count = ortho.shape[0],
+                    width = ortho.shape[2],
+                    height = ortho.shape[1],
+                    crs = EPSG,
+                    transform = transform,
+                    compress="lzw"
+                    ) as dst:
+                    dst.write(ortho)
+
+                e_min = transform.c
+                n_max = transform.f
 
                 save_tfw("ORTHO_{}.tfw".format(tile["properties"]["name"]), e_min+0.25, n_max-0.25)
-            os.remove(chemin_image_local)
+
     else:
         logger.warning("Le répertoire {} n'existe pas".format(chemin_ortho))
         
 
-
-if not os.path.exists(os.path.join(args.metadata, "ortho_temp")):
-    os.makedirs(os.path.join(args.metadata, "ortho_temp"))
-
-if not os.path.exists(os.path.join(args.metadata, "ortho_temp2")):
-    os.makedirs(os.path.join(args.metadata, "ortho_temp2"))
-
 if not os.path.exists(os.path.join(args.metadata, "ortho")):
     os.makedirs(os.path.join(args.metadata, "ortho"))
-
-if not os.path.exists(os.path.join(args.metadata, "mns_temp")):
-    os.makedirs(os.path.join(args.metadata, "mns_temp"))
-
-if not os.path.exists(os.path.join(args.metadata, "mns_temp2")):
-    os.makedirs(os.path.join(args.metadata, "mns_temp2"))
 
 if not os.path.exists(os.path.join(args.metadata, "mns")):
     os.makedirs(os.path.join(args.metadata, "mns"))
@@ -393,8 +393,4 @@ footprint_tiles.to_file("footprint.shp")
 # Pour la Corse, ils sont sous la clef "2AB"
 MNS_disponibles_chantiers = get_millesimes(footprint_tiles)
 
-
 get_dalles(footprint_tiles, MNS_disponibles_chantiers, EPSG)
-
-shutil.rmtree(os.path.join(args.metadata, "mns_temp2"))
-shutil.rmtree(os.path.join(args.metadata, "ortho_temp2"))

@@ -19,6 +19,8 @@ from scipy.spatial.transform import Rotation as R
 from osgeo import gdal
 from scipy import ndimage
 from lxml import etree
+import rasterio
+import os
 
 
 
@@ -49,38 +51,63 @@ class Shot:
     def __str__(self) -> str:
         return "Shot_{}".format(self.imagePath)
 
-    def setProj(self, EPSG):
-
+    @staticmethod
+    def getProj(EPSG):
         if not EPSG in dict_EPSG.keys():
             raise ValueError("Impossible de créer une ortho sur MNT pour l'EPSG {} car ses coordonnées géocentriques et géographiques n'ont pas été renseignées".format(EPSG))
 
-        self.proj = dict_EPSG[EPSG]
+        proj = dict_EPSG[EPSG]
 
-        if isinstance(self.proj["auth"], int):
-            self.crs = pyproj.CRS.from_epsg(self.proj["auth"])
+        if isinstance(proj["auth"], int):
+            crs = pyproj.CRS.from_epsg(proj["auth"])
         else:
-            self.crs = pyproj.CRS.from_string(self.proj["auth"])
+            crs = pyproj.CRS.from_string(proj["auth"])
 
-        if isinstance(self.proj["epsg_geoc"], int):
-            self.crs_geoc = pyproj.CRS.from_epsg(self.proj["epsg_geoc"])
+        if isinstance(proj["epsg_geoc"], int):
+            crs_geoc = pyproj.CRS.from_epsg(proj["epsg_geoc"])
         else:
-            self.crs_geoc = pyproj.CRS.from_string(self.proj["epsg_geoc"])
+            crs_geoc = pyproj.CRS.from_string(proj["epsg_geoc"])
 
-        if isinstance(self.proj["epsg_geog"], int):
-            self.crs_geog = pyproj.CRS.from_epsg(self.proj["epsg_geog"])
+        if isinstance(proj["epsg_geog"], int):
+            crs_geog = pyproj.CRS.from_epsg(proj["epsg_geog"])
         else:
-            self.crs_geog = pyproj.CRS.from_string(self.proj["epsg_geog"])
+            crs_geog = pyproj.CRS.from_string(proj["epsg_geog"])
+
+        crs_to_crs_geoc = pyproj.Transformer.from_crs(crs, crs_geoc)
+        crs_geoc_to_crs = pyproj.Transformer.from_crs(crs_geoc, crs)
+        crs_to_crs_geog = pyproj.Transformer.from_crs(crs, crs_geog)
+        return {
+            "crs_to_crs_geoc":crs_to_crs_geoc,
+            "crs_geoc_to_crs":crs_geoc_to_crs,
+            "crs_to_crs_geog":crs_to_crs_geog,
+            "crs":crs,
+            "crs_geoc":crs_geoc,
+            "crs_geog":crs_geog
+        }
+
+
+    def setProj(self, proj):
+
+        self.crs_to_crs_geoc = proj["crs_to_crs_geoc"]
+        self.crs_geoc_to_crs = proj["crs_geoc_to_crs"]
+        self.crs_to_crs_geog = proj["crs_to_crs_geog"]
+        self.crs = proj["crs"]
+        self.crs_geoc = proj["crs_geoc"]
+        self.crs_geog = proj["crs_geog"]
 
 
     @staticmethod
-    def createShot(cliche, focale, imagePath, EPSG):
+    def createShot(path, proj, calibration):
         shot = Shot()
-        shot.setProj(EPSG)
-        model = cliche.find(".//model")
-        pt3d = model.find(".//pt3d")
-        x = float(pt3d.find(".//x").text)
-        y = float(pt3d.find(".//y").text)
-        z = float(pt3d.find(".//z").text)
+        shot.setProj(proj)
+        tree = etree.parse(path)
+        root = tree.getroot()
+
+        centre = root.find(".//Centre").text
+        x = float(centre.split()[0])
+        y = float(centre.split()[1])
+        z = float(centre.split()[2])
+
         shot.x_pos = x
         shot.y_pos = y
         shot.z_pos = z
@@ -89,25 +116,33 @@ class Shot:
         shot.z_central = 0
         shot.rot_to_euclidean_local = shot.topaero_matrix(shot.x_central, shot.y_central)
 
-        shot.nom = "OIS-Reech_{}".format(cliche.find(".//image").text.strip())
-        shot.imagePath = imagePath
-        inputds = gdal.Open(imagePath)
+        name = os.path.basename(path).replace(".tif.xml", "").replace("Orientation-", "")
+        shot.nom = name
+        shot.imagePath = f"{name}.tif"
+        inputds = gdal.Open(shot.imagePath)
         shot.X_size = inputds.RasterXSize
         shot.Y_size = inputds.RasterYSize
         
-        shot.x_ppa = focale[0]
-        shot.y_ppa = focale[1]
-        shot.focal = focale[2]
+        shot.x_ppa = calibration.PPX
+        shot.y_ppa = calibration.PPY
+        shot.focal = calibration.focale
 
         shot.x_pos_eucli, shot.y_pos_eucli, shot.z_pos_eucli = shot.world_to_euclidean(x, y, z)
 
-        quaternion = model.find(".//quaternion")
-        x_q = float(quaternion.find(".//x").text)
-        y_q = float(quaternion.find(".//y").text)
-        z_q = float(quaternion.find(".//z").text)
-        w_q = float(quaternion.find(".//w").text)
-        q = np.array([x_q, y_q, z_q, w_q])
-        shot.mat_eucli = shot.quaternion_to_mat_eucli(q)
+        rotMatrice = np.zeros((3,3))
+        L1 = root.find(".//L1").text
+        rotMatrice[0,0] = float(L1.split()[0])
+        rotMatrice[0,1] = float(L1.split()[1])
+        rotMatrice[0,2] = float(L1.split()[2])
+        L2 = root.find(".//L2").text
+        rotMatrice[1,0] = float(L2.split()[0])
+        rotMatrice[1,1] = float(L2.split()[1])
+        rotMatrice[1,2] = float(L2.split()[2])
+        L3 = root.find(".//L3").text
+        rotMatrice[2,0] = float(L3.split()[0])
+        rotMatrice[2,1] = float(L3.split()[1])
+        rotMatrice[2,2] = float(L3.split()[2])
+        shot.mat_eucli = rotMatrice
 
         return shot
 
@@ -150,8 +185,7 @@ class Shot:
             :return: c, l Image coordinates
             """
             type_input = type(x_world)
-            x_eucli, y_eucli, z_eucli = self.world_to_euclidean(x_world, y_world, z_world)
-            x_bundle, y_bundle, z_bundle = self.local_to_bundle(x_eucli, y_eucli, z_eucli)
+            x_bundle, y_bundle, z_bundle = self.local_to_bundle(x_world, y_world, z_world)
             x_shot, y_shot, z_shot = self.bundle_to_shot(x_bundle, y_bundle, z_bundle)
             c, l = self.shot_to_image(x_shot, y_shot, z_shot)
             return self.convertback(type_input, c, l)
@@ -279,25 +313,6 @@ class Shot:
             return output[0]
 
     
-    def quaternion_to_mat_eucli(self, q) -> np.array:
-        """
-        Transform quaternions into a rotation matrix (TOPAERO convention)
-
-        :param q: quaternion
-        :type q: np.array, list
-
-        :return: rotation matrix
-        :rtype: np.array
-        """
-        mat = R.from_quat(q).as_matrix()
-        # passage en convention TOPAERO
-        # axe Z dans l'autre sens donc *-1 sur la dernière colonne
-        mat = mat*np.array([1, 1, -1])
-        # Inversion des deux premières colonnes + transposition
-        mat = mat[:, [1, 0, 2]].T
-        return mat
-
-    
     def local_to_bundle(self, x_local, y_local, z_local):
         # Repere local euclidien -> repere faisceau
         point_bundle = self.mat_eucli.T @ np.vstack([x_local - self.x_pos_eucli, y_local - self.y_pos_eucli, z_local - self.z_pos_eucli])
@@ -372,10 +387,10 @@ class Shot:
 class MNT:
 
     def __init__(self, path) -> None:
-        self.dem = gdal.Open(path)
-        self.gt = self.dem.GetGeoTransform()
-        self.rb = self.dem.GetRasterBand(1)
-
+        self.dem = rasterio.open(path)
+        self.gt = self.dem.transform
+        self.array = self.dem.read().squeeze()
+        self.array = np.where(self.array<=-1000.00, 0, self.array)
 
     def world_to_image(self, x, y):
         """
@@ -385,21 +400,9 @@ class MNT:
             :param y: y world coordinate
             :return: image coordinates
         """
-        c = (np.array(x) - self.gt[0])/self.gt[1]
-        l = (np.array(y) - self.gt[3])/self.gt[5]
+        c = (x - self.gt.c)/self.gt.a
+        l = (y - self.gt.f)/self.gt.e
         return c, l
-
-    def image_to_world(self, c, l):
-        """
-            Compute world coordinates from image coordinates
-
-            :param c: column coordinates
-            :param l: line coordinates
-            :return: x, y world coordinates
-        """
-        x = np.array(c) * self.gt[1] + self.gt[0]
-        y = np.array(l) * self.gt[5] + self.gt[3]
-        return x, y
 
 
     def get(self, x, y):
@@ -410,26 +413,69 @@ class MNT:
             :param y: y world coordinate
             :return: z value.
         """
+        c, l = self.world_to_image(x, y)
+        c_min = int(max(np.min(c), 0))
+        l_min = int(max(np.min(l), 0))
+        c_max = int(min(np.max(c), self.array.shape[1]))
+        l_max = int(min(np.max(l), self.array.shape[0]))
+        array_ex = self.array[l_min:l_max+10, c_min:c_max+10]
+        # Les points images sont en col lig mais les np.array sont en lig col
+        z = ndimage.map_coordinates(array_ex, np.vstack([l-l_min, c-c_min]), order=1, mode="constant")
+        return z
+        
 
+class Mask:
+    def __init__(self, path) -> None:
+        self.mask = rasterio.open(path)
+        self.gt = self.mask.transform
+        self.array = self.mask.read().squeeze()
+        self.array = np.where(self.array>=1, 1, 0)
+
+    def world_to_image(self, x, y):
+        """
+            Compute image coordinates from world coordinates
+
+            :param x: x world coordinate
+            :param y: y world coordinate
+            :return: image coordinates
+        """
+        c = (x - self.gt.c)/self.gt.a
+        l = (y - self.gt.f)/self.gt.e
+        return c, l
+
+    def get(self, x, y):
+        
         try:
-            xmin, ymin = np.min(x), np.min(y)
-            xmax, ymax = np.max(x), np.max(y)
-            imin, jmin = np.floor(self.world_to_image(xmin, ymax))
-            imax, jmax = np.ceil(self.world_to_image(xmax, ymin))
-            imin = int(min(max(imin, 0), self.dem.RasterXSize))
-            imax = int(min(max(imax, 0), self.dem.RasterXSize - 1))
-            jmin = int(min(max(jmin, 0), self.dem.RasterYSize))
-            jmax = int(min(max(jmax, 0), self.dem.RasterYSize - 1))
-            array = self.rb.ReadAsArray(imin, jmin, imax - imin + 1, jmax - jmin + 1)
-            array = np.where(array<=-1000.00, 0, array)
-            xmin, ymax = self.image_to_world(imin, jmin)
-            c = (x - xmin)/self.gt[1]
-            l = (y - ymax)/self.gt[5]
-            # Les points images sont en col lig mais les np.array sont en lig col
-            z = ndimage.map_coordinates(array, np.vstack([l, c]), order=1, mode="constant")
+            c, l = self.world_to_image(x, y)
+            c_min = int(max(np.min(c), 0))
+            l_min = int(max(np.min(l), 0))
+            c_max = int(min(np.max(c), self.array.shape[1]))
+            l_max = int(min(np.max(l), self.array.shape[0]))
+            array_ex = self.array[l_min:l_max+1, c_min:c_max+1]
+            l_request = l-l_min
+            l_request = l_request.astype(np.int16)
+            c_request = c-c_min
+            c_request = c_request.astype(np.int16)
+
+            l_out = np.full(l_request.shape, False)
+            l_out[l_request<0] = True
+            l_request[l_request<0] = 0
+            l_out[l_request>=array_ex.shape[0]] = True
+            l_request[l_request>=array_ex.shape[0]] = 0
+
+            c_out = np.full(c_request.shape, False)
+            c_out[c_request<0] = True
+            c_request[c_request<0] = 0
+            c_out[c_request>=array_ex.shape[1]] = True
+            c_request[c_request>=array_ex.shape[1]] = 0
+
+            z = array_ex[l_request, c_request]
+            z[l_out] = 0
+            z[c_out] = 0
             return z
         except:
-            return None
+            return np.zeros(x.shape)
+
         
 
 class Calibration:
@@ -477,17 +523,6 @@ class Calibration:
     def setAffine(self, root):
         self.affine_b1 = float(root.find(".//b1").text)
         self.affine_b2 = float(root.find(".//b2").text)
-
-    def changeFocale(self, sensor):
-        pixel_size = 0.021
-        sensor.find(".//pixel_size").text = str(pixel_size)
-        pt3d = sensor.find((".//pt3d"))
-        x = pt3d.find(".//x")
-        y = pt3d.find(".//y")
-        z = pt3d.find(".//z")
-        x.text = str(self.PPX*pixel_size)
-        y.text = str(self.PPY*pixel_size)
-        z.text = str(self.focale*pixel_size)
 
 
 class DistorsionCorrection:
