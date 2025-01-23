@@ -75,7 +75,7 @@ def SaisieAppuisInit(liste_probleme, xml, dir):
                 [
                     "python", script_python,
                     "--image_name", image,
-                    "--output_file", f"MeasuresIm-{image}.tif-S2D.xml",
+                    "--output_file", f"MeasuresIm-{image}-S2D.xml",
                     "--flag", "True",
                     "--input_file", xml
                     #"--id_reperes", "id_reperes.txt",

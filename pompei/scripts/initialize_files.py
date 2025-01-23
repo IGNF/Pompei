@@ -18,6 +18,7 @@ from lxml import etree
 import os
 import log # Chargement des configurations des logs
 import logging
+import json
 
 logger = logging.getLogger()
 
@@ -25,7 +26,6 @@ parser = argparse.ArgumentParser(description="Préparation des différents fichi
 parser.add_argument('--scripts', help='Répertoire du chantier')
 parser.add_argument('--TA', help='Fichier TA du chantier')
 parser.add_argument('--nb_fiducial_marks', help='Nombre de repères de fond de chambre')
-parser.add_argument('--scan_resolution', help='résolution du scannage de la photo argentique')
 parser.add_argument('--remove_artefacts', help="Présence d'artefacts")
 parser.add_argument('--targets', help='Utiliser Yolo pour détecter les cibles')
 parser.add_argument('--apply_threshold', help='faire la recherche de repères de fons de chambre sur les images seuillées')
@@ -33,7 +33,6 @@ args = parser.parse_args()
 
 scripts_path = args.scripts
 TA_path = args.TA
-scan_resolution = float(args.scan_resolution)
 nb_fiducial_marks = int(args.nb_fiducial_marks)
 remove_artefacts = int(args.remove_artefacts)
 targets = int(args.targets)
@@ -55,6 +54,21 @@ class Sensor:
     def setFocale(self, focale):
         self.focale = focale
 
+
+def get_resolution_scan():
+    ta_basename = os.path.basename(TA_path)
+    resol_scan = 0.021
+    with open(os.path.join(scripts_path, "export_focales.json"), "r") as f:
+        data = json.load(f)
+        for chantier_dict in data:
+            if chantier_dict["chantier"].replace(" ", "_") + ".xml" == ta_basename:
+                resol_scan = float(chantier_dict["resol_scan"])
+                break
+    os.makedirs("metadata", exist_ok=True)
+    with open(os.path.join("metadata", "resol.txt"), "w") as f:
+        f.write(str(resol_scan))
+    return resol_scan
+    
 
 
 def openXml(TA_path):
@@ -106,7 +120,7 @@ def createOriCalibNum(scripts_path, sensor:Sensor):
     root = tree.getroot()
 
     root.find(".//PP").text = "{} {}".format(sensor.width/2, sensor.height/2)
-    root.find(".//F").text = "{}".format(sensor.focale / scan_resolution)
+    root.find(".//F").text = "{}".format(sensor.focale / get_resolution_scan())
     root.find(".//SzIm").text = "{} {}".format(sensor.width, sensor.height)
     root.find(".//CDist").text = "{} {}".format(sensor.width/2, sensor.height/2)
 
@@ -269,4 +283,3 @@ if nb_fiducial_marks == 0:
 
 else:
     case_n_fiduciaux(cliches, remove_artefacts, sensor, targets, nb_fiducial_marks, apply_threshold)
-
