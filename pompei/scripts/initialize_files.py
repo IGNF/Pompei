@@ -186,7 +186,12 @@ def case_n_fiduciaux(cliches, remove_artefacts, sensor:Sensor, targets, nb_fiduc
         if targets == 1:
             f.write("python ${scripts_dir}/detect_fiducial_marks_YOLO.py --nb_points " + str(nb_fiducial_marks) + " --scripts ${scripts_dir} \n\n")
         else:
-            f.write("mm3d SaisieAppuisInit {}.tif NONE id_reperes.txt MeasuresIm-{}.tif.xml >> logfile\n\n".format(name_first_image, name_first_image))
+            #f.write("mm3d SaisieAppuisInit {}.tif NONE id_reperes.txt MeasuresIm-{}.tif.xml >> logfile\n\n".format(name_first_image, name_first_image))
+            
+            #f.write("python fichier3.py --image_name {}.tif --output_file MeasuresIm-{}.tif.xml \n\n".format(name_first_image, name_first_image))
+            f.write("python ${scripts_dir}/fichier3.py --image_name " + name_first_image +".tif --output_file MeasuresIm-" + name_first_image + ".tif-S2D.xml --flag " + str(False) + " \n\n")
+
+            
             f.write("#Saisie d'un masque indiquant où les repères de fond de chambre peuvent se trouver \n")
             f.write("echo \"Saisie du masque où les repères du fond de chambre se trouvent\" \n")
             f.write("mm3d SaisieMasq {}.tif >> logfile \n\n".format(name_first_image))
@@ -203,7 +208,10 @@ def case_n_fiduciaux(cliches, remove_artefacts, sensor:Sensor, targets, nb_fiduc
                 f.write("mm3d FFTKugelhupf {}.*tif MeasuresIm-{}.tif-S2D.xml Masq=Masq | tee reports/rapport_FFTKugelhupf.txt >> logfile \n\n".format(base_name, name_first_image))
 
             f.write("echo \"Analyse du rapport FFTKugelhupf\" \n")
-            f.write("python ${scripts_dir}/analyze_FFTKugelhupf.py --input_report reports/rapport_FFTKugelhupf.txt \n\n")
+            
+            #f.write("python ${scripts_dir}/analyze_FFTKugelhupf.py --input_report reports/rapport_FFTKugelhupf.txt \n\n")
+            f.write("python ${scripts_dir}/analyze_FFTKugelhupf.py --input_report reports/rapport_FFTKugelhupf.txt --out_xml MeasuresIm-"+ name_first_image +".tif-S2D.xml --dir ${scripts_dir} \n\n")
+
             f.write("#Suppression de fichiers de masques sinon ils sont traités comme faisant partie des images \n")
             f.write("rm {}_Masq.tif \n".format(name_first_image))
             f.write("rm {}_Masq.xml \n".format(name_first_image))
