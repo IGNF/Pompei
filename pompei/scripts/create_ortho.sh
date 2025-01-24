@@ -10,11 +10,17 @@
 #of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #You should have received a copy of the GNU General Public License along with Pompei. If not, see <https://www.gnu.org/licenses/>.
 
+set -e
 
 scripts_dir=$1
 TA=$2
 ortho=$3
 CPU=$4
+delete=$5
+
+if test ${delete} -eq 1; then
+    rm -rf Tmp-MM-Dir
+fi
 
 # Création d'un nouveau fichier TA avec les orientations et focales mises à jour.
 echo "Création du fichier TA_xml_updated.xml"
@@ -30,6 +36,10 @@ python ${scripts_dir}/create_orthos_OIS_Reech.py --mnt metadata/mnt/mnt.vrt --or
 
 echo "Egalisation radiométrique"
 sh ${scripts_dir}/equalizate_radiometry_ortho_mnt.sh ${scripts_dir} ${CPU} radiom_ortho_mnt ortho_mnt >> logfile
+
+if test ${delete} -eq 1; then
+    rm -rf ortho_mns/Incid*
+fi
 
 echo "Calcul de la mosaïque"
 python ${scripts_dir}/mosaiquage.py --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --cpu ${CPU} --metadata metadata --mosaic ortho_mnt/mosaic.gpkg --ortho ortho_mnt --ta ${TA}

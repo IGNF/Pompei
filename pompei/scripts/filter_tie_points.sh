@@ -10,7 +10,7 @@
 #Pompei is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
 #of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #You should have received a copy of the GNU General Public License along with Pompei. If not, see <https://www.gnu.org/licenses/>.
-
+set -e
 remove_artefacts=$1
 scripts_dir=$2 
 
@@ -30,3 +30,5 @@ mv Homol HomolTA_safe >> logfile
 
 python ${scripts_dir}/delete_tie_points.py --homol_input HomolMasqFiltered --homol_output Homol --footprints flight_plan/flight_plan.shp
 python ${scripts_dir}/visualize_tie_points.py --homol Homol --footprints flight_plan/flight_plan.shp --reports reports/
+
+rm -rf HomolMasqFiltered

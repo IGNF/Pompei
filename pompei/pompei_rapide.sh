@@ -22,6 +22,7 @@ Kugelhupf_apply_threshold=$4 #[0, 1]
 remove_artefacts=$5 #[0, 1]
 ortho=$6 # storeref, wms, histo, dalles
 CPU=$7
+delete=$8
 
 
 
@@ -36,6 +37,7 @@ if test "$#" = 0; then
     echo "remove_artefacts : [0, 1]"
     echo "ortho : [storeref, wms, histo, dalles]"
     echo "CPU : int"
+    echo "delete : [0, 1]"
 else
 
     workspace=$(dirname ${TA})
@@ -68,7 +70,7 @@ else
 
     sh ${scripts_dir}/pompei_rapide/aero.sh ${scripts_dir}
 
-    sh ${scripts_dir}/create_ortho.sh ${scripts_dir} ${TA} ${ortho} ${CPU}
+    sh ${scripts_dir}/create_ortho.sh ${scripts_dir} ${TA} ${ortho} ${CPU} ${delete}
 
 fi
 

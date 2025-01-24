@@ -10,6 +10,8 @@
 #of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #You should have received a copy of the GNU General Public License along with Pompei. If not, see <https://www.gnu.org/licenses/>.
 
+set -e
+
 scripts_dir=$1
 ortho=$2
 TA=$3
@@ -28,8 +30,8 @@ echo "Téléchargement de la BD Ortho"
 
 if test ${ortho} = "dalles"; then
     #On télécharge le SRTM correspondant à la zone et on découpe les images en tuiles de 2000 pixels de côté
-    mkdir metadata/mns_temp
-    mkdir metadata/mns
+    mkdir -p metadata/mns_temp
+    mkdir -p metadata/mns
     python ${scripts_dir}/download_SRTM.py --metadata metadata --output metadata/mns_temp/MNS_temp.tif
     gdalwarp -t_srs EPSG:${EPSG}   -overwrite metadata/mns_temp/MNS_temp.tif metadata/mns_temp/MNS.tif
     rm metadata/mns_temp/MNS_temp.tif

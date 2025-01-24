@@ -195,6 +195,7 @@ def case_0_fiduciaux(cliches, remove_artefacts):
     name_first_image = cliches[0].find("image").text.strip()
     base_name = name_first_image[:5]
     with open(os.path.join("correct_geometrically_images.sh"), "w") as f:
+        f.write("set -e\n")
         f.write("scripts_dir=$1 \n\n")
         f.write("#On copie les images  : on fait comme si les images initiales sont les images rééchantillonnées \n")
         f.write("for f in "+base_name+"*.tif; do cp ${f} OIS-Reech_${f}; done \n\n")
@@ -206,8 +207,10 @@ def case_0_fiduciaux(cliches, remove_artefacts):
         if remove_artefacts:
             f.write("echo \"Saisie du masque pour supprimer les contours et les artefacts\"\n ")
             f.write("mm3d SaisieMasq OIS-Reech_{}.tif Name=filtre_artefacts.tif Gama=2 >> logfile\n".format(name_first_image))
+        f.write(f"rm -rf {base_name}*.tif\n")
 
     with open(os.path.join("find_tie_points.sh"), "w") as f:
+        f.write("set -e\n")
         f.write("scripts_dir=$1 \n\n")
         f.write("#Conversion des orientations et positions des sommets de prise de vue contenue dans le fichier csv dans le format MicMac \n")
         f.write("echo \"OriConvert\" \n")
@@ -220,6 +223,7 @@ def case_0_fiduciaux(cliches, remove_artefacts):
 
 def case_n_fiduciaux(remove_artefacts, sensors, targets, nb_fiducial_marks, apply_threshold, TA_path):
     with open(os.path.join("correct_geometrically_images.sh"), "w") as f:
+        f.write("set -e\n")
         f.write("scripts_dir=$1 \n\n")
         f.write("#Saisie des repères de fond de chambre sur une image \n")
         f.write("echo \"Saisie des repères de fonds de chambre\" \n")
@@ -283,8 +287,13 @@ def case_n_fiduciaux(remove_artefacts, sensors, targets, nb_fiducial_marks, appl
         if remove_artefacts:
             f.write("echo \"Saisie du masque pour supprimer les contours et les artefacts\" \n ")
             f.write("mm3d SaisieMasq OIS-Reech_{}.tif Name=filtre_artefacts.tif Gama=2 >> logfile\n".format(name_first_image))
+        images = sensors[0]["images"]
+        name_first_image = images[0][:-4]
+        base_name = name_first_image[:5]
+        f.write(f"rm -rf {base_name}*.tif\n")
 
     with open("find_tie_points.sh", "w") as f:
+        f.write("set -e\n")
         f.write("scripts_dir=$1 \n\n")
         f.write("#Conversion des orientations et positions des sommets de prise de vue contenue dans le fichier csv dans le format MicMac \n")
         f.write("echo \"OriConvert\" \n")

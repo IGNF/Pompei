@@ -11,10 +11,12 @@
 #of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #You should have received a copy of the GNU General Public License along with Pompei. If not, see <https://www.gnu.org/licenses/>.
 
+set -e
 
 scripts_dir=$1
 CPU=$2
 TA=$3
+delete=$4
 
 #Calcul de l'orthophoto
 
@@ -26,6 +28,12 @@ python ${scripts_dir}/create_mask_per_image.py --TA ${TA}
 echo "Malt"
 mm3d Malt Ortho "OIS.*([0-9]).tif" TerrainFinal_10_10_0.5_AllFree_Final MasqIm=Masq NbVI=2 UseTA=0 NbProc=${CPU} EZA=1 DirMEC=MEC-Malt-Final DEMInitIMG=metadata/mns/MNS_ssech4.tif DEMInitXML=metadata/mns/MNS_ssech4.xml >> logfile
 rm OIS*Masq.tif
+
+if test ${delete} -eq 1; then
+    rm -rf Tmp-MM-Dir
+    rm -rf MEC-Malt-Final/MasqPC*
+    rm -rf MEC-Malt-Final/AutoMask*
+fi
 
 python ${scripts_dir}/create_Z_Num_tfw.py --input_Malt MEC-Malt-Final
 python ${scripts_dir}/build_mns_micmac.py --input_Malt MEC-Malt-Final
@@ -46,6 +54,10 @@ python ${scripts_dir}/create_orthos_OIS_Reech.py --mnt MEC-Malt-Final/MNS_Final.
 echo "Egalisation radiométrique"
 sh ${scripts_dir}/equalizate_radiometry_ortho_mnt.sh ${scripts_dir} ${CPU} radiom_ortho_mns ortho_mns >> logfile
 
+if test ${delete} -eq 1; then
+    rm -rf ortho_mns/Incid*
+fi
+
 echo "Calcul de la mosaïque"
 python ${scripts_dir}/mosaiquage.py --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final --cpu ${CPU} --metadata metadata --mosaic ortho_mns/mosaic.gpkg --ortho ortho_mns --ta ${TA}
 
@@ -59,6 +71,7 @@ gdalbuildvrt ortho_mns/ortho.vrt ortho_mns/*_ortho.tif
 
 python ${scripts_dir}/compute_MNS_diff.py --mnsHistoPath MEC-Malt-Final/  --mnsPath  metadata/mns/ --masque MEC-Malt-Final/Masq_STD-MALT_DeZoom2.tif --metadata metadata
 
+rm -rf ortho_mns/carte_correlation
 mkdir ortho_mns/carte_correlation
 mv MEC-Malt-Final/carte_interpolation* ortho_mns/carte_correlation/
 mv MEC-Malt-Final/correlation* ortho_mns/carte_correlation/

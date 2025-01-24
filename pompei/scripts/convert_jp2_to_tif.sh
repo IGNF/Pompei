@@ -10,10 +10,12 @@
 #of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #You should have received a copy of the GNU General Public License along with Pompei. If not, see <https://www.gnu.org/licenses/>.
 
+set -e
+
 echo "Conversion des images jp2 en tif"
 
-find . -maxdepth 1 -name "*jp2" -exec basename {} .jp2 ';' | parallel -I% --max-args 1 gdal_translate %.jp2 %.tif
+find . -maxdepth 1 -name "*.jp2" -exec basename {} .jp2 ';' | parallel -I% --max-args 1 gdal_translate %.jp2 %.tif
 
-mkdir jp2
+mkdir -p jp2
+
 mv *.jp2 jp2
-

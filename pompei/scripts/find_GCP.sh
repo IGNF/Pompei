@@ -13,19 +13,16 @@
 
 scripts_dir=$1
 CPU=$2
+delete=$3
 
 pasdallage="1000"
 
-rm -r -f TraitementAPP
+rm -rf TraitementAPP
 mkdir TraitementAPP
 cd TraitementAPP
-#scripts_dir=../${scripts_dir}
-
-
 
 mkdir dallage
 ls ../Ortho-MEC-Malt-Abs-Ratafia/Orthophotomosaic_Tile_*tif > liste_tile.txt
-
 
 #On commence par daller les differentes orthoimages deja generees
 for i in `cat liste_tile.txt` ; do
@@ -41,9 +38,9 @@ python ${scripts_dir}/delete_black_images.py --path dallage --seuil_value 0 --se
 #On fait la liste des dalles creees
 ls dallage/*.tif > liste_dalles.txt
 for i in `cat liste_dalles.txt` ; do
-fichier=$(basename ${i})
-fichiersansext=`echo ${fichier}|cut -d"." -f1`
-echo $fichiersansext >> liste_dalles_tmp
+    fichier=$(basename ${i})
+    fichiersansext=`echo ${fichier}|cut -d"." -f1`
+    echo $fichiersansext >> liste_dalles_tmp
 done
 mv liste_dalles_tmp liste_dalles.txt
 
@@ -51,7 +48,7 @@ mv liste_dalles_tmp liste_dalles.txt
 #Lister la BDOrtho
 ls ../metadata/ortho/*.tfw > liste_bdortho.txt
 for i in `cat liste_bdortho.txt` ; do 
-${scripts_dir}/convert_ori.LINUX tfw2ori ${i} 
+    ${scripts_dir}/convert_ori.LINUX tfw2ori ${i} 
 done
 ls ../metadata/ortho/*.tif > liste_bdortho.txt
 
@@ -59,22 +56,22 @@ ls ../metadata/ortho/*.tif > liste_bdortho.txt
 #On écrit dans un fichier les commandes à appliquer pour chaque dalle
 echo -n "" > bashtmp
 for i in `cat liste_dalles.txt` ; do 
-#On cree une dalle d ortho superposable en tenant compte du décalage calculé dans find_GCP_downsampled_10.sh
-echo -n "${scripts_dir}/POMPEI.LINUX DecalageDalle:CropResult dallage/${i}.ori ../TraitementAPPssech10/resultpi dallage/${i}.pregeoref 5000 ; " >> bashtmp ;
-echo -n "${scripts_dir}/RANSAC dallage/${i}.pregeoref dallage/${i}.pregeoreff --adresse_export_best_modele dallage/${i}.pregeoref_modsim > /dev/null ; " >> bashtmp ;
-echo -n "${scripts_dir}/POMPEI.LINUX DecalageDalle:FromSim dallage/${i}.ori dallage/${i}.pregeoref_modsim > dallage/${i}.T.txt ; " >> bashtmp ;
-echo -n "${scripts_dir}/POMPEI.LINUX TranslatOri:m dallage/${i}.ori dallage/${i}.T.txt dallage/${i}.decal.ori ; " >> bashtmp ;
-echo -n "${scripts_dir}/Decoupage.LINUX dallage/${i}.decal.ori liste_bdortho.txt dallage/bdortho_${i}.tif > /dev/null ; " >> bashtmp ;
-echo -n "${scripts_dir}/Ech_noif.LINUX Format dallage/bdortho_${i}.tif dallage/bdortho_${i}.tif ; " >> bashtmp ;
-#Detection des points d interet
-echo -n "${scripts_dir}/MethodeAubry.LINUX dallage/bdortho_${i}.tif dallage/bdortho_${i}.kaub --maxlocaux --Mu ${scripts_dir}/MuAubry.tif --SigmaInv ${scripts_dir}/SigmaInvAubry.tif > /dev/null ; " >> bashtmp ;
-echo -n "${scripts_dir}/FiltrageMasqueDilat.LINUX --image dallage/bdortho_${i}.tif --rayon 10 --kp:bin dallage/bdortho_${i}.kaub --out dallage/bdortho_${i}.kaub > /dev/null ; " >> bashtmp ;
-#Mise en correspondance 
-echo -n "${scripts_dir}/MethodeAubryAppariement.LINUX Points:Image dallage/bdortho_${i}.kaub dallage/${i}.tif dallage/${i}.resultpi --Mu ${scripts_dir}/MuAubry.tif --SigmaInv ${scripts_dir}/SigmaInvAubry.tif > /dev/null ; " >> bashtmp 
-#On supprime les points situes dans les zones "noires"
-echo -n "${scripts_dir}/POMPEI.LINUX NettoyageResultZoneNoire  dallage/${i}.resultpi dallage/${i}.tif dallage/${i}.resultpi > /dev/null ; " >> bashtmp 
-#On reprojette les coordonnees dans un referentiel commun (coordonnees images dans l ori de Orthophotomosaic) --> A faire en mieux
-echo "${scripts_dir}/POMPEI.LINUX Reproj dallage/${i}.resultpi dallage/bdortho_${i}.ori dallage/${i}.ori Orthophotomosaic.ori Orthophotomosaic.ori dallage/${i}.resultpireproj " >> bashtmp
+    #On cree une dalle d ortho superposable en tenant compte du décalage calculé dans find_GCP_downsampled_10.sh
+    echo -n "${scripts_dir}/POMPEI.LINUX DecalageDalle:CropResult dallage/${i}.ori ../TraitementAPPssech10/resultpi dallage/${i}.pregeoref 5000 ; " >> bashtmp ;
+    echo -n "${scripts_dir}/RANSAC dallage/${i}.pregeoref dallage/${i}.pregeoreff --adresse_export_best_modele dallage/${i}.pregeoref_modsim > /dev/null ; " >> bashtmp ;
+    echo -n "${scripts_dir}/POMPEI.LINUX DecalageDalle:FromSim dallage/${i}.ori dallage/${i}.pregeoref_modsim > dallage/${i}.T.txt ; " >> bashtmp ;
+    echo -n "${scripts_dir}/POMPEI.LINUX TranslatOri:m dallage/${i}.ori dallage/${i}.T.txt dallage/${i}.decal.ori ; " >> bashtmp ;
+    echo -n "${scripts_dir}/Decoupage.LINUX dallage/${i}.decal.ori liste_bdortho.txt dallage/bdortho_${i}.tif > /dev/null ; " >> bashtmp ;
+    echo -n "${scripts_dir}/Ech_noif.LINUX Format dallage/bdortho_${i}.tif dallage/bdortho_${i}.tif ; " >> bashtmp ;
+    #Detection des points d interet
+    echo -n "${scripts_dir}/MethodeAubry.LINUX dallage/bdortho_${i}.tif dallage/bdortho_${i}.kaub --maxlocaux --Mu ${scripts_dir}/MuAubry.tif --SigmaInv ${scripts_dir}/SigmaInvAubry.tif > /dev/null ; " >> bashtmp ;
+    echo -n "${scripts_dir}/FiltrageMasqueDilat.LINUX --image dallage/bdortho_${i}.tif --rayon 10 --kp:bin dallage/bdortho_${i}.kaub --out dallage/bdortho_${i}.kaub > /dev/null ; " >> bashtmp ;
+    #Mise en correspondance 
+    echo -n "${scripts_dir}/MethodeAubryAppariement.LINUX Points:Image dallage/bdortho_${i}.kaub dallage/${i}.tif dallage/${i}.resultpi --Mu ${scripts_dir}/MuAubry.tif --SigmaInv ${scripts_dir}/SigmaInvAubry.tif > /dev/null ; " >> bashtmp 
+    #On supprime les points situes dans les zones "noires"
+    echo -n "${scripts_dir}/POMPEI.LINUX NettoyageResultZoneNoire  dallage/${i}.resultpi dallage/${i}.tif dallage/${i}.resultpi > /dev/null ; " >> bashtmp 
+    #On reprojette les coordonnees dans un referentiel commun (coordonnees images dans l ori de Orthophotomosaic) --> A faire en mieux
+    echo "${scripts_dir}/POMPEI.LINUX Reproj dallage/${i}.resultpi dallage/bdortho_${i}.ori dallage/${i}.ori Orthophotomosaic.ori Orthophotomosaic.ori dallage/${i}.resultpireproj " >> bashtmp
 done
 
 
@@ -86,7 +83,7 @@ make -k -f monmaketmp -j ${CPU} >> ../logfile;
 #On rassemble tous les appariements dans un meme fichier
 echo -n "" > resultpi
 for i in `cat liste_dalles.txt` ; do 
-cat dallage/${i}.resultpireproj >> resultpi ;
+    cat dallage/${i}.resultpireproj >> resultpi ;
 done
 
 
@@ -107,4 +104,10 @@ else
     ${scripts_dir}/RANSAC resultpi resultpif --taille_case 5000 > /dev/null
     #On reprojette en terrain
     ${scripts_dir}/POMPEI.LINUX ReprojTerrain resultpif Orthophotomosaic_Tile.ori Orthophotomosaic_Tile.ori resultpifreproj
+fi
+
+python ${scripts_dir}/reduction_resultpifreproj.py --input_resultpifreproj resultpifreproj
+
+if test ${delete} -eq 1; then
+    rm -rf Tmp-MM-Dir
 fi
