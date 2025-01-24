@@ -29,3 +29,4 @@ dependencies:
     - ultralytics>=8.0.50
     - psycopg2-binary>=2.9.5
     - python-dotenv>=1.0.1
+    - scikit-image>=0.25.0
