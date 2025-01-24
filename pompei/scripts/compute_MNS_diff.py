@@ -112,6 +112,8 @@ def process(mnsHisto, coordsMNSHisto, MNSFiles):
             MNS_extracted = mns[extractionMNS[2]:extractionMNS[3], extractionMNS[0]:extractionMNS[1]]
             
             #On rééchantillonne l'extraction du MNS actuel
+            if MNSHisto_extracted.shape[0]==0 or MNSHisto_extracted.shape[1]==0:
+                continue
             MNS_extracted_resized = cv2.resize(MNS_extracted, dsize=(MNSHisto_extracted.shape[1],MNSHisto_extracted.shape[0]) )
 
             #On calcule la différence

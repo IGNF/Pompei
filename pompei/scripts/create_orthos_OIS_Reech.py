@@ -51,10 +51,6 @@ tileSize = 2000
   
 
 def saveImage(image, path, x0, y0, resolution, EPSG, create_ori=False):
-    dictionnaire = {
-            'interleave': 'Band',
-            'tiled': True
-        }
     with rasterio.open(
         path, "w",
         driver = "GTiff",
@@ -64,7 +60,6 @@ def saveImage(image, path, x0, y0, resolution, EPSG, create_ori=False):
         height = image.shape[1],
         crs = EPSG,
         transform = rasterio.Affine(resolution, 0.0, x0, 0.0, -resolution, y0),
-        **dictionnaire
         ) as dst:
         dst.write(image)
 

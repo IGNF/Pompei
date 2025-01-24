@@ -131,6 +131,8 @@ def get_intersection(two_shots:List[Shot], line:LineString, ortho_path:str) ->Tu
     # On réduit la ligne de mosaïquage au résultat de l'intersection et on recommence
     # En effet, cela permet de réduire la surface de recherche au strict minimum. 
     line_reduce = intersection(line, geom_intersect)
+    if line_reduce.is_empty:
+        return geom_intersect, None, line
     line_bounds = line_reduce.bounds
     line_box = box(*line_bounds).buffer(buffer_size)
 
@@ -595,15 +597,17 @@ for shot in shots:
     # On recherche les polygones parmi ces lignes
     valid, _, _, not_valid = polygonize_full(lignes)
     for poly in valid.geoms:
-        all_polygones.append(poly)
+        if poly.area < 0.9*emprise.area:
+            all_polygones.append(poly)
 
     for poly in not_valid.geoms:
-        all_polygones.append(Polygon(poly.coords))
+        if poly.area < 0.9*emprise.area:
+            all_polygones.append(Polygon(poly.coords))
 
     centre = Point(shot.x_pos, shot.y_pos)
+
     for poly in all_polygones:
-        if within(centre, poly):
-            polygones.append(poly)
-            shot_names.append(shot.imagePath)
+        polygones.append(poly)
+        shot_names.append(shot.imagePath)
 
 gpd.GeoDataFrame({"shot":shot_names, "geometry":polygones}).set_crs(epsg=EPSG).to_file(mosaic_path)

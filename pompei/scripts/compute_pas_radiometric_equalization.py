@@ -20,9 +20,18 @@ Le pas est en mètres. Le risque, c'est que ce soit interminable pour des chanti
 """
 
 import os
-from tools import getResolution
+from tools import getResolution, load_bbox
+from math import sqrt
 
 resolution = getResolution()
+bbox = load_bbox("metadata")
+
+points_max = 20000
+
+H = bbox[3] - bbox[1]
+W = bbox[2] - bbox[0]
+pas_min = int(sqrt(H*W/(2*points_max))) # On contraint d'avoir au plus 50000 points
+pas_ideal = int(resolution*100/0.5)  # le pas d'un chantier à 50 centimètres de résolution est de 100 mètres, puis on applique une proportionnalité
 
 with open(os.path.join("metadata", "pas_egalisation_radiometrique.txt"), "w") as f:
-    f.write(str(int(resolution*100/0.5))) # le pas d'un chantier à 50 centimètres de résolution est de 100 mètres, puis on applique une proportionnalité
+    f.write(str(max(pas_min, pas_ideal)))
