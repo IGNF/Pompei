@@ -5,6 +5,8 @@ Created on Sat Dec 21 12:43:45 2024
 @author: abont
 """
 
+import sys
+
 from PyQt5.QtWidgets import (
     QApplication, QGraphicsView, QGraphicsScene, QMainWindow, 
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSplitter
@@ -139,7 +141,9 @@ class SelectPoints(QMainWindow):
         self.set_custom_cursor()
         
     def set_custom_cursor(self):
-        ''' Create a cross cursor'''
+        """
+        Create a cross cursor
+        """
         size = 16  # Cursor size
         pixmap = QPixmap(size, size)
         pixmap.fill(Qt.transparent)  # Transparent background
@@ -156,7 +160,12 @@ class SelectPoints(QMainWindow):
         self.view.setCursor(custom_cursor)
         
     def handle_mouse_press(self, event):
-        ''' Analyze the mouse click '''
+        """ 
+        Analyze the mouse click 
+
+        Args:
+            event: detection of click
+        """
         scene_pos = self.view.mapToScene(event.pos())
         if event.button() == Qt.LeftButton:
             self.add_point(scene_pos)
@@ -164,7 +173,12 @@ class SelectPoints(QMainWindow):
             self.remove_point(scene_pos)
 
     def add_point(self, scene_pos):
-        ''' Add a new point at the clicked position '''
+        """
+        Add a new point at the clicked position 
+
+        Args:
+            scene_pos: mouse position
+        """
         self.points.append((scene_pos.x(), scene_pos.y()))
         print(f"Point added: {scene_pos.x()}, {scene_pos.y()}")
 
@@ -174,7 +188,12 @@ class SelectPoints(QMainWindow):
         self.point_items.append(point_item)
 
     def remove_point(self, scene_pos):
-        ''' Remove point if the click is near an existing point '''
+        """ 
+        Remove point if the click is near an existing point 
+
+        Args:
+            scene_pos: mouse position
+        """
         tolerance = 10  # Radius around the point
         for i, (x, y) in enumerate(self.points):
             if abs(scene_pos.x() - x) <= tolerance and abs(scene_pos.y() - y) <= tolerance:
@@ -187,7 +206,15 @@ class SelectPoints(QMainWindow):
 
     
     def pixmap_to_numpy(self, pixmap):
-        ''' Convert a QPixmap to a NumPy array '''
+        """
+        Convert a QPixmap to a NumPy array
+
+        Args:
+            pixmap (pixmap): representation of the image per pixel
+
+        Returns:
+            arr (array): array of pixel
+        """
         qimage = pixmap.toImage()
         qimage = qimage.convertToFormat(QImage.Format_RGBA8888)
         width = qimage.width()
@@ -197,78 +224,24 @@ class SelectPoints(QMainWindow):
         ptr.setsize(qimage.byteCount())
         arr = np.array(ptr, dtype=np.uint8).reshape((height, width, 4))  # RGBA format
         return arr
-    '''
-    def analyze_lines_and_columns(self, image_array, threshold=10):
-        """
-        Analyze the rows and columns of an image to find lines/columns that are:
-        - Majorly black (all pixel values close to 0)
-        - Majorly white (all pixel values close to 255)
-        - Very homogeneous (standard deviation below a threshold)
-        """
-        # Convert RGBA to grayscale
-        grayscale = np.mean(image_array[:, :, :3], axis=2)  # Ignore alpha channel
-        total_pixels = grayscale.shape[1]  # Number of columns in each row
-        
-        pixel_threshold = 0.85 * total_pixels
-        # Thresholds for black and white
-        black_threshold = 0.4 * total_pixels  # At least 40% black pixels
-        white_threshold = 0.4 * total_pixels  # At least 40% white pixels
-        
-        # Analyze rows
-        bad_row = []
-        for i, row in enumerate(grayscale):
-            if np.sum(row < 15) >= pixel_threshold:  # Nearly black
-                bad_row.append(i)
-            elif np.sum(row > 240) >= pixel_threshold:  # Nearly white
-                bad_row.append(i)
-            elif np.sum((row < 15 or row > 240)) >= pixel_threshold:  # Nearly white
-                bad_row.append(i)
-            elif np.std(row) < threshold:  # Homogeneous
-                bad_row.append(i)
-        
-        # Analyze columns
-        bad_column = []
-        for j, col in enumerate(grayscale.T):  # Transpose to iterate columns as rows
-            if np.sum(col < 15) >= pixel_threshold:  # Nearly black
-                bad_column.append(j)
-            elif np.sum(col > 240) >= pixel_threshold:  # Nearly white
-                bad_column.append(j)
-            elif np.std(col) < threshold:  # Homogeneous
-                bad_column.append(j)
-        
-        bad_row = []
-        for i, row in enumerate(grayscale):
-            black_pixels = np.sum(row < 15)  # Count nearly black pixels
-            white_pixels = np.sum(row > 240)  # Count nearly white pixels
-            if black_pixels >= pixel_threshold or white_pixels >= pixel_threshold:  # Mostly black or white
-                bad_row.append(i)
-            elif black_pixels >= black_threshold and white_pixels >= white_threshold:  # Mixed black and white
-                bad_row.append(i)
-            elif np.std(row) < threshold:  # Homogeneous
-                bad_row.append(i)
-        
-        bad_column = []
-        for j, col in enumerate(grayscale.T):  # Transpose to iterate columns as rows
-            black_pixels = np.sum(col < 15)  # Count nearly black pixels
-            white_pixels = np.sum(col > 240)  # Count nearly white pixels
-            if black_pixels >= pixel_threshold or white_pixels >= pixel_threshold:  # Mostly black or white
-                bad_column.append(j)
-            elif black_pixels >= black_threshold and white_pixels >= white_threshold:  # Mixed black and white
-                bad_column.append(j)
-            elif np.std(col) < threshold:  # Homogeneous
-                bad_column.append(j)
-        return bad_row, bad_column
-    '''
-
+    
 
     def analyze_lines_and_columns(self, image_array, threshold=15):
-        '''
+        """
         Analyze the rows and columns of an image to find lines/columns that are:
         - Majorly black (most pixel values close to 0)
         - Majorly white (most pixel values close to 255)
         - Very homogeneous (standard deviation below a threshold)
         - Composed mostly of black and white pixels (e.g., >90% black+white)
-        '''
+
+        Args:
+            image_array (array): array of pixel
+            threshold (int): threshold on the standard deviation of a row or column
+
+        Returns:
+            bad_raw (list): list of black/white/Homogeneous lines
+            bad_column (list): list of black/white/Homogeneous column
+        """
         # Convert RGBA to grayscale
         grayscale = np.mean(image_array[:, :, :3], axis=2)  # Ignore alpha channel
         total_pixels = grayscale.shape[1]  
@@ -303,7 +276,17 @@ class SelectPoints(QMainWindow):
         return bad_row, bad_column
 
     def find_border(self, list_results, center):
-        ''' Retrieve the analysis indices which are closest to the center => image border '''
+        """
+        Retrieve the analysis indices which are closest to the center => image border
+
+        Args:
+            list_results (list): list of black/white/Homogeneous lines or column
+            center (float): coordinate of the center of the image
+
+        Returns:
+            closest_left (float): left or top border
+            closest_right (float): right or bottom border
+        """
         left_indices = [idx for idx in list_results if idx < center]
         closest_left = max(left_indices) if left_indices else None  # None si aucun
     
@@ -314,7 +297,14 @@ class SelectPoints(QMainWindow):
     
 
     def zoom_on_area(self, x, y, zoom_factor=1.4):
-        ''' Define the zoom rectangle based on coordinates and zoom factor '''
+        """
+        Define the zoom rectangle based on coordinates and zoom factor
+
+        Args:
+            x (float): x coodinate of the top-left corner of the zoom rectangle 
+            y (float): y coodinate of the top-left corner of the zoom rectangle
+            zoom_factor (float): zoom factor
+        """
         view_width = self.view.viewport().width()
         view_height = self.view.viewport().height()
         
@@ -331,9 +321,12 @@ class SelectPoints(QMainWindow):
     def read_xml(self, name_xml):
         """
         Reads a measurement XML file
-        
-        :param name_xml: path to XML file of image 1 (mode 1)
-        :return: list of coordinates of points.
+
+        Args:
+            name_xml (String): path to XML file of image 1 (mode 1)
+
+        Returns:
+            points (list): list of coordinates of points.
         """
         try:
             # load XML file
@@ -356,7 +349,12 @@ class SelectPoints(QMainWindow):
             return []
     
     def closeEvent(self, event):
-        ''' create xml file with clicked points when the window is closed '''
+        """
+        create xml file with clicked points when the window is closed
+
+        Args:
+            event: detection of click
+        """
         # First element
         root = ET.Element("SetOfMesureAppuisFlottants")
 
@@ -384,7 +382,7 @@ class SelectPoints(QMainWindow):
         
 
 if __name__ == "__main__":
-    import sys
+
     app = QApplication(sys.argv)
     
     # Retrieve arguments
@@ -409,7 +407,7 @@ if __name__ == "__main__":
     image_path = args.image_name
     out_xml = args.output_file
     flag = args.flag.lower() in ("true", "1", "yes")
-    if hasattr(args, 'input_file') and args.input_file:  # Vérifie l'existence et la valeur
+    if hasattr(args, 'input_file') and args.input_file:  # Check existence and value
         in_xml = args.input_file
     else:
         in_xml = None
