@@ -44,33 +44,15 @@ def find_problem(chemin_rapport):
                         logger.warning("Attention : le résidu de l'image {} est trop élevé : {}".format(line_splitted[4], value))
                         liste_probleme.append(line_splitted[4])
     return liste_probleme
-'''
-def SaisieAppuisInit(liste_probleme):
-    for image in liste_probleme:
-        commande = "mm3d SaisieAppuisInit {} NONE id_reperes.txt MeasuresIm-{}.xml Gama=2".format(image, image)
-        os.system(commande)
-'''
-import subprocess
 
+import subprocess
 def SaisieAppuisInit(liste_probleme, xml, dir):
     for image in liste_probleme:
-        script_python = dir+"/fichier3.py"
+        script_python = dir+"/select_points.py"
       
-        '''
-        # Arguments pour le script Python
-        args = [
-            script_python,
-            image, 
-            "NONE", 
-            #"id_reperes.txt", 
-            f"MeasuresIm-{image}.tif-S2D.xml",
-            #"Gama=2"
-        ]
-        '''
-        # Appel du script Python avec subprocess
         try:
             #subprocess.run(["python"] + args, check=True)
-            print("salut ca va???")
+            print("lancement de select_points")
             subprocess.run(
                 [
                     "python", script_python,
