@@ -4,7 +4,7 @@ Les procédures d'installation de Pompéi et Micmac sont détaillées dans la [d
 
 Une fois que Pompéi est correctement installé, plusieurs commandes doivent être exécutées avant de concrétement lancer Pompéi.
 
-Le guide d'utilsation est disponible dans la documentation de Pompéi.
+Le guide d'utilisation est disponible dans la documentation de Pompéi.
 
 Les commandes sont rappelées ci-dessous avec quelques détails supplémentaires:
 
