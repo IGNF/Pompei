@@ -425,9 +425,11 @@ class MNT:
         array_ex = np.where(array_ex<=-1000.00, 0, array_ex)
         array_ex = np.nan_to_num(array_ex)
         # Les points images sont en col lig mais les np.array sont en lig col
-        z = ndimage.map_coordinates(array_ex, np.vstack([l-l_min, c-c_min]), order=1, mode="constant")
-        return z
-        
+        try:
+            z = ndimage.map_coordinates(array_ex, np.vstack([l-l_min, c-c_min]), order=1, mode="constant")
+            return z
+        except:
+            return np.zeros(x.shape)        
 
 class Mask:
     def __init__(self, path) -> None:
