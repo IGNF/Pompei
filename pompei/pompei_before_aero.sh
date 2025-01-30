@@ -23,6 +23,7 @@ filter_GCP=$5 #[0, 1]
 create_ortho_mns=$6 #[0, 1]
 create_ortho_mnt=$7 #[0, 1]
 CPU=$8
+delete=$9
 
 if test "$#" = 0; then
     echo "pompei_before_aero.sh : pour reprendre Pompei une fois les points d'appuis trouvés. Sert notamment si l'on veut changer le paramètre filter_GCP"
@@ -32,6 +33,7 @@ if test "$#" = 0; then
     echo "create_ortho_mns : [0, 1]"
     echo "create_ortho_mnt : [0, 1]"
     echo "CPU : int"
+    echo "delete : [0, 1]"
 else
     
     rm -f ${workspace}
@@ -62,17 +64,17 @@ else
     cd ${workspace}
     workspace=./
 
-    sh ${scripts_dir}/aero.sh ${scripts_dir} ${filter_GCP} ${algo}
+    sh ${scripts_dir}/aero.sh ${scripts_dir} ${filter_GCP} ${algo} ${delete}
 
     if test ${create_ortho_mns} = "1"; then
 
-        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${CPU} ${TA}
+        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${CPU} ${TA} ${delete}
     
     fi
 
     if test ${create_ortho_mnt} = "1"; then
 
-        sh ${scripts_dir}/create_ortho.sh ${scripts_dir} ${TA} ${ortho} ${CPU}
+        sh ${scripts_dir}/create_ortho.sh ${scripts_dir} ${TA} ${ortho} ${CPU} ${delete}
 
     fi
 fi

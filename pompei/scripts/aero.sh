@@ -15,6 +15,7 @@
 scripts_dir=$1
 filter_GCP=$2
 algo=$3
+delete=$4
 
 
 
@@ -24,7 +25,6 @@ cd TraitementAPP
 
 
 EPSG=`cat ../metadata/EPSG.txt`
-python ${scripts_dir}/reduction_resultpifreproj.py --input_resultpifreproj resultpifreproj
 #On va aller chercher les z associe a ces points
 ${scripts_dir}/POMPEI.LINUX ExportAsTxt resultpifreproj pts_bdortho.txt pts_orthomicmac_abs.txt
 ${scripts_dir}/POMPEI.LINUX ExportAsGJson resultpifreproj pts_bdortho.geojson pts_orthomicmac_abs.geojson ${EPSG}
@@ -110,6 +110,10 @@ python ${scripts_dir}/delete_GCP.py --factor ${factor} --GCP GCP_0.xml --S2D GCP
 # Deuxième itérations : on supprime des points d'appuis jusqu'à ce que le campari AllFree=true fonctionne
 python ${scripts_dir}/aero_first_step.py --scripts ${scripts_dir} --facteur ${factor}
 
+# Il ne faut pas mettre le set -e avant car dans aero_first_step.py, 
+# on supprime des points d'appuis jusqu'à ce que Campari fonctionne sans avoir d'erreur 
+set -e
+
 # Troisième itération : on permet la modification des paramètres internes. cette itération ne sert qu'à supprimer les points d'appuis les plus faux
 echo "Campari 10_10_10_AllFree"
 mm3d Campari OIS.*tif TerrainFinal_10_10_10 TerrainFinal_10_10_10_AllFree_temp GCP=[GCP_AF_0.xml,10,GCP-S2D_AF_0.xml,10]  SigmaTieP=10 AllFree=true RapTxt=ResidualsReport_AF_0.txt| tee reports/rapport_CampariAero_10_10_10_AllFree_temp.txt >> logfile
@@ -136,3 +140,15 @@ python ${scripts_dir}/analyze_Tapas.py --input_report reports/rapport_CampariAer
 #Analyse des résidus sur les points d'appuis
 #Dans le cas où l'erreur est trop grande, alors on utilise les points d'appuis trouvés dans le sous-échantillonnage 10. Cela peut arriver lorsque les dalles ne se superposent pas correctement
 python ${scripts_dir}/analyze_residual_vectors.py --input_geojson VecteursResidusAppui.geojson --input_appuis GCP_AF_2.xml --scripts ${scripts_dir} --etape 1  --filter_GCP ${filter_GCP}
+
+
+if test ${delete} -eq 1; then
+    rm -rf MEC-Malt-Abs-Ratafia
+    rm -rf Pastis
+    rm -rf TraitementAPP
+    rm -rf TraitementAPPssech10
+    rm -rf metadata/ortho
+    rm -rf metadata/bati
+    rm -rf metadata/surface_hydro
+    rm -rf metadata/vegetation
+fi

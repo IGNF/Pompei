@@ -14,6 +14,7 @@
 
 # Chaîne de traitement complète pour Pompei
 
+set -e
 
 TA=$1
 nb_fiducial_marks=$2 #int
@@ -26,8 +27,7 @@ filter_GCP=$8 #[0, 1]
 create_ortho_mns=$9 #[0, 1]
 create_ortho_mnt=${10} #[0, 1]
 CPU=${11}
-
-
+delete=${12}
 
 
 if test "$#" = 0; then
@@ -43,10 +43,11 @@ if test "$#" = 0; then
     echo "create_ortho_mns : [0, 1]"
     echo "create_ortho_mnt : [0, 1]"
     echo "CPU : int"
+    echo "delete : [0, 1]"
 else
 
     workspace=$(dirname ${TA})
-    rm workspace.txt
+    rm -f workspace.txt
     echo $workspace >> workspace.txt
     scripts_dir=$(realpath "scripts")
 
@@ -65,7 +66,7 @@ else
 
     cd ${workspace}
     TA=$(basename ${TA})
-    mkdir reports
+    mkdir -p reports
 
     sh ${scripts_dir}/convert_jp2_to_tif.sh
     echo "A partir de maintenant, vous pouvez utiliser pompei_after_convert_jp2_to_tif.sh"
@@ -99,11 +100,11 @@ else
     fi
 
     echo "A partir de maintenant, vous pouvez utiliser pompei_before_aero.sh"
-    sh ${scripts_dir}/aero.sh ${scripts_dir} ${filter_GCP} ${algo}
+    sh ${scripts_dir}/aero.sh ${scripts_dir} ${filter_GCP} ${algo} ${delete}
 
     if test ${create_ortho_mns} = "1"; then
 
-        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${CPU} ${TA}
+        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${CPU} ${TA} ${delete}
     
     fi
 
