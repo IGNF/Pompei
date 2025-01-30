@@ -597,11 +597,11 @@ for shot in shots:
     # On recherche les polygones parmi ces lignes
     valid, _, _, not_valid = polygonize_full(lignes)
     for poly in valid.geoms:
-        if poly.area < 0.9*emprise.area:
+        if poly.area < 0.3*emprise.area:
             all_polygones.append(poly)
 
     for poly in not_valid.geoms:
-        if poly.area < 0.9*emprise.area:
+        if poly.area < 0.3*emprise.area:
             all_polygones.append(Polygon(poly.coords))
 
     centre = Point(shot.x_pos, shot.y_pos)
