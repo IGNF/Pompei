@@ -20,6 +20,7 @@ delete=$5
 
 if test ${delete} -eq 1; then
     rm -rf Tmp-MM-Dir
+    rm -rf metadata/mns
 fi
 
 # Création d'un nouveau fichier TA avec les orientations et focales mises à jour.
@@ -38,7 +39,7 @@ echo "Egalisation radiométrique"
 sh ${scripts_dir}/equalizate_radiometry_ortho_mnt.sh ${scripts_dir} ${CPU} radiom_ortho_mnt ortho_mnt >> logfile
 
 if test ${delete} -eq 1; then
-    rm -rf ortho_mns/Incid*
+    rm -rf ortho_mnt/Incid*
 fi
 
 echo "Calcul de la mosaïque"
@@ -50,3 +51,10 @@ python ${scripts_dir}/create_big_Ortho.py --ori Ori-TerrainFinal_10_10_0.5_AllFr
 echo "Création de fichiers vrt"
 # On crée un fichier vrt sur les orthos et le graphe de mosaïquage
 gdalbuildvrt ortho_mnt/ortho.vrt ortho_mnt/*_ortho.tif
+
+if test ${delete} -eq 1; then
+    rm -rf metadata/mnt
+    rm -rf radiom_ortho_mnt
+    rm -rf Pyram
+    rm -rf Ortho-MEC-Malt-Abs-Ratafia
+fi

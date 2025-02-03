@@ -96,7 +96,7 @@ else
         sh ${scripts_dir}/find_GCP_downsampled_10.sh ${scripts_dir} ${CPU} >> logfile
 
         
-        sh ${scripts_dir}/find_GCP.sh ${scripts_dir} ${CPU} >> logfile
+        sh ${scripts_dir}/find_GCP.sh ${scripts_dir} ${CPU} ${delete} >> logfile
     fi
 
     echo "A partir de maintenant, vous pouvez utiliser pompei_before_aero.sh"
@@ -110,7 +110,7 @@ else
 
     if test ${create_ortho_mnt} = "1"; then
 
-        sh ${scripts_dir}/create_ortho.sh ${scripts_dir} ${TA} ${ortho} ${CPU}
+        sh ${scripts_dir}/create_ortho.sh ${scripts_dir} ${TA} ${ortho} ${CPU} ${delete}
 
     fi
 

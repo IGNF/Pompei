@@ -77,3 +77,10 @@ mv MEC-Malt-Final/carte_interpolation* ortho_mns/carte_correlation/
 mv MEC-Malt-Final/correlation* ortho_mns/carte_correlation/
 mv MEC-Malt-Final/indicateur* ortho_mns/carte_correlation/
 mv MEC-Malt-Final/MNS_Final* ortho_mns/carte_correlation/
+
+
+if test ${delete} -eq 1; then
+    rm -rf Ortho-MEC-Malt-Final
+    rm -rf MEC-Malt-Final
+    rm -rf radiom_ortho_mns
+fi
