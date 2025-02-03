@@ -18,6 +18,7 @@ import rasterio
 from lxml import etree
 import numpy as np
 import argparse
+from tqdm import tqdm
 
 import rasterio.windows
 import log # Chargement des configurations des logs
@@ -32,7 +33,7 @@ args = parser.parse_args()
 """
 Malt construit le MNS niveau par niveau. Il commence d'abord avec un sous-échantillonage fort pour terminer à un niveau beaucoup plus fin.
 A chaque niveau, il dispose d'une carte de corrélation qui indique les lieux où la corrélation fonctionne.
-Si à un niveau la corrélation ne fonctionne pas, alros elle ne fonctionnera pas à un niveau plus précis.
+Si à un niveau la corrélation ne fonctionne pas, alors elle ne fonctionnera pas à un niveau plus précis.
 L'idée est ici de récupérer pour chaque pixel la dernière altitude calculée avant que la corrélation ne fonctionne plus.
 On produit également une carte indicateur.tif qui contient l'identifiant de la couche utilisée. 
 """
@@ -232,12 +233,13 @@ def compute_mns(input_Malt):
         mns = higher_level.mns
         correlation = higher_level.correlation
         correlation = correlation.astype(np.uint8)
+        correlation_finale = correlation
         indicateur = np.ones(mns.shape)*first_level
         indicateur = indicateur.astype(np.uint8)
         transform = higher_level.transform
         bounds = higher_level.bounds
         # On parcourt tous les niveaux de MNS (sauf celui juste en dessous car il a la même carte de corrélation que le niveau le plus élevé)
-        for level in range(first_level-2, 0, -1):
+        for level in tqdm(range(first_level-2, 0, -1)):
             levels_filename = get_level(input_Malt, level)
 
             dezoom = int(levels_filename[0].split("_")[2].replace("DeZoom", ""))
@@ -255,8 +257,9 @@ def compute_mns(input_Malt):
             # On conserve les informations précédentes que pour les endroits où la corrélation 
             # est différente de 1 (1 faible corrélation, 255 très forte corrélation)
 
-            mns = np.where(correlation>1, mns, level.mns)
-            indicateur = np.where(correlation>1, indicateur, level.level)
+            indicateur = np.where(correlation>1, indicateur, max(level.level-1,0))
+            mns = np.where(indicateur==level.level, level.mns, mns)
+            correlation_finale = np.where(indicateur==level.level, level.correlation, correlation_finale)
             correlation = np.where(correlation>1, correlation, level.correlation)
 
         indicateur = np.where(correlation>1, indicateur, 0)
@@ -277,7 +280,7 @@ def compute_mns(input_Malt):
             f.write(f"{transform.f}\n")
         
         save_image(indicateur, os.path.join(input_Malt, mns_name.replace("MNS_pyramide", "indicateur")), transform, rasterio.uint8)
-        save_image(correlation, os.path.join(input_Malt, mns_name.replace("MNS_pyramide", "correlation")), transform, rasterio.uint8)
+        save_image(correlation_finale, os.path.join(input_Malt, mns_name.replace("MNS_pyramide", "correlation")), transform, rasterio.uint8)
     
 
 
