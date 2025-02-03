@@ -1,13 +1,15 @@
+set -e
+
 scripts_dir=$1
 
 # Ce script permet de rechercher des points d'appuis sur les chantiers pour lesquels la BD Ortho et le MNS n'est pas disponible. 
 # La recherche de points d'appuis se fait alors avec le MNS du SRTM
 
 cd metadata
-mkdir mns
-mkdir mns_temp
+mkdir -p mns
+mkdir -p mns_temp
 cd ..
-mkdir MEC_SRTM
+mkdir -p MEC_SRTM
 
 #On télécharge le SRTM correspondant au terrain
 python ${scripts_dir}/download_SRTM.py --metadata metadata --output metadata/mns_temp/mns.tif

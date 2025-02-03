@@ -16,9 +16,34 @@ You should have received a copy of the GNU General Public License along with Pom
 from lxml import etree
 import os
 import numpy as np
+import argparse
+from tools import getSensors
 
 
-if __name__ == "__main__":	
+parser = argparse.ArgumentParser(description="Calcule la position moyenne des repères de fond de chambre")
+parser.add_argument('--identifiant', help="Identifiant du vol à pour lequel il faut calculer la position moyenne", type=int)
+parser.add_argument('--ta', help="Tableau d'assemblage")
+args = parser.parse_args()
+
+identifiant = args.identifiant
+TA_path = args.ta
+
+
+def get_images(sensors, identifiant):
+	for sensor_dict in sensors:
+		if sensor_dict["identifiant"]==identifiant:
+			return sensor_dict["images"]
+
+if __name__ == "__main__":
+
+	tree = etree.parse(TA_path)
+	root = tree.getroot()
+
+	# On récupère les capteurs et leurs images associées
+	sensors = getSensors(root)
+
+	# On récupère la liste des images associées au vol identifiant
+	images = get_images(sensors, identifiant)
 
 	# Récupération des identifiants des repères de fond de chambre dans id_reperes.txt
 	listReperes = []
@@ -28,13 +53,13 @@ if __name__ == "__main__":
 
 	#On récupère la liste des fichiers contenant la position des repères de fond de chambre pour chaque cliché
 	InterneScan_path = "Ori-InterneScan"
-	listFile = os.listdir(InterneScan_path)
+	listFile = [i for i in os.listdir(InterneScan_path) if i[:10]=="MeasuresIm" and i[-4:]==".xml"]
 	listXml = []
 	#on ne garde que les fichiers Measures-Im  Xml
 	for file in listFile :
-		if file.split('-')[0] == 'MeasuresIm':
+		image_name = file[11:].replace(".xml", "")
+		if file.split('-')[0] == 'MeasuresIm' and image_name in images:
 			listXml.append(file)
-
 
 	#création de la structure xml d'export
 	MesureAppui = etree.Element("MesureAppuiFlottant1Im")

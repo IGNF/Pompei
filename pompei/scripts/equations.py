@@ -123,12 +123,12 @@ class Shot:
         shot.X_size = inputds.RasterXSize
         shot.Y_size = inputds.RasterYSize
         
+        shot.calibration = calibration
         shot.x_ppa = calibration.PPX
         shot.y_ppa = calibration.PPY
         shot.focal = calibration.focale
 
         shot.x_pos_eucli, shot.y_pos_eucli, shot.z_pos_eucli = shot.world_to_euclidean(x, y, z)
-
         rotMatrice = np.zeros((3,3))
         L1 = root.find(".//L1").text
         rotMatrice[0,0] = float(L1.split()[0])
@@ -148,13 +148,13 @@ class Shot:
 
 
     def carto_to_geoc(self, x, y, z):
-        return pyproj.Transformer.from_crs(self.crs, self.crs_geoc).transform(x, y, z)
+        return self.crs_to_crs_geoc.transform(x, y, z)
 
     def geoc_to_carto(self, x, y, z):
-        return pyproj.Transformer.from_crs(self.crs_geoc, self.crs).transform(x, y, z)
+        return self.crs_geoc_to_crs.transform(x, y, z)
 
     def carto_to_geog(self, x, y):
-        return pyproj.Transformer.from_crs(self.crs, self.crs_geog).transform(x, y)
+        return self.crs_to_crs_geog.transform(x, y)
 
     def world_to_euclidean(self, x, y, z):
             """
@@ -389,8 +389,8 @@ class MNT:
     def __init__(self, path) -> None:
         self.dem = rasterio.open(path)
         self.gt = self.dem.transform
-        self.array = self.dem.read().squeeze()
-        self.array = np.where(self.array<=-1000.00, 0, self.array)
+        self.l_max = self.dem.height
+        self.c_max = self.dem.width
 
     def world_to_image(self, x, y):
         """
@@ -416,20 +416,27 @@ class MNT:
         c, l = self.world_to_image(x, y)
         c_min = int(max(np.min(c), 0))
         l_min = int(max(np.min(l), 0))
-        c_max = int(min(np.max(c), self.array.shape[1]))
-        l_max = int(min(np.max(l), self.array.shape[0]))
-        array_ex = self.array[l_min:l_max+10, c_min:c_max+10]
-        # Les points images sont en col lig mais les np.array sont en lig col
-        z = ndimage.map_coordinates(array_ex, np.vstack([l-l_min, c-c_min]), order=1, mode="constant")
-        return z
         
+        c_max = int(min(np.max(c), self.c_max))
+        l_max = int(min(np.max(l), self.l_max))
+        if c_max-c_min+10 < 0 or l_max-l_min+10 < 0:
+            return np.zeros(x.shape)
+        array_ex = self.dem.read(window=rasterio.windows.Window(c_min, l_min, c_max-c_min+10, l_max-l_min+10)).squeeze()
+        array_ex = np.where(array_ex<=-1000.00, 0, array_ex)
+        array_ex = np.nan_to_num(array_ex)
+        # Les points images sont en col lig mais les np.array sont en lig col
+        try:
+            z = ndimage.map_coordinates(array_ex, np.vstack([l-l_min, c-c_min]), order=1, mode="constant")
+            return z
+        except:
+            return np.zeros(x.shape)        
 
 class Mask:
     def __init__(self, path) -> None:
         self.mask = rasterio.open(path)
         self.gt = self.mask.transform
-        self.array = self.mask.read().squeeze()
-        self.array = np.where(self.array>=1, 1, 0)
+        self.l_max = self.mask.height
+        self.c_max = self.mask.width
 
     def world_to_image(self, x, y):
         """
@@ -449,9 +456,10 @@ class Mask:
             c, l = self.world_to_image(x, y)
             c_min = int(max(np.min(c), 0))
             l_min = int(max(np.min(l), 0))
-            c_max = int(min(np.max(c), self.array.shape[1]))
-            l_max = int(min(np.max(l), self.array.shape[0]))
-            array_ex = self.array[l_min:l_max+1, c_min:c_max+1]
+            c_max = int(min(np.max(c), self.c_max))
+            l_max = int(min(np.max(l), self.l_max))
+            array_ex = self.mask.read(window=rasterio.windows.Window(c_min, l_min, c_max-c_min+10, l_max-l_min+10)).squeeze()
+            array_ex = np.where(array_ex>=1, 1, 0)
             l_request = l-l_min
             l_request = l_request.astype(np.int16)
             c_request = c-c_min

@@ -23,12 +23,14 @@ from lxml import etree
 import argparse
 import log # Chargement des configurations des logs
 import logging
+from tools import getSensors
 
 logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description="Recherche automatique des repères de fond de chambre qui sont sous forme de targets")
 parser.add_argument('--nb_points', help='Nombre de repères de fond de chambre à trouver')
 parser.add_argument('--scripts', help='Répertoire contenant les scripts')
+parser.add_argument('--ta', help="Tableau d'assemblage")
 args = parser.parse_args()
 
 
@@ -200,13 +202,13 @@ def save_xml(liste_points):
                 f.write(str(etree.tostring(MesureAppuiFlottant1Im,encoding='unicode')))
     return liste_probleme
 
-def chercher_image_maitresse(model):
+def chercher_image_maitresse(model, images):
     """
     On parcourt toutes les images jusqu'à en trouver une pour laquelle YOLO trouve le bon nombre de repères de fond de chambre.
     Cette image devient l'image maîtresse pour la suite
     """
     liste_points = {}
-    images = [i for i in os.listdir() if i[-4:]==".tif"]
+    images = [i for i in os.listdir() if i in images]
     pas_trouve = True
     while pas_trouve and len(images) > 0:
         image_maitresse = images.pop()
@@ -316,7 +318,7 @@ def SaisieAppuisInit_to_InterneScan(liste_probleme):
             f.write(str(etree.tostring(MesureAppui,encoding='unicode')))
 
 
-def run(chemin_sauvegarde):
+def run(chemin_sauvegarde, images):
     """
     Fonction pour récupérer les repères de fond de chambre
     """
@@ -326,12 +328,12 @@ def run(chemin_sauvegarde):
     model = YOLO(os.path.join(args.scripts, "best.pt"))
 
     # On recherche l'image maîtresse : la première pour laquelle on trouve le bon nombre de repères de fond de chambre
-    liste_points, points_image_maitresse, image_maitresse = chercher_image_maitresse(model)
+    liste_points, points_image_maitresse, image_maitresse = chercher_image_maitresse(model, images)
     
     
 
     # On parcourt les images secondaires
-    images_secondaires = [i for i in os.listdir() if i[-4:]==".tif" and i!=image_maitresse]
+    images_secondaires = [i for i in os.listdir() if i in images and i!=image_maitresse]
     for image_secondaire in images_secondaires:
         logger.info(f"image_secondaire : {image_secondaire}")
         # On détecte les repères de fond de chambre sur l'image secondaire avec Yolo
@@ -356,4 +358,9 @@ if not os.path.exists(chemin_sauvegarde):
 
 if not os.path.exists("Ori-InterneScan"):
     os.makedirs("Ori-InterneScan")
-run(chemin_sauvegarde)
+
+tree = etree.parse(args.ta)
+root = tree.getroot()
+sensors = getSensors(root)
+for sensor in sensors:
+    run(chemin_sauvegarde, sensor["images"])

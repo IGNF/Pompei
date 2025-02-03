@@ -89,8 +89,9 @@ if args.ortho == "storeref" and EPSG==2154:
             with open(path_out, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
         os.system(f"gdal_edit.py -a_srs EPSG:{EPSG} {path_out}")
+        os.system(f'gdal_translate -co "TILED=YES" {path_out} {path_out.replace(".asc", ".tif")}')
         os.remove(os.path.join("metadata", "mnt", tile))
-    commande = "gdalbuildvrt {} {}".format(os.path.join("metadata", "mnt", "mnt.vrt"), os.path.join("metadata", "mnt", "*.asc"))
+    commande = "gdalbuildvrt {} {}".format(os.path.join("metadata", "mnt", "mnt.vrt"), os.path.join("metadata", "mnt", "*.tif"))
     os.system(commande)
 else:
     download_data(bbox, "MNT", "metadata", EPSG)

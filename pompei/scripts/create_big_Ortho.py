@@ -15,11 +15,11 @@ You should have received a copy of the GNU General Public License along with Pom
 
 import os
 import argparse
-from equations import MNT, Calibration
+from equations import MNT
 import numpy as np
 from osgeo import gdal, osr
 from multiprocessing import Pool
-from tools import getEPSG, load_bbox, getNbCouleurs, getResolution, loadShots
+from tools import getEPSG, load_bbox, getNbCouleurs, getResolution, read_ori
 import log # Chargement des configurations des logs
 import logging
 from tqdm import tqdm
@@ -38,6 +38,7 @@ parser.add_argument('--cpu', help="Nombre de cpus à utiliser", type=int)
 parser.add_argument('--mnt', help="MNT sous format vrt")
 parser.add_argument('--radiom', help="Répertoire avec les images égalisées")
 parser.add_argument('--mosaic', help="Fichier avec la mosaïque")
+parser.add_argument('--ta', help="Fichier TA")
 parser.add_argument('--outdir', help="Répertoire contenant les fichiers orientations")
 args = parser.parse_args()
 
@@ -47,6 +48,7 @@ mnt_path = args.mnt
 outdir = args.outdir
 radiom = args.radiom
 mosaic_file = args.mosaic
+ta_path = args.ta
 
 # Une dalle : 2000 pixels
 tileSize = 2000
@@ -215,13 +217,6 @@ def createTiles(bbox, shots, nbCouleurs, EPSG, path_ortho):
             for i in pool.map(createOrthoProcess, work_data):
                 pbar.update()
 
-def getCalibrationFile(path):
-    files = os.listdir(path)
-    for file in files:
-        if file[:11] == "AutoCal_Foc":
-            return os.path.join(path, file)
-    raise Exception("No calibration file in {}".format(path))
-
 def read_mosaique(shots, mosaic_file):
     mosaique = []
     emprises_mosaique = gpd.read_file(mosaic_file)
@@ -245,13 +240,8 @@ resolution = getResolution()
 nbCouleurs = getNbCouleurs("metadata")
 EPSG = getEPSG("metadata")
 
-
-# On récupère les paramètres de calibration de la caméra
-calibrationFile = getCalibrationFile(ori_path)
-calibration = Calibration.createCalibration(calibrationFile)
-
 # On crée un objet shot par image
-shots = loadShots(ori_path, EPSG, calibration)
+shots = read_ori(ori_path, ta_path, EPSG)
 mosaique = read_mosaique(shots, mosaic_file)
 
 # On récupère le réeprtoire où se trouvent les orthos pour chaque image

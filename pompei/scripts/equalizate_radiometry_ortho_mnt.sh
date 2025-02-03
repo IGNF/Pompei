@@ -18,6 +18,7 @@ ortho_path=$4
 
 nbCouleurs=`cat metadata/nb_colors.txt`
 
+rm -rf ${outdir}
 mkdir ${outdir}
 
 python ${scripts_dir}/compute_pas_radiometric_equalization.py

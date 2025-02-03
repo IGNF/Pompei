@@ -26,5 +26,16 @@
    </Calcs>
    <Key>   NKS-Assoc-STD-FOC </Key>
   </KeyedNamesAssociations>
+  <KeyedNamesAssociations>
+   <Calcs>
+    <Arrite>  1 1 </Arrite>
+    <Direct>
+     <PatternTransform> .*tif </PatternTransform>
+     <CalcName> 152 </CalcName>
+    </Direct>
+   </Calcs>
+   <Key>   MyKeyCalculMasq </Key>
+   <IsParametrized> true </IsParametrized>
+  </KeyedNamesAssociations>
  </ChantierDescripteur>
 </Global>

@@ -20,6 +20,7 @@ filter_GCP=$6 #[0, 1]
 create_ortho_mns=$7 #[0, 1]
 create_ortho_mnt=$8 #[0, 1]
 CPU=$9
+delete=${10}
 
 
 if test "$#" = 0; then
@@ -33,6 +34,7 @@ if test "$#" = 0; then
     echo "create_ortho_mns : [0, 1]"
     echo "create_ortho_mnt : [0, 1]"
     echo "CPU : int"
+    echo "delete : [0, 1]"
 else
 
     if test ${ortho} = "storeref"; then
@@ -53,7 +55,7 @@ else
 
     sh ${scripts_dir}/first_absolute_orientation.sh ${scripts_dir} ${TA}
 
-    sh ${scripts_dir}/second_absolute_orientation.sh ${scripts_dir} ${CPU}
+    sh ${scripts_dir}/second_absolute_orientation.sh ${scripts_dir} ${CPU} ${TA}
     echo "A partir de maintenant, vous pouvez utiliser pompei_after_Tawny.sh"
 
 
@@ -71,17 +73,17 @@ else
     fi
 
     echo "A partir de maintenant, vous pouvez utiliser pompei_before_aero.sh"
-    sh ${scripts_dir}/aero.sh ${scripts_dir} ${filter_GCP} ${algo}
+    sh ${scripts_dir}/aero.sh ${scripts_dir} ${filter_GCP} ${algo} ${delete}
 
     if test ${create_ortho_mns} = "1"; then
 
-        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${CPU} ${TA}
+        sh ${scripts_dir}/create_ortho_mns.sh ${scripts_dir} ${CPU} ${TA} ${delete}
     
     fi
 
     if test ${create_ortho_mnt} = "1"; then
 
-        sh ${scripts_dir}/create_ortho.sh ${scripts_dir} ${TA} ${ortho} ${CPU}
+        sh ${scripts_dir}/create_ortho.sh ${scripts_dir} ${TA} ${ortho} ${CPU} ${delete}
 
     fi
 fi

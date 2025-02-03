@@ -17,13 +17,13 @@ import os
 import argparse
 
 import rasterio.crs
-from equations import Shot, MNT, Calibration, DistorsionCorrection, Mask
+from equations import Shot, MNT, DistorsionCorrection, Mask
 import numpy as np
 import rasterio
 from scipy import ndimage
-from multiprocessing import Pool
+from multiprocessing import Pool, Process
 from tqdm import tqdm
-from tools import getEPSG, load_bbox, getNbCouleurs, getResolution, loadShots
+from tools import getEPSG, load_bbox, getNbCouleurs, getResolution, read_ori
 import log # Chargement des configurations des logs
 import logging
 
@@ -36,6 +36,7 @@ parser.add_argument('--ori', help="Répertoire contenant les fichiers orientatio
 parser.add_argument('--outdir', help="Répertoire où sauvegarder les orthos")
 parser.add_argument('--cpu', help="Nombre de cpus à utiliser", type=int)
 parser.add_argument('--mask', help="Masque où calculer les orthos", default=None)
+parser.add_argument('--ta', help="Fichier TA")
 args = parser.parse_args()
 
 mnt_path = args.mnt
@@ -43,6 +44,7 @@ ori_path = args.ori
 outdir = args.outdir
 nb_cpus = args.cpu
 mask_path = args.mask
+ta_path = args.ta
 
 # Une dalle : 2000 pixels
 tileSize = 2000
@@ -57,7 +59,7 @@ def saveImage(image, path, x0, y0, resolution, EPSG, create_ori=False):
         width = image.shape[2],
         height = image.shape[1],
         crs = EPSG,
-        transform = rasterio.Affine(resolution, 0.0, x0, 0.0, -resolution, y0)
+        transform = rasterio.Affine(resolution, 0.0, x0, 0.0, -resolution, y0),
         ) as dst:
         dst.write(image)
 
@@ -97,7 +99,7 @@ def createOrthoImage(shot:Shot, x_min, x_max, y_min, y_max, mnt:MNT, resolution,
     c, l = shot.world_to_image(xx, yy, z)
 
     # On applique la correction de la distorsion
-    dc = DistorsionCorrection(calibration)
+    dc = DistorsionCorrection(shot.calibration)
     c_corr, l_corr = dc.compute(c, l)
 
     RasterXSize = array_ortho.shape[2]
@@ -139,20 +141,18 @@ def createOrthoImage(shot:Shot, x_min, x_max, y_min, y_max, mnt:MNT, resolution,
     else:
         ortho = None
     return ortho
-            
-
-
-def getCalibrationFile(path):
-    files = os.listdir(path)
-    for file in files:
-        if file[:11] == "AutoCal_Foc":
-            return os.path.join(path, file)
-    raise Exception("No calibration file in {}".format(path))
 
 
 def getEmpriseSol(shot:Shot, mnt:MNT):
-    points = np.array([[0, 0],[0, shot.Y_size],[shot.X_size, 0],[shot.X_size, shot.Y_size]])
-    worldExtend_x, worldExtend_y, _ = shot.image_to_world(points[:,0], points[:,1], mnt)
+    points = [[0, 0],[0, shot.Y_size],[shot.X_size, 0],[shot.X_size, shot.Y_size]]
+    worldExtend_x = []
+    worldExtend_y = []
+    for point in points:
+        x_p, y_p, _ = shot.image_to_world(np.array([point[0]]), np.array([point[1]]), mnt)
+        worldExtend_x.append(x_p)
+        worldExtend_y.append(y_p)
+    worldExtend_x = np.array(worldExtend_x)
+    worldExtend_y = np.array(worldExtend_y)
     x_min = np.min(worldExtend_x)
     y_min = np.min(worldExtend_y)
     x_max = np.max(worldExtend_x)
@@ -185,6 +185,7 @@ def poolProcess(work_data):
     i = work_data[5]
     j = work_data[6]
     nbCouleurs = work_data[7]
+    mnt = MNT(mnt_path)
     orthoImage = createOrthoImage(shot, x0, x1, y1, y0, mnt, resolution, nbCouleurs)
     if orthoImage is not None:
         mask = np.where(orthoImage==0, 255, 0)
@@ -192,6 +193,11 @@ def poolProcess(work_data):
         return (orthoImage, i, i+n_temp, j, j+m_temp, mask)
     else:
         return None
+
+
+def write_image(bigOrtho, path_ortho, x_min, y_max, resolution, EPSG, bigMask, path_mask):
+    saveImage(bigOrtho, path_ortho, x_min, y_max, resolution, EPSG, create_ori=True)
+    saveImage(bigMask, path_mask, x_min, y_max, resolution, EPSG, create_ori=True)
 
 
 def createShotOrtho(shot, resolution, nbCouleurs, EPSG):
@@ -227,8 +233,9 @@ def createShotOrtho(shot, resolution, nbCouleurs, EPSG):
                     bigOrtho[:,i_min:i_max, j_min:j_max] = orthoImage
                     bigMask[:,i_min:i_max, j_min:j_max] = mask
         
-        saveImage(bigOrtho, path_ortho, x_min, y_max, resolution, EPSG, create_ori=True)
-        saveImage(bigMask, path_mask, x_min, y_max, resolution, EPSG, create_ori=True)
+        p = Process(target=write_image, args=([bigOrtho, path_ortho, x_min, y_max, resolution, EPSG, bigMask, path_mask]))
+        p.start()
+        
 
 
 def createShotOrthos(shots, resolution, nbCouleurs, EPSG):
@@ -252,12 +259,9 @@ EPSG = getEPSG("metadata")
 resolution = getResolution()
 nbCouleurs = getNbCouleurs("metadata")
 
-# On récupère les paramètres de calibration de la caméra
-calibrationFile = getCalibrationFile(ori_path)
-calibration = Calibration.createCalibration(calibrationFile)
 
 # On crée un objet shot par image
-shots = loadShots(ori_path, EPSG, calibration)
+shots = read_ori(ori_path, ta_path, EPSG)
 
 # Crée les tuiles d'ortho
 createShotOrthos(shots, resolution, nbCouleurs, EPSG)

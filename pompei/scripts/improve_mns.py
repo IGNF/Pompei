@@ -26,10 +26,18 @@ mns_input = args.mns_input
 indicateur_path = args.indicateur
 nb_cpus = args.cpu
 
-def read_image(path):
+def read_image(path, bounds=None):
     input_ds = rasterio.open(path)
-    MNS = input_ds.read().squeeze()
-    return MNS, input_ds.transform
+    if bounds is None:
+        array = input_ds.read().squeeze()
+        bounds_return = input_ds.bounds
+    else:
+        transformer = rasterio.transform.AffineTransformer(transform)
+        l_max, c_min = transformer.rowcol(bounds[0], bounds[1])
+        l_min, c_max = transformer.rowcol(bounds[2], bounds[3])
+        array = input_ds.read(window=rasterio.windows.Window(c_min, l_min, c_max-c_min+1, l_max-l_min+1)).squeeze()
+        bounds_return = bounds
+    return array, input_ds.transform, bounds_return
 
 
 def vectorize_MNS(MNS, transform, indicateur):
@@ -114,7 +122,7 @@ def interpolate(MNS, indicateur, recompute_mns):
     n, m = MNS.shape
     tile_size = 500
     work_data = []
-    for ligne in tqdm(range(0, n, 480)):
+    for ligne in range(0, n, 480):
         for colonne in range(0, m, 480):
             ligne_1 = min(ligne+tile_size, n)
             colonne_1 = min(colonne+tile_size, m)
@@ -124,7 +132,7 @@ def interpolate(MNS, indicateur, recompute_mns):
             work_data.append([ligne, ligne_1, colonne, colonne_1, MNS_ex, indicateur_ex, recompute_mns_ex])
     
     with Pool(nb_cpus) as pool:
-        for result in tqdm(pool.imap(poolProcess, work_data), total=len(work_data)):
+        for result in tqdm(pool.imap(poolProcess, work_data), total=len(work_data), desc="Interpolation : "):
             ligne = result[0]
             ligne_1 = result[1]
             colonne = result[2]
@@ -175,7 +183,7 @@ def get_rasterisation(MNS, transform, indicateur):
     tile_size = 2000
     work_data = []
     rasterisation = np.zeros(MNS.shape)
-    for ligne in tqdm(range(0, n, 1980)):
+    for ligne in range(0, n, 1980):
         for colonne in range(0, m, 1980):
             ligne_1 = min(ligne+tile_size, n)
             colonne_1 = min(colonne+tile_size, m)
@@ -185,7 +193,7 @@ def get_rasterisation(MNS, transform, indicateur):
             work_data.append([ligne, ligne_1, colonne, colonne_1, MNS_ex, indicateur_ex, transform_ex])
 
     with Pool(nb_cpus) as pool:
-        for result in tqdm(pool.imap(get_rasterisation_pool, work_data), total=len(work_data)):
+        for result in tqdm(pool.imap(get_rasterisation_pool, work_data), total=len(work_data), desc="Rasterisation : "):
             ligne = result[0]
             ligne_1 = result[1]
             colonne = result[2]
@@ -194,37 +202,64 @@ def get_rasterisation(MNS, transform, indicateur):
             rasterisation[ligne:ligne_1, colonne:colonne_1] = rasterisation_ex
     return rasterisation
 
+def resize(MNS, indicateur):
+    """
+    Redécoupe le mns et la carte de corrélation pour qu'elle ait la taille définie par c et l
+    """
+    l, c = MNS.shape
+    indicateur = np.ones((l, c), dtype=np.uint8)
+    l_current, c_current = indicateur.shape
+    l_min = min(l, l_current)
+    c_min = min(c, c_current)
+    indicateur[:l_min,:c_min] = indicateur[:l_min,:c_min]
+    return indicateur
+
 
 if __name__=="__main__":
-    # Ouverture du MNS
-    MNS, transform = read_image(mns_input)
-    # Ouverture de la carte des indicateurs de la couche de la pyramide utilisée pour calculer le MNS
-    indicateur, _ = read_image(indicateur_path)
-    # On récupère un raster qui indique les pixels qu'il faudra recalculer
-    rasterization = get_rasterisation(MNS, transform, indicateur)
-    logger.info("Rasterisation terminée")
-    # Pour chaque pixel devant être recalculé, on le recalcule grâce à une interpolation sur les pixels n'ayant pas besoin d'être recalculés
-    MNS_final = interpolate(MNS, indicateur,  rasterization)
-    logger.info("Interpolation terminée")
+    MNS_files = [i for i in os.listdir("MEC-Malt-Final") if i[:12]=="MNS_pyramide" and i[-4:]==".tif"]
+    for MNS_file in MNS_files:
+        print(MNS_file)
+        mns_input = os.path.join("MEC-Malt-Final", MNS_file)
+        
+        # Ouverture du MNS
+        MNS, transform, bounds = read_image(mns_input)
+        # Ouverture de la carte des indicateurs de la couche de la pyramide utilisée pour calculer le MNS
+        indicateur, _, _ = read_image(indicateur_path, bounds=bounds)
+        indicateur = resize(MNS, indicateur)
 
-    MNS_final = np.expand_dims(MNS_final, axis=0)
-    with rasterio.open(
-        os.path.join("MEC-Malt-Final", "MNS_Final.tif"), "w",
-        driver = "GTiff",
-        transform = transform,
-        dtype = rasterio.float32,
-        count = MNS_final.shape[0],
-        width = MNS_final.shape[2],
-        height = MNS_final.shape[1]) as dst:
-        dst.write(MNS_final)
+        # On récupère un raster qui indique les pixels qu'il faudra recalculer
+        rasterization = get_rasterisation(MNS, transform, indicateur)
+        logger.info("Rasterisation terminée")
+        # Pour chaque pixel devant être recalculé, on le recalcule grâce à une interpolation sur les pixels n'ayant pas besoin d'être recalculés
+        MNS_final = interpolate(MNS, indicateur,  rasterization)
+        logger.info("Interpolation terminée")
 
-    rasterization = np.expand_dims(rasterization, axis=0)
-    with rasterio.open(
-        os.path.join("MEC-Malt-Final", "carte_interpolation.tif"), "w",
-        driver = "GTiff",
-        transform = transform,
-        dtype = rasterio.uint8,
-        count = rasterization.shape[0],
-        width = rasterization.shape[2],
-        height = rasterization.shape[1]) as dst:
-        dst.write(rasterization)
+        MNS_final = np.expand_dims(MNS_final, axis=0)
+        mns_final_filename = MNS_file.replace("pyramide", "Final")
+        dictionnaire = {
+            'interleave': 'Band',
+            'tiled': True
+        }
+        with rasterio.open(
+            os.path.join("MEC-Malt-Final", mns_final_filename), "w",
+            driver = "GTiff",
+            transform = transform,
+            dtype = rasterio.float32,
+            count = MNS_final.shape[0],
+            width = MNS_final.shape[2],
+            height = MNS_final.shape[1],
+            **dictionnaire) as dst:
+            dst.write(MNS_final)
+
+        rasterization = np.expand_dims(rasterization, axis=0)
+        interpolation_filename = MNS_file.replace("MNS_pyramide", "carte_interpolation")
+        with rasterio.open(
+            os.path.join("MEC-Malt-Final", interpolation_filename), "w",
+            driver = "GTiff",
+            transform = transform,
+            dtype = rasterio.uint8,
+            count = rasterization.shape[0],
+            width = rasterization.shape[2],
+            height = rasterization.shape[1],
+            **dictionnaire) as dst:
+            dst.write(rasterization)
