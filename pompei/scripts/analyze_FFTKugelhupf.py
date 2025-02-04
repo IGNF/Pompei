@@ -18,6 +18,7 @@ import os
 from lxml import etree
 import log # Chargement des configurations des logs
 import logging
+import subprocess
 
 logger = logging.getLogger()
 
@@ -45,13 +46,12 @@ def find_problem(chemin_rapport):
                         liste_probleme.append(line_splitted[4])
     return liste_probleme
 
-import subprocess
+
 def SaisieAppuisInit(liste_probleme, xml, dir):
     for image in liste_probleme:
         script_python = dir+"/select_points.py"
       
         try:
-            #subprocess.run(["python"] + args, check=True)
             print("lancement de select_points")
             subprocess.run(
                 [
@@ -60,8 +60,6 @@ def SaisieAppuisInit(liste_probleme, xml, dir):
                     "--output_file", f"MeasuresIm-{image}-S2D.xml",
                     "--flag", "True",
                     "--input_file", xml
-                    #"--id_reperes", "id_reperes.txt",
-                    #"--gama", "2"
                 ],
             check=True
             )
@@ -112,7 +110,6 @@ def SaisieAppuisInit_to_InterneScan(liste_probleme):
 if __name__ == "__main__":
 
     liste_probleme = find_problem(args.input_report)
-    #SaisieAppuisInit(liste_probleme)
     SaisieAppuisInit(liste_probleme, args.out_xml, args.dir) #v2
 
     SaisieAppuisInit_to_InterneScan(liste_probleme)
