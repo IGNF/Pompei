@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import (
     QApplication, QGraphicsView, QGraphicsScene, QMainWindow, 
     QWidget, QVBoxLayout, QSplitter
 )
-from PyQt5.QtGui import QPixmap, QImage, QPen, QCursor, QPainter
+from PyQt5.QtGui import QPixmap, QPen, QCursor, QPainter
 from PyQt5.QtCore import QRectF, Qt
 from PyQt5.QtCore import QEvent
 import xml.etree.ElementTree as ET
@@ -256,6 +256,22 @@ class SelectPoints(QMainWindow):
         except Exception as e:
             print(f"Erreur inattendue : {e}")
             return []
+
+    def sort_points(self):
+        """
+        Dans le cas de la ressaisie, remet dans le bon ordre les points saisis pour qu'ils correspondent à l'ordre des points saisis sur l'image maîtresse
+        """
+        points_ordered = []
+        for point_maitre in self.points_maitres:
+            d_min = 1e10
+            point_min = self.points[0]
+            for point in self.points:
+                distance = np.sqrt((point_maitre[0]-point[0])**2+(point_maitre[1]-point[1])**2)
+                if distance < d_min:
+                    d_min = distance
+                    point_min = point
+            points_ordered.append(point_min)
+        self.points = points_ordered
     
     def closeEvent(self, event):
         """
@@ -273,6 +289,10 @@ class SelectPoints(QMainWindow):
         # third element
         name_im = ET.SubElement(mesure_appui, "NameIm")
         name_im.text = image_path
+
+        # S'il s'agit de la ressaisie de points, on met les points saisis dans le même ordre que les points maitres
+        if self.flag:
+            self.sort_points()
        
         # add coordinates points and their id
         for i, (x, y) in enumerate(self.points):
