@@ -14,8 +14,12 @@ set -e
 
 echo "Conversion des images jp2 en tif"
 
-find . -maxdepth 1 -name "*.jp2" -exec basename {} .jp2 ';' | parallel -I% --max-args 1 gdal_translate %.jp2 %.tif
+if ls *.jp2 1> /dev/null 2>&1; then
 
-mkdir -p jp2
+    find . -maxdepth 1 -name "*.jp2" -exec basename {} .jp2 ';' | parallel -I% --max-args 1 gdal_translate %.jp2 %.tif
 
-mv *.jp2 jp2
+    mkdir -p jp2
+
+    mv *.jp2 jp2
+
+fi
