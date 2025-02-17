@@ -1,6 +1,8 @@
 # Pompei
 
 
+![Alt text](La_Defense.png "La Défense")
+
 Pompei (Production d'Orthophotos et de Mns à partir de Photos anciennEs de l'IGN) est une chaîne de traitement presque entièrement automatisée pour reconstruire des orthophotos et des MNS à partir des images argentiques acquises tout au long du XXème siècle et qui ont été scannées dernièrement. Jusqu’à présent, une première couverture de la France entière a été produite à partir d’images de 1950-1960, sous le nom de "BD Ortho historique". Cependant, cette production a nécessité de nombreuses opérations manuelles, principalement pour saisir les points d’appuis. Pompei permet de produire ces orthophotos avec un nombre d’opérations manuelles particulièrement réduit et pour des résultats tout aussi bons. L’enjeu est de taille car l’IGN possède plus de 3,5 millions d’images argentiques scannées, acquises au cours de plus de 26000 chantiers, que ce soit en France métropolitaine, dans les DOM-TOM ou dans les anciennes colonies. Les images sont disponibles sur [Remonter le temps](https://remonterletemps.ign.fr/). 
 
 Pompei permet notamment de répondre à plusieurs défis techniques : recherche de repères de fond de chambre, construction d’orthophotos, recherche de points d’appuis et égalisation radiométrique. Pompei traite indifféremment les images en couleur (RVB ou IRC) ou bien les images à un seul canal (panchromatique ou infrarouge).
@@ -201,6 +203,18 @@ sh visualize_flight_plan.sh TA
 
 sh pompei_rapide.sh TA nb_fiducial_marks targets Kugelhupf_image_filtree remove_artefacts ortho nb_cpus
 ```
+
+
+
+### Utilisation de l'interface pour saisir un masque
+
+En début de chantier, il est demandé de saisir un masque pour ne pas conserver les points de liaisons du contour de l'image.
+
+Lorsque la fenêtre Elise s'affiche, vous devez sélectionner un polygone qui ne recouvre pas les contours de l'image : clic gauche pour ajouter un point, maj+clic gauche pour fermer le polygone. Vous devez avoir ensuite un résultat semblable à cette image :
+
+![Alt text](saisie_masque.png "Saisie d'un masque")
+
+Pour fermer la fenêtre, il faut maintenir le clic droit, déplacer la souris sur Exit, et relâcher le clic droit
 
 
 # Contributeurs
