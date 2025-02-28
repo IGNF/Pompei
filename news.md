@@ -1,3 +1,7 @@
+### Pompei, pour redécouvrir la France du XXe siècle
+
+![La Défense au XXe siècle](https://github.com/IGNF/Pompei/blob/news/La_Defense.png "image pompei"){: .img-thumbnail-left loading=lazy }
+
 L’IGN possède un fond important d’images aériennes acquises tout au long du XXe siècle et qui ont été numérisées dernièrement. Ces images sont disponibles sur [Remonter le Temps](https://remonterletemps.ign.fr/). Cependant, elles ne sont géoréférencées qu’à une centaine de mètres près et seule une orthophoto complète de la France des années 1950 est disponible [BD ORTHO® Historique](https://geoservices.ign.fr/bdorthohisto). Il reste donc une grande quantité d’images historiques parmi les 23000 missions qui ne peuvent être exploitées faute de géoréférencement précis. 
 
 Pompei (Production d’Orthophotos et de Mns à partir de Photos anciennEs de l’IGN) est une chaîne de traitement presque entièrement automatisée pour reconstruire des orthophotos et des modèles numériques de surface à partir de ces images anciennes avec une précision de l’ordre du mètre. Le code de Pompei a été ouvert au public: [https://github.com/IGNF/Pompei](https://github.com/IGNF/Pompei). Il a été développé par la recherche et le service de l’innovation de l’IGN.  
