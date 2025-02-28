@@ -18,12 +18,15 @@ import os
 from lxml import etree
 import log # Chargement des configurations des logs
 import logging
+import subprocess
 
 logger = logging.getLogger()
 
 parser = argparse.ArgumentParser(description='Analyse du rapport de FFTKugelhupf pour vérifier que tous les repères de fond de chambre ont été trouvés')
 
 parser.add_argument('--input_report', help='Rapport FFTKugelhupf')
+parser.add_argument('--out_xml', help='fichier de points image1')
+parser.add_argument('--dir', help='chemin vers répertoire script')
 args = parser.parse_args()
 
 
@@ -43,10 +46,26 @@ def find_problem(chemin_rapport):
                         liste_probleme.append(line_splitted[4])
     return liste_probleme
 
-def SaisieAppuisInit(liste_probleme):
+
+def SaisieAppuisInit(liste_probleme, xml, dir):
     for image in liste_probleme:
-        commande = "mm3d SaisieAppuisInit {} NONE id_reperes.txt MeasuresIm-{}.xml Gama=2".format(image, image)
-        os.system(commande)
+        script_python = dir+"/select_points.py"
+      
+        try:
+            print("lancement de select_points")
+            subprocess.run(
+                [
+                    "python", script_python,
+                    "--image_name", image,
+                    "--output_file", f"MeasuresIm-{image}-S2D.xml",
+                    "--flag", "True",
+                    "--input_file", xml
+                ],
+            check=True
+            )
+        except subprocess.CalledProcessError as e:
+            print(f"Erreur lors de l'exécution du script Python pour l'image {image}: {e}")
+
 
 def SaisieAppuisInit_to_InterneScan(liste_probleme):
     for image in liste_probleme:
@@ -91,7 +110,8 @@ def SaisieAppuisInit_to_InterneScan(liste_probleme):
 if __name__ == "__main__":
 
     liste_probleme = find_problem(args.input_report)
-    SaisieAppuisInit(liste_probleme)
+    SaisieAppuisInit(liste_probleme, args.out_xml, args.dir) #v2
+
     SaisieAppuisInit_to_InterneScan(liste_probleme)
 
     

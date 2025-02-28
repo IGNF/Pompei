@@ -58,7 +58,6 @@ else
         fi
     fi
 
-
     if [ ! -f "scripts/api_key.env" ]; then
         echo "Vous devez avoir un fichier api_key.env dans scripts. Voyez le readme.md"
         exit 1

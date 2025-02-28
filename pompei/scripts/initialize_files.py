@@ -235,10 +235,10 @@ def case_n_fiduciaux(remove_artefacts, sensors, targets, nb_fiducial_marks, appl
                 images = sensor_dict["images"]
                 name_first_image = images[0][:-4]
                 base_name = name_first_image[:5]
-                f.write("mm3d SaisieAppuisInit {}.tif NONE id_reperes.txt MeasuresIm-{}.tif.xml >> logfile\n\n".format(name_first_image, name_first_image))
+                f.write("python ${scripts_dir}/select_points.py --image_name " + name_first_image + f".tif --output_file MeasuresIm-{name_first_image}.tif-S2D.xml --flag {False} --nb_fiducial_marks {nb_fiducial_marks} \n\n")
                 f.write("#Saisie d'un masque indiquant où les repères de fond de chambre peuvent se trouver \n")
                 f.write("echo \"Saisie du masque où les repères du fond de chambre se trouvent\" \n")
-                f.write("mm3d SaisieMasq {}.tif >> logfile \n\n".format(name_first_image))
+                f.write("python ${scripts_dir}/saisie_masq.py --image " + f"{name_first_image}.tif --xml_file MeasuresIm-{name_first_image}.tif-S2D.xml --output_mask {name_first_image}_Masq.tif \n\n")
 
                 if apply_threshold:
                     f.write("python ${scripts_dir}/filtre_FFTKugelhupf.py "+ f"--identifiant {identifiant} --ta {TA_path} \n")
@@ -252,19 +252,15 @@ def case_n_fiduciaux(remove_artefacts, sensors, targets, nb_fiducial_marks, appl
                     f.write("mm3d FFTKugelhupf {} MeasuresIm-{}.tif-S2D.xml Masq=Masq | tee reports/rapport_FFTKugelhupf.txt >> logfile \n\n".format(get_pattern(images), name_first_image))
 
                 f.write("echo \"Analyse du rapport FFTKugelhupf\" \n")
-                f.write("python ${scripts_dir}/analyze_FFTKugelhupf.py --input_report reports/rapport_FFTKugelhupf.txt \n\n")
+                f.write("python ${scripts_dir}/analyze_FFTKugelhupf.py --input_report reports/rapport_FFTKugelhupf.txt --out_xml MeasuresIm-"+ name_first_image +".tif-S2D.xml --dir ${scripts_dir} \n\n")
                 f.write("#Suppression de fichiers de masques sinon ils sont traités comme faisant partie des images \n")
                 f.write("rm {}_Masq.tif \n".format(name_first_image))
-                f.write("rm {}_Masq.xml \n".format(name_first_image))
                 f.write("rm MeasuresIm-{}.tif-S2D.xml \n".format(name_first_image))
-                f.write("rm MeasuresIm-{}.tif-S3D.xml \n".format(name_first_image))
 
                 if apply_threshold:
                     f.write("rm filtre_FFTKugelHupf_*tif \n")
                     f.write("#Modifie le dossier Ori-InterneScan pour faire comme si la recherche de points fiduciaux a été faite sur les images originales et non sur les images filtrées \n")
                     f.write("python ${scripts_dir}/modify_FFTKugelhupf.py \n")
-                else:
-                    f.write("rm Ori-InterneScan/MeasuresIm-{}_Masq.tif.xml \n".format(name_first_image))
 
         f.write("#Recherche des positions moyennes des repères de fond de chambre \n")
         for sensor_dict in sensors:
@@ -320,4 +316,3 @@ if nb_fiducial_marks == 0:
 
 else:
     case_n_fiduciaux(remove_artefacts, sensors, targets, nb_fiducial_marks, apply_threshold, TA_path)
-
