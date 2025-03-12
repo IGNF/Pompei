@@ -22,7 +22,7 @@ from shapely import Polygon
 
 parser = argparse.ArgumentParser(description="Récupère le plan de vol d'un chantier disponible sur la géoplateforme")
 parser.add_argument('--footprints_file', help="Fichier avec les footprints au sol des chantiers")
-parser.add_argument('--id', help="Fichier avec les footprints au sol des chantiers")
+parser.add_argument('--id', help="ID du chantier")
 parser.add_argument('--outdir', help="Répertoire où préparer le chantier")
 args = parser.parse_args()
 
@@ -62,7 +62,7 @@ def get_images_metadata(bbox, outdir, id):
 
         keep_features = []
         for feature in data0["features"]:
-            if feature["properties"]["dataset_identifier"] == id:
+            if feature["properties"]["dataset_identifier"] == id and feature not in keep_features:
                 keep_features.append(feature)
 
         data0["features"] = keep_features

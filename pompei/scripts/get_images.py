@@ -15,7 +15,6 @@ You should have received a copy of the GNU General Public License along with Pom
 
 import requests
 import json
-import geojson
 import argparse
 import os
 from shapely import Polygon
@@ -24,6 +23,7 @@ from lxml import etree
 from pyproj import CRS, Transformer
 import geopandas as gpd
 from tqdm import tqdm
+import time
 
 parser = argparse.ArgumentParser(description="Récupère les footprints au sol des chantiers disponibles sur la géoplateforme")
 parser.add_argument('--selection', help="Fichier avec les footprints au sol des chantiers")
@@ -79,7 +79,7 @@ def get_images_metadata(bbox, id, selected_images):
 
         keep_features = []
         for feature in data0["features"]:
-            if feature["properties"]["dataset_identifier"] == id and feature["properties"]["image_identifier"] in selected_images:
+            if feature["properties"]["dataset_identifier"] == id and feature["properties"]["image_identifier"] in selected_images and feature not in keep_features:
                 keep_features.append(feature)
 
         data0["features"] = keep_features
@@ -88,20 +88,31 @@ def get_images_metadata(bbox, id, selected_images):
 
 
 def download_images(images_metadata, id, outdir):
+    compte_max = 10
     for feature in tqdm(images_metadata["features"]):
         image_id = feature["id"][6:]
 
         url = "https://data.geopf.fr/telechargement/download/pva/{}/{}.tif".format(id, image_id)
 
+        ok = False
+        compte = 0
+        while compte < compte_max and not ok:
+            r = requests.get(url)
+            if r.status_code == 200:
+                with open(os.path.join(outdir, image_id+"_temp.tif"), 'wb') as out:
+                    out.write(bytes(r.content))
+                    ok = True
+            
+            if not ok:
+                compte += 1
+                time.sleep(5)
 
-        r = requests.get(url)
-        if r.status_code == 200:
-            with open(os.path.join(outdir, image_id+"_temp.tif"), 'wb') as out:
-                out.write(bytes(r.content))
-
-        ds = gdal.Open(os.path.join(outdir, image_id+"_temp.tif"))
-        ds = gdal.Translate(os.path.join(outdir, image_id+".tif"), ds)
-        os.remove(os.path.join(outdir, image_id+"_temp.tif"))
+        if ok:
+            ds = gdal.Open(os.path.join(outdir, image_id+"_temp.tif"))
+            ds = gdal.Translate(os.path.join(outdir, image_id+".tif"), ds)
+            os.remove(os.path.join(outdir, image_id+"_temp.tif"))
+        else:
+            print(f"Impossible de télécharger l'image {image_id}")
 
 
 def get_projection_name(epsg):
