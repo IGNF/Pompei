@@ -51,7 +51,9 @@ def get_images_metadata(bbox, outdir, id):
         data0 = json.loads(r.text)
         nb_features = data0["totalFeatures"]
 
-        for i in range(5000, nb_features, 5000):
+        data0["features"] = []
+
+        for i in range(0, nb_features, 5000):
             url = "https://data.geopf.fr/wfs?service=WFS&version=2.0.0&typeName=pva:image&request=GetFeature&outputFormat=json&cql_filter=INTERSECTS(geom,{})&startIndex={}".format(bbox, i)
 
             r = requests.get(url)
