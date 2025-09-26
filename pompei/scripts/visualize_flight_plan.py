@@ -18,14 +18,15 @@ from lxml import etree
 from osgeo import ogr
 from osgeo import osr
 import fiona                                                                                                       
-from shapely.ops import unary_union                                                                             
-from shapely.geometry import shape, mapping  
+from shapely.ops import unary_union, polygonize                                                                           
+from shapely.geometry import shape, mapping, MultiPolygon
 import argparse
 import shutil
 from math import sqrt
 from osgeo import gdal
 import log # Chargement des configurations des logs
 import logging
+import geopandas as gpd
 
 logger = logging.getLogger()
 
@@ -216,9 +217,12 @@ def merge(src, dst, typeData):
         crs = ds_in.crs 
         drv = ds_in.driver 
 
-        filtered = filter(lambda x: shape(x["geometry"]).is_valid, list(ds_in))                                                                                   
-
-        geoms = [shape(x["geometry"]) for x in filtered]                                                   
+        filtered = filter(lambda x: shape(x["geometry"]).is_valid, list(ds_in)) 
+                                                                                          
+        if typeData=="recouvrement":
+            geoms = [shape(x["geometry"]) for x in filtered if x["properties"]["count"]>=2] 
+        else:
+            geoms = [shape(x["geometry"]) for x in filtered]                                                   
         dissolved = unary_union(geoms)                                    
 
     schema = {                                                                                                     
@@ -246,16 +250,26 @@ def merge(src, dst, typeData):
 
 
 def recouvrement(chemin_footprint, chemin_resultat):
-    schema = {                                                                                                     
-        "geometry": "Polygon",                                                                                     
-    }
-    footprints1 = fiona.open(chemin_footprint)
-    with fiona.open(chemin_resultat, 'w',driver='ESRI Shapefile', schema=schema, crs=footprints1.crs) as output:
-        for emp1 in footprints1:
-            for emp2 in fiona.open(chemin_footprint):
-                if emp1['id'] != emp2['id'] and shape(emp1['geometry']).intersects(shape(emp2['geometry'])):
-                    intersection = shape(emp1['geometry']).intersection(shape(emp2['geometry']))
-                    output.write({'geometry':mapping(intersection)})
+
+    gdf = gpd.read_file(chemin_footprint)
+    
+    exterior_geom = list(polygonize(gdf.exterior.union_all()))
+
+    # create gdf out of the dissolved features
+    gdf_exterior = gpd.GeoDataFrame({'id':range(0, len(exterior_geom))}, geometry=exterior_geom, crs=gdf.crs).explode()
+
+    geometries = []
+    counts = []
+    for i in range(gdf_exterior.shape[0]):
+        row = gdf_exterior.iloc[i]
+        geometry = row["geometry"]
+        centroid = geometry.centroid
+        geometries.append(row["geometry"])
+        count = gdf.contains(centroid).sum()
+        counts.append(count)    
+
+    # Sauvegarder le résultat
+    gpd.GeoDataFrame({"count":counts, "geometry":geometries}).set_crs(EPSG).to_file(chemin_resultat)
 
 def calcul_proportion_recouvrement(path_recouvrement_merged, path_footprint_chantier_merged):
     aire_recouvrement = 0
