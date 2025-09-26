@@ -130,8 +130,8 @@ def getSensors(root):
     for vol in root.findall(".//vol"):
         images = []
         for cliche in vol.findall(".//cliche"):
-            image_path = f"{cliche.find("image").text.strip()}.tif"
-            imageOIS_path = f"OIS-Reech_{cliche.find("image").text.strip()}.tif"
+            image_path = f"{cliche.find('image').text.strip()}.tif"
+            imageOIS_path = f"OIS-Reech_{cliche.find('image').text.strip()}.tif"
             if os.path.exists(image_path) or os.path.exists(imageOIS_path):
                 images.append(image_path)
         

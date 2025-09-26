@@ -205,6 +205,17 @@ sh pompei_rapide.sh TA nb_fiducial_marks targets Kugelhupf_image_filtree remove_
 ```
 
 
+### Correction de la distorsion
+
+Il est possible de calculer les images corrigées de la distorsion. Pour cela, une fois pompei.sh terminé, lancer :
+```
+cd [workdir]
+python [script_dir]/distorsion_correction.py --ori Ori-TerrainFinal_10_10_0.5_AllFree_Final/ --ta TA
+```
+
+Les images corrigées de la distorsion sont dans [workdir]/images_without_distorsion
+
+
 
 ### Utilisation de l'interface pour saisir un masque
 
