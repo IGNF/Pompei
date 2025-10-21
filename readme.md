@@ -181,7 +181,7 @@ Avec :
 cd pompei
 sh visualize_flight_plan.sh TA 0
 
-sh pompei.sh TA nb_fiducial_marks targets Kugelhupf_image_filtree remove_artefacts ortho algo filter_GCP create_ortho_mns create_ortho_mnt cpu
+sh pompei.sh TA nb_fiducial_marks targets Kugelhupf_image_filtree remove_artefacts ortho algo filter_GCP create_ortho_mns create_ortho_mnt cpu delete
 ```
 
 La signification des paramètres est détaillée dans [la documentation](documentation/Pompei.pdf).
