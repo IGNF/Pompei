@@ -225,6 +225,7 @@ def case_n_fiduciaux(remove_artefacts, sensors, targets, nb_fiducial_marks, appl
     with open(os.path.join("correct_geometrically_images.sh"), "w") as f:
         f.write("set -e\n")
         f.write("scripts_dir=$1 \n\n")
+        f.write("delete=$2 \n\n")
         f.write("#Saisie des repères de fond de chambre sur une image \n")
         f.write("echo \"Saisie des repères de fonds de chambre\" \n")
         if targets == 1:
@@ -272,6 +273,7 @@ def case_n_fiduciaux(remove_artefacts, sensors, targets, nb_fiducial_marks, appl
             f.write("#Rééchantillonnage des clichés \n")
             f.write("echo \"Rééchantillonnage des clichés\" \n")
             f.write(f"mm3d ReSampFid {get_pattern(images)} 1 | tee reports/rapport_ReSampFid.txt >> logfile \n\n")
+            f.write("if test ${delete} -eq 1; then \n"+f"echo {get_pattern(images)} | tr -d '()' | tr '|' '\n' | xargs rm -f"+"\n fi \n")
             f.write("#Analyse du rapport de ReSampFid \n")
             f.write("python ${scripts_dir}/analyze_ReSampFid.py --input_report reports/rapport_ReSampFid.txt \n\n")
             f.write("#Mise à jour du fichier de calibration \n")
