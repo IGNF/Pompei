@@ -7,6 +7,8 @@ from equations import Shot, DistorsionCorrection
 import numpy as np
 from scipy import ndimage
 from tqdm import tqdm
+from lxml import etree
+from scipy.spatial.transform import Rotation as R
 
 parser = argparse.ArgumentParser(description="Correction de la distorsion sur les images OIS-Reech")
 parser.add_argument('--ori', help='Répertoire avec les orientations du chantier')
@@ -91,7 +93,25 @@ def save_image(image, path, encoding):
         **dictionnaire) as dst:
         dst.write(image)
 
+def get_shot(shots, image_name):
+    for shot in shots:
+        if shot.nom==f"OIS-Reech_{image_name.strip()}":
+            return shot
+        
 
+def mat_eucli_to_quaternion(mat_eucli: np.array) -> np.array:
+    """
+    Transform rotation matrix (TOPAERO convention) into quaternions
+    :param mat_eucli: quaternion
+    :return: quaternion
+    """
+    # Passage en convention classique
+    # Transposition + inversion des deux premières colonnes
+    mat = mat_eucli[:, [1, 0, 2]]
+    # axe Z dans l'autre sens donc *-1 sur la dernière colonne
+    mat = mat*np.array([1, 1, -1])
+    q = -R.from_matrix(mat).as_quat()
+    return q
 
 #On récupère l'EPSG du chantier
 EPSG = getEPSG("metadata")
@@ -99,10 +119,62 @@ EPSG = getEPSG("metadata")
 resolution = getResolution()
 nbCouleurs = getNbCouleurs("metadata")
 
-
 # On crée un objet shot par image
 shots = read_ori(ori_path, ta_path, EPSG)
 
 for shot in tqdm(shots):
     correct_distorsion(shot)
+
+tree = etree.parse(ta_path)
+root = tree.getroot()
+vols = root.findall(".//vol")
+for vol in vols:
+    cliches = vol.findall(".//cliche")
+    for cliche in cliches:
+        image = cliche.find(".//image")
+        shot = get_shot(shots, image.text)
+        if shot is None:
+            continue
+        shot_valid = shot
+        model = cliche.find(".//model")
+
+        image.text = shot.nom
+        
+        x = model.find(".//x")
+        x.text = str(shot.x_pos)
+        y = model.find(".//y")
+        y.text = str(shot.y_pos)
+        z = model.find(".//z")
+        z.text = str(shot.z_pos)
+
+        quaternions = mat_eucli_to_quaternion(shot.mat_eucli)
+        
+        quat_balise = cliche.find(".//quaternion")
+        w = quat_balise.find(".//w")
+        x = quat_balise.find(".//x")
+        y = quat_balise.find(".//y")
+        z = quat_balise.find(".//z")
+
+        x.text = str(quaternions[0])
+        y.text = str(quaternions[1])
+        z.text = str(quaternions[2])
+        w.text = str(quaternions[3])
+
+    focal = vol.find(".//focal")
+    x = focal.find(".//x")
+    x.text = str(shot_valid.x_ppa)
+    y = focal.find(".//y")
+    y.text = str(shot_valid.y_ppa)
+    z = focal.find(".//z")
+    z.text = str(shot_valid.focal)
+
+    usefull_frame = vol.find(".//usefull-frame")
+    width = usefull_frame.find(".//w")
+    height = usefull_frame.find(".//h")
+    width.text = str(shot_valid.X_size)
+    height.text = str(shot_valid.Y_size)
+
+with open(os.path.join(output_dir, "ta_corrected.xml"), "w") as f:
+		f.write(str(etree.tostring(root,encoding='unicode')))
+
 
