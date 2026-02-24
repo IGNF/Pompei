@@ -48,7 +48,7 @@ def get_resolution_scan():
         data = json.load(f)
         for chantier_dict in data:
             if chantier_dict["chantier"].replace(" ", "_") + ".xml" == ta_basename:
-                resol_scan = float(chantier_dict["resol_scan"])
+                resol_scan = float(chantier_dict["resolution_scannage"])
                 break
     os.makedirs("metadata", exist_ok=True)
     with open(os.path.join("metadata", "resol.txt"), "w") as f:
