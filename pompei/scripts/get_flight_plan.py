@@ -19,6 +19,7 @@ import geojson
 import argparse
 import os
 from shapely import Polygon
+import geopandas as gpd
 
 parser = argparse.ArgumentParser(description="Récupère le plan de vol d'un chantier disponible sur la géoplateforme")
 parser.add_argument('--footprints_file', help="Fichier avec les footprints au sol des chantiers")
@@ -28,17 +29,14 @@ args = parser.parse_args()
 
 
 def get_bbox(footprints_file, id):
-    with open(footprints_file, "r") as f:
-        footprints = json.loads(f.read())
-    
-    for feature in footprints["features"]:
-        if feature["id"] == "dataset."+id:
-            bbox = feature["bbox"]
-            bbox_polygon = Polygon([[bbox[0], bbox[1]], [bbox[0], bbox[3]], [bbox[2], bbox[3]], [bbox[2], bbox[1]], [bbox[0], bbox[1]]])
-            return bbox_polygon
-
-    raise ValueError("Aucun chantier avec l'identifiant {} n'a été trouvé".format(id))
-
+    footprints = gpd.read_file(footprints_file)
+    raw = footprints[footprints["dataset_identifier"]==id]
+    if raw.shape[0]==0:
+        raise ValueError("Aucun chantier avec l'identifiant {} n'a été trouvé".format(id))
+    raw = raw.iloc[0]
+    xmin, ymin, xmax, ymax = raw["geometry"].bounds
+    bbox_polygon = Polygon.from_bounds(xmin, ymin, xmax, ymax)
+    return bbox_polygon
 
 
 def get_images_metadata(bbox, outdir, id):
