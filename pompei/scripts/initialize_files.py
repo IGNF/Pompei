@@ -200,10 +200,10 @@ def case_0_fiduciaux(cliches, remove_artefacts):
         f.write("#On copie les images  : on fait comme si les images initiales sont les images rééchantillonnées \n")
         f.write("for f in "+base_name+"*.tif; do cp ${f} OIS-Reech_${f}; done \n\n")
         f.write("#Mise à jour du fichier de calibration \n")
-        f.write("python ${scripts_dir}/maj_calibNum.py --input_micmac_folder=./ >> logfile \n\n")
+        f.write("python ${scripts_dir}/maj_calibNum.py "+f"--identifiant 0 --ta {TA_path} >> logfile \n\n")
         f.write("#Saisie du masque pour supprimer les contours \n")
         f.write("echo \"Saisie du masque pour supprimer les contours\" \n")
-        f.write("mm3d SaisieMasq OIS-Reech_{}.tif Name=filtre.tif Gama=2 >> logfile\n".format(name_first_image))
+        f.write("mm3d SaisieMasq OIS-Reech_{}.tif Name=filtre0.tif Gama=2 >> logfile\n".format(name_first_image))
         if remove_artefacts:
             f.write("echo \"Saisie du masque pour supprimer les contours et les artefacts\"\n ")
             f.write("mm3d SaisieMasq OIS-Reech_{}.tif Name=filtre_artefacts.tif Gama=2 >> logfile\n".format(name_first_image))
