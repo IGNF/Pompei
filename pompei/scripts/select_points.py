@@ -102,7 +102,7 @@ class SelectPoints(QMainWindow):
         elif self.nb_fiducial_marks==8:
             return [[w0,h0], [w1,h0], [w2,h0], [w2,h1], [w2,h2], [w1,h2], [w0,h2], [w0,h1]]
         else:
-            return []
+            return [[w1,h1] for i in range(self.nb_fiducial_marks)]
 
     def eventFilter(self, source, event):
         if (source == self.view.viewport() and event.type() == QEvent.Wheel):
