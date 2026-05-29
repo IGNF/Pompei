@@ -18,7 +18,7 @@ import log # Chargement des configurations des logs
 import logging
 from equations import Shot, Calibration
 from lxml import etree
-
+from typing import List
 logger = logging.getLogger()
 
 
@@ -83,7 +83,7 @@ def get_calibration_file(ori, suffixe):
     logger.warning(f"Fichier avec le suffixe {suffixe} non trouvé dans {ori}")
 
 
-def read_ori(ori, TA_path, EPSG):
+def read_ori(ori, TA_path, EPSG)->List[Shot]:
     tree = etree.parse(TA_path)
     root = tree.getroot()
     sensors = getSensors(root)

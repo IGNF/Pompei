@@ -111,6 +111,7 @@ class Shot:
         shot.x_pos = x
         shot.y_pos = y
         shot.z_pos = z
+        shot.sommet = [shot.x_pos, shot.y_pos, shot.z_pos]
         shot.x_central = x
         shot.y_central = y
         shot.z_central = 0
@@ -145,6 +146,13 @@ class Shot:
         shot.mat_eucli = rotMatrice
 
         return shot
+    
+
+    def get_sommet(self) -> np.array:
+        """
+        Retourne le sommet de prise de vue
+        """
+        return np.array([self.x_pos, self.y_pos, self.z_pos])
 
 
     def carto_to_geoc(self, x, y, z):
@@ -273,6 +281,16 @@ class Shot:
         x_local_1, y_local_1, z_local_1 = self.bundle_to_local(x_bundle_1, y_bundle_1, z_bundle_1)
 
         return x_local_0, y_local_0, z_local_0, x_local_1, y_local_1, z_local_1
+    
+
+    def get_vect_unitaire(self, c, l):
+        x_local_0, y_local_0, z_local_0, x_local_1, y_local_1, z_local_1 = self.image_to_local_vec(c, l)
+        dx = x_local_1 - x_local_0
+        dy = y_local_1 - y_local_0
+        dz = z_local_1 - z_local_0
+        array = np.vstack([dx, dy, dz])
+        norm = np.linalg.norm(array, axis=0)
+        return array/norm
 
     def shot_to_bundle(self, x_shot, y_shot, z_shot):
         # Repere cliche -> repere faisceau
@@ -382,6 +400,45 @@ class Shot:
         return -np.array(proj.get_factors(x_geog, y_geog).meridian_convergence)
 
 
+    def read(self, c_corr, l_corr, x_shape, y_shape, nbCouleurs):
+        inputds = rasterio.open(self.imagePath)
+        array_ortho = inputds.read()
+        RasterXSize = array_ortho.shape[2]
+        RasterYSize = array_ortho.shape[1]
+        min_c = int(np.floor(np.min(c_corr)))
+        max_c = int(np.ceil(np.max(c_corr)))
+        min_l = int(np.floor(np.min(l_corr)))
+        max_l = int(np.ceil(np.max(l_corr)))
+
+        # Coordonnées pour lire une partie de l'image même si dans l'idéal on a besoin d'une partie en-dehors de l'image
+        min_c_read = max(0, min_c)
+        max_c_read = min(RasterXSize-1, max_c)
+        min_l_read = max(0, min_l)
+        max_l_read = min(RasterYSize-1, max_l)
+
+        # Si les coordonnées demandées sont en dehors de l'image, on renvoie None
+        if min_l > RasterYSize or min_c > RasterXSize or max_l < 0 or max_c < 0:
+            finalImage = None
+        # Si on veut une image trop grande, on renvoie None par sécurité
+        elif max_l-min_l+1 > 30000 or max_c-min_c+1 > 30000:
+            finalImage = None
+        else:
+            image = array_ortho[:,min_l_read:max_l_read+1, min_c_read:max_c_read+1]
+            image = image.reshape((nbCouleurs, max_l_read-min_l_read+1, max_c_read-min_c_read+1))
+            
+            finalImage = np.zeros((nbCouleurs, max_l-min_l+1, max_c-min_c+1), dtype=np.uint8)
+            finalImage[:,min_l_read-min_l:max_l_read-min_l+1, min_c_read-min_c:max_c_read-min_c+1] = image
+
+        # On récupère les points de l'image
+        if finalImage is not None:
+            list_bands = []
+            for i in range(nbCouleurs):
+                value_band = ndimage.map_coordinates(finalImage[i,:,], np.vstack([l_corr-min_l, c_corr-min_c])).reshape((1, y_shape, x_shape))
+                list_bands.append(value_band)
+            ortho = np.concatenate(list_bands, axis=0)
+        else:
+            ortho = None
+        return ortho
 
 
 class MNT:

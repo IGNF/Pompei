@@ -7,3 +7,5 @@ log.txt
 *.log
 workspace.txt
 *.env
+
+pompei/mns_raftstereo.sh
