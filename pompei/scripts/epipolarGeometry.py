@@ -78,16 +78,13 @@ class EpipolarGeometry:
         # On projette les pixels terrain en géométrie image pour la première image
         c1_im, l1_im = self.image1.world_to_image(xx, yy, z)
         
-        ## On applique la correction de la distorsion 
-        #dc = DistorsionCorrection(self.image1.calibration)
-        #c1_corr, l1_corr = dc.compute(c1_im, l1_im)
-#
-        ## On récupère les coordonnées épipolaires, toujours pour la première image
-        #c1_epip, l1_epip = self.image_to_epip(c1_corr, l1_corr, self.image1, self.r1e)
+        # On applique la correction de la distorsion 
+        dc = DistorsionCorrection(self.image1.calibration)
+        c1_corr, l1_corr = dc.compute(c1_im, l1_im)
 
+        # On récupère les coordonnées épipolaires, toujours pour la première image
+        c1_epip, l1_epip = self.image_to_epip(c1_corr, l1_corr, self.image1, self.r1e)
 
-
-        c1_epip, l1_epip = self.image_to_epip(c1_im, l1_im, self.image1, self.r1e)
 
         # On calcule la translation à appliquer entre les deux images en géométrie épipolaire pour qu'elles se superposent correctement
         # Pour cela, on utilise les points de liaisons
@@ -98,7 +95,7 @@ class EpipolarGeometry:
         # On applique le décalage entre les deux géométries épipolaires
         image_epip_2, c2_im, l2_im = self.compute_epip_image(c1_epip-diff_c, l1_epip-diff_l, self.image2, self.r2e, len_x, len_y)
 
-        return image_epip_1, image_epip_2, c1_im, l1_im, c2_im, l2_im, diff_c, diff_l
+        return image_epip_1, image_epip_2, c1_im, l1_im, diff_c, diff_l
 
 
     

@@ -28,7 +28,7 @@ import log # Chargement des configurations des logs
 import logging
 from epipolarGeometry import EpipolarGeometry
 from shapely import Polygon, Point
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 import json
 import geopandas as gpd
 from pathlib import Path
@@ -63,7 +63,7 @@ def get_shot_from_nom(shots, nom):
         if shot.nom==nom:
             return shot
 
-def get_shots(tile_dir, shots)->Tuple[Shot, Shot, float, float]:
+def get_shots(tile_dir, shots)->Tuple[Shot, Shot, Dict]:
     with open(epipDir/tile_dir/"info.json", "r") as f:
         infos = json.load(f)
 
@@ -79,10 +79,8 @@ def load_images(tile_dir):
     disparity = rasterio.open(epipDir/tile_dir/"disparity.tif").read()
     disparity = disparity[:,:c1_im.shape[1], :c1_im.shape[2]].reshape((-1))
     c1_im = c1_im.reshape((-1))
-    c2_im = rasterio.open(epipDir/tile_dir/"c2_im.tif").read().reshape((-1))
     l1_im = rasterio.open(epipDir/tile_dir/"l1_im.tif").read().reshape((-1))
-    l2_im = rasterio.open(epipDir/tile_dir/"l2_im.tif").read().reshape((-1))
-    return disparity, c1_im, c2_im, l1_im, l2_im
+    return disparity, c1_im, l1_im
 
 
 def find_pseudo_intersections(S1, S2, D1, D2):
@@ -197,7 +195,7 @@ def interpolate_to_grid(P, x_min, x_max, y_min, y_max, resolution):
 
 def run_one_tile(tile_dir, shots):
     shot1, shot2, infos = get_shots(tile_dir, shots)
-    disparity, c1_im, c2_im, l1_im, l2_im = load_images(tile_dir)
+    disparity, c1_im, l1_im = load_images(tile_dir)
     r1e = np.load(epipDir/tile_dir/"r1e.npy")
     r2e = np.load(epipDir/tile_dir/"r2e.npy")
     epipolarGeometry = EpipolarGeometry.load(shot1, shot2, r1e, r2e)
@@ -207,8 +205,14 @@ def run_one_tile(tile_dir, shots):
 
     c2_im, l2_im = epipolarGeometry.epip_to_image(c2_epip, l2_epip, shot2, r2e)
 
-    vec1 = shot1.get_vect_unitaire(c1_im, l1_im)
-    vec2 = shot2.get_vect_unitaire(c2_im, l2_im)
+    dc_image1 = DistorsionCorrection(shot1.calibration)
+    c1_corr, l1_corr = dc_image1.reverse_distorsion(c1_im, l1_im)
+
+    dc_image2 = DistorsionCorrection(shot2.calibration)
+    c2_corr, l2_corr = dc_image2.reverse_distorsion(c2_im, l2_im)
+
+    vec1 = shot1.get_vect_unitaire(c1_corr, l1_corr)
+    vec2 = shot2.get_vect_unitaire(c2_corr, l2_corr)
 
 
     S1 = shot1.get_sommet()
@@ -219,6 +223,9 @@ def run_one_tile(tile_dir, shots):
 
 
     P = find_pseudo_intersections(S1, S2, vec1, vec2)
+
+    P = shot1.euclidean_to_world(P[0], P[1], P[2])
+    P = np.array(P)
     with open(epipDir/tile_dir/"nuage.xyz", "w") as f:
         for i in range(P.shape[1]):
             f.write(f"{P[0,i]},{P[1,i]},{P[2,i]}\n")

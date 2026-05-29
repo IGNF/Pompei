@@ -21,7 +21,7 @@ from scipy import ndimage
 from lxml import etree
 import rasterio
 import os
-
+from scipy.interpolate import griddata
 
 
 
@@ -648,3 +648,37 @@ class DistorsionCorrection:
         outRaster = driver.Create(path, m, n, 1, gdal.GDT_Byte)
         outband = outRaster.GetRasterBand(1)
         outband.WriteArray(self.imageWithoutDistorsion)
+
+
+    def reverse_distorsion(self, c, l):
+        # c et l sont en coordonnées images
+
+        # On construit une grille
+        marge = 30
+        c_grille = np.arange(int(np.min(c))-marge, int(np.max(c))+marge)
+        l_grille = np.arange(int(np.min(l))-marge, int(np.max(l))+marge)
+        
+        grid_c, grid_l = np.meshgrid(c_grille, l_grille)
+        grid_c = grid_c.reshape((-1))
+        grid_l = grid_l.reshape((-1))
+        grid_c_corr, grid_l_corr = self.compute(grid_c, grid_l)
+
+        delta_c = grid_c_corr - grid_c # image - théorique
+        delta_l = grid_l_corr - grid_l
+
+        grid_cl_corr = np.moveaxis(np.vstack([grid_c_corr, grid_l_corr]), 0, 1)
+        grid_dc = griddata(
+            points=grid_cl_corr, 
+            values=delta_c, 
+            xi=(c, l), 
+            method='nearest'
+        )
+
+        grid_dl = griddata(
+            points=grid_cl_corr, 
+            values=delta_l, 
+            xi=(c, l), 
+            method='nearest'
+        )
+
+        return c-grid_dc, l-grid_dl

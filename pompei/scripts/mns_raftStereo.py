@@ -116,7 +116,7 @@ def run_tile(emprise:Polygon, shots:List[Shot], index_shots:gpd.GeoDataFrame, mn
     z = mnt.get(xx, yy)
 
     # On calcule la paire d'images en géométrie épipolaire
-    image_epip_1, image_epip_2, c1_im, l1_im, c2_im, l2_im, diff_c, diff_l = epipolarGeometry.compute_epip_images(xx, yy, z, x.shape[0], y.shape[0])
+    image_epip_1, image_epip_2, c1_im, l1_im, diff_c, diff_l = epipolarGeometry.compute_epip_images(xx, yy, z, x.shape[0], y.shape[0])
 
     
     # On sauvegarde les informations nécessaires pour la suite du traitement
@@ -127,15 +127,11 @@ def run_tile(emprise:Polygon, shots:List[Shot], index_shots:gpd.GeoDataFrame, mn
 
     c1_im = c1_im.reshape(image_epip_1.shape)
     l1_im = l1_im.reshape(image_epip_1.shape)
-    c2_im = c2_im.reshape(image_epip_1.shape)
-    l2_im = l2_im.reshape(image_epip_1.shape)
 
     save_image(image_epip_1, output_dir/"epip_left.tif", np.uint8)
     save_image(image_epip_2, output_dir/"epip_right.tif", np.uint8)
     save_image(c1_im, output_dir/"c1_im.tif", np.float32)
     save_image(l1_im, output_dir/"l1_im.tif", np.float32)
-    save_image(c2_im, output_dir/"c2_im.tif", np.float32)
-    save_image(l2_im, output_dir/"l2_im.tif", np.float32)
     np.save(output_dir/"r1e.npy", epipolarGeometry.r1e)
     np.save(output_dir/"r2e.npy", epipolarGeometry.r2e)
     with open(output_dir/"info.json", "w") as f:
@@ -155,30 +151,23 @@ def run_tile(emprise:Polygon, shots:List[Shot], index_shots:gpd.GeoDataFrame, mn
 
 
 def run_tiles(bbox, shots, index_shots, mnt:MNT, homol_dir:Path):
-    tileSize_px = 640 # pixels
     
     #tileSize_px = 5000 # pixels
     pas_px = 440
     recouvrement_px = 100
     # On crée un tableau numpy qui contient les positions des sommets de prise de vue pour tous les clichés
     pas = int(pas_px*resolution)
-    tileSize = int(tileSize_px*resolution)
     recouvrement = int(recouvrement_px*resolution)
     # Pour chaque tuile, on remplit work_data avec les paramètres pour le traitement
     for x0 in range(int(bbox[0]), int(bbox[2]), pas):
         for y0 in range(int(bbox[3]), int(bbox[1]), -pas):
             emprise = Polygon.from_bounds(x0-recouvrement, y0-(pas+recouvrement), x0+(pas+recouvrement), y0+recouvrement)
             gpd.GeoDataFrame({"geometry":[emprise]}).set_crs(epsg=2154).to_file("emprise.gpkg")
-            #run_tile(emprise, shots, index_shots, mnt, homol_dir, x0, y0, resolution, pas)
             try:
                 run_tile(emprise, shots, index_shots, mnt, homol_dir, x0, y0, resolution, pas)
             except:
                 pass
-        #    if compte >3:
-        #        break
-        #if compte>3:
-        #    break
-        #    print(a)
+
 
 
 
@@ -201,8 +190,10 @@ def get_nb_bandes(shots, ta_path):
 bbox = load_bbox("metadata")
 
 #bbox = [614600, 6245800, 615600, 6246800]
-bbox = [613000, 6245800, 616300, 6247900]
-#bbox = [615300, 6242800, 617300, 6245000]
+bbox = [613000, 6245800, 616300, 6247900] # Ville complète
+#bbox = [615300, 6242800, 617300, 6245000] # Zone complète
+
+#bbox = [614650, 6246900, 614800, 6247100]
 
 #On récupère l'EPSG du chantier
 EPSG = getEPSG("metadata")
