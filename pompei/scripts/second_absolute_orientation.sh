@@ -53,7 +53,7 @@ python ${scripts_dir}/create_mask_per_image.py --TA ${TA}
 
 #Calcul d'une première orthophoto
 echo "Malt"
-mm3d Malt Ortho "OIS.*([0-9]).tif" Abs-Ratafia-AllFree MasqIm=Masq NbVI=2 UseTA=0 NbProc=13 EZA=1 DirMEC=MEC-Malt-Abs-Ratafia >> logfile
+mm3d Malt Ortho "OIS.*([0-9]).tif" Abs-Ratafia-AllFree MasqIm=Masq NbVI=2 UseTA=0 NbProc=${CPU} EZA=1 DirMEC=MEC-Malt-Abs-Ratafia >> logfile
 
 echo "Tawny"
 mm3d Tawny Ortho-MEC-Malt-Abs-Ratafia/ RadiomEgal=false >> logfile
