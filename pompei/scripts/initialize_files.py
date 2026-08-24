@@ -272,7 +272,7 @@ def case_n_fiduciaux(remove_artefacts, sensors, targets, nb_fiducial_marks, appl
             f.write("python ${scripts_dir}/compute_mean_fiducial_marks.py " + f"--identifiant {identifiant} --ta {TA_path} >> logfile \n\n")
             f.write("#Rééchantillonnage des clichés \n")
             f.write("echo \"Rééchantillonnage des clichés\" \n")
-            f.write(f"mm3d ReSampFid {get_pattern(images)} 1 | tee reports/rapport_ReSampFid.txt >> logfile \n\n")
+            f.write(f"mm3d ReSampFid {get_pattern(images)} 1 ExpAff=true | tee reports/rapport_ReSampFid.txt >> logfile \n\n")
             f.write("if test ${delete} -eq 1; then \n"+f"echo {get_pattern(images)} | tr -d '()' | tr '|' '\n' | xargs rm -f"+"\n fi \n")
             f.write("#Analyse du rapport de ReSampFid \n")
             f.write("python ${scripts_dir}/analyze_ReSampFid.py --input_report reports/rapport_ReSampFid.txt \n\n")

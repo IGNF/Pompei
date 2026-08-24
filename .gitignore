@@ -7,3 +7,6 @@ log.txt
 *.log
 workspace.txt
 *.env
+
+merge.py
+merge2.py

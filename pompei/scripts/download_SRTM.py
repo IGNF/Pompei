@@ -65,7 +65,6 @@ def download(pointsWGS84, path):
     if API_KEY is None:
         logger.warning("Renseigner API_KEY dans scripts/api_key.env : https://www.opentopography.org/")
     url = "https://portal.opentopography.org/API/globaldem?demtype=SRTMGL1&south={}&north={}&west={}&east={}&outputFormat=GTiff&API_Key={}".format(south, north, west, east, API_KEY)
-    logger.info(url)
     r = requests.get(url)
     with open(path, 'wb') as out:
         out.write(bytes(r.content))
